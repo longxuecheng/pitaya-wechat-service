@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/acroca/go-symbols" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/derekparker/delve" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/dustin/go-broadcast" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/gin-contrib/sse" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/gin-gonic/autotls" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/gin-gonic/gin" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/go-redis/redis" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/golang-migrate/migrate" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/golang/lint" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/golang/protobuf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/gorilla/websocket" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/jessevdk/go-assets" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/jmoiron/sqlx" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/karrick/godirwalk" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/lib/pq" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/manucorporat/stats" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/mattn/go-isatty" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/mdempsky/gocode" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/pkg/errors" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/ramya-rao-a/go-outline" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/rogpeppe/godef" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/sqs/goreturns" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/stretchr/testify" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/thinkerou/favicon" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/ugorji/go" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vendor/github.com/uudashr/gopkgs" vcs="Git" />
+  </component>
+</project>
