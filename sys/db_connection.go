@@ -9,21 +9,20 @@ import (
 
 var dbConnection *sqlx.DB
 
-func connectDataBase() *sqlx.DB{
-	if dbConnection != nil {
-		return dbConnection
+func connectDataBase() {
+	if dbConnection == nil {
+		db, err := sqlx.Connect("mysql", "root:6263272lxc@tcp(localhost:3306)/mymall")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		err = db.Ping()
+		if err != nil {
+			log.Panic("ping to database maybe some problems")
+		}
 	}
-	db, err := sqlx.Connect("mysql", "root:6263272lxc@tcp(localhost:3306)/mymall")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	err = db.Ping()
-	if err != nil {
-		log.Panic("ping to database maybe some problems")
-	}
-	return db
 }
 
 func DBConnection() *sqlx.DB {
-	return connectDataBase()
+	connectDataBase()
+	return dbConnection
 }

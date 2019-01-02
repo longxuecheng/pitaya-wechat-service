@@ -26,3 +26,4 @@ func (dao *UserDao) SelectAll() ([]*model.User, error) {
 	}
 	return users, err
 }
+
