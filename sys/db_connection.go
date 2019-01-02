@@ -11,7 +11,7 @@ var dbConnection *sqlx.DB
 
 func connectDataBase() {
 	if dbConnection == nil {
-		db, err := sqlx.Connect("mysql", "root:6263272lxc@tcp(localhost:3306)/mymall")
+		db, err := sqlx.Connect("mysql", "root:6263272lxc@tcp(localhost:3306)/mymall?allowNativePasswords=true")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -19,6 +19,7 @@ func connectDataBase() {
 		if err != nil {
 			log.Panic("ping to database maybe some problems")
 		}
+		dbConnection = db
 	}
 }
 
