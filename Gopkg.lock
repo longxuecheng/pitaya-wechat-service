@@ -74,6 +74,22 @@
   version = "1.0.1"
 
 [[projects]]
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
+
+[[projects]]
+  digest = "1:81e02c4edb639c80559c0650f9401d3e2dcc3256d1fa215382bb7c83c1db9126"
+  name = "github.com/shopspring/decimal"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cd690d0c9e2447b1ef2a129a6b7b49077da89b8e"
+  version = "1.1.0"
+
+[[projects]]
   digest = "1:03aa6e485e528acb119fb32901cf99582c380225fc7d5a02758e08b180cb56c3"
   name = "github.com/ugorji/go"
   packages = ["codec"]
@@ -104,6 +120,8 @@
     "github.com/gin-gonic/gin",
     "github.com/go-sql-driver/mysql",
     "github.com/jmoiron/sqlx",
+    "github.com/pkg/errors",
+    "github.com/shopspring/decimal",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
