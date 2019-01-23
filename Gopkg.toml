@@ -37,3 +37,11 @@ ignored = ["github.com/mattn/go-isatty"]
 [[constraint]]
   name = "github.com/pkg/errors"
   version = "0.8.1"
+
+[[constraint]]
+  name = "github.com/huandu/go-sqlbuilder"
+  version = "1.1.0"
+
+[[constraint]]
+  name = "github.com/Masterminds/squirrel"
+  version = "1.1.0"

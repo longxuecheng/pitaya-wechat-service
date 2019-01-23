@@ -35,6 +35,7 @@ func main() {
 	root.GET("/category/info", controller.GetCategoryInfo)
 	goodsGroup := root.Group("/goods")
 	goodsGroup.GET("/list", controller.GetGoodsListByCategory)
+	goodsGroup.GET("/detail", controller.GetGoodsInfo)
 	srv := &http.Server{
 		Addr:    ":8081",
 		Handler: r,
