@@ -22,6 +22,15 @@ type GoodsStockDao struct {
 	db *sys.EasyDB
 }
 
+func (dao *GoodsStockDao) SelectByID(ID int64) (*model.GoodsStock, error) {
+	stock := new(model.GoodsStock)
+	err := dao.db.SelectOneDSL(stock, columns_goods_stock, model.Table_Stock, sq.Eq{"id": ID})
+	if err != nil {
+		return nil, err
+	}
+	return stock, nil
+}
+
 func (dao *GoodsStockDao) SelectByGoodsID(goodsID int64) ([]*model.GoodsStock, error) {
 	stocks := []*model.GoodsStock{}
 	err := dao.db.SelectDSL(&stocks, columns_goods_stock, model.Table_Stock, sq.Eq{"goods_id": goodsID})

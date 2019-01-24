@@ -36,6 +36,13 @@ func main() {
 	goodsGroup := root.Group("/goods")
 	goodsGroup.GET("/list", controller.GetGoodsListByCategory)
 	goodsGroup.GET("/detail", controller.GetGoodsInfo)
+	cartGroup := root.Group("/cart")
+	cartGroup.POST("add", controller.AddCart)
+	cartGroup.GET("index", controller.CartIndex)
+	cartGroup.POST("checked", controller.CartItemCheck)
+	cartGroup.GET("checkout", controller.CartCheckout)
+	regionGroup := root.Group("/region")
+	regionGroup.GET("list", controller.RegionList)
 	srv := &http.Server{
 		Addr:    ":8081",
 		Handler: r,

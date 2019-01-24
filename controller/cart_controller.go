@@ -1,0 +1,114 @@
+package controller
+
+import (
+	"pitaya-wechat-service/api"
+	"pitaya-wechat-service/dto/request"
+	"pitaya-wechat-service/dto/response"
+	"pitaya-wechat-service/facility/utils"
+	"pitaya-wechat-service/service"
+
+	"github.com/shopspring/decimal"
+
+	"github.com/gin-gonic/gin"
+)
+
+var (
+	cartServiceRf api.ICartService = service.CartServiceSingleton
+)
+
+// AddCart 向购物车添加商品
+func AddCart(c *gin.Context) {
+	req := request.CartAddRequest{}
+	err := c.BindJSON(&req)
+	if err != nil {
+		panic(err)
+	}
+	_, err = cartServiceRf.AddGoods(req)
+	if err != nil {
+		panic(err)
+	}
+	total, err := cartServiceRf.GoodsCount(req.UserID)
+	if err != nil {
+		panic(err)
+	}
+	cartSummary := response.CartSummaryDTO{}
+	cartTotal := response.CartTotalDTO{
+		GoodsCount: total,
+	}
+	cartSummary.CartTotal = cartTotal
+	c.Set("data", cartSummary)
+}
+
+// CartIndex 获取某个用户下的购物车列表
+func CartIndex(c *gin.Context) {
+	carts, err := cartServiceRf.ListCart4User(0)
+	if err != nil {
+		panic(err)
+	}
+	c.Set("data", summaryCart(carts))
+}
+
+// CartItemCheck 操作购物车条目的选择
+func CartItemCheck(c *gin.Context) {
+	req := request.CartCheckRequest{}
+	err := c.BindJSON(&req)
+	if err != nil {
+		panic(err)
+	}
+	err = cartServiceRf.CheckItem(req)
+	if err != nil {
+		panic(err)
+	}
+	carts, err := cartServiceRf.ListCart4User(0)
+	c.Set("data", summaryCart(carts))
+}
+
+func CartCheckout(c *gin.Context) {
+	carts, err := cartServiceRf.ListCart4User(0)
+	utils.CheckAndPanic(err)
+	cartsFiltered := filterCartItem(carts, func(cart response.CartItemDTO) bool {
+		return cart.Checked == 1
+	})
+	cartSum := summaryCart(cartsFiltered)
+	expressFee := decimal.NewFromFloat32(20.35)
+	goodsTotalPrice, _ := decimal.NewFromString(cartSum.CartTotal.CheckedGoodsAmount)
+	orderTotalPrice := goodsTotalPrice.Add(expressFee)
+	resultmap := map[string]interface{}{
+		"checkedGoodsList": cartsFiltered,
+		"expressFee":       expressFee.StringFixed(2),
+		"goodsTotalPrice":  goodsTotalPrice.StringFixed(2),
+		"orderTotalPrice":  orderTotalPrice.StringFixed(2),
+		"actualPrice":      orderTotalPrice.StringFixed(2),
+	}
+	c.Set("data", resultmap)
+}
+
+func filterCartItem(carts []response.CartItemDTO, filterFunc func(input response.CartItemDTO) bool) []response.CartItemDTO {
+	results := []response.CartItemDTO{}
+	for _, cart := range carts {
+		if filterFunc(cart) {
+			results = append(results, cart)
+		}
+	}
+	return results
+}
+
+func summaryCart(carts []response.CartItemDTO) response.CartSummaryDTO {
+	checkedGoodsCount := 0
+	checkedGoodsAmount := decimal.Zero
+	for _, cart := range carts {
+		if cart.Checked == 1 {
+			checkedGoodsCount++
+			checkedGoodsAmount = checkedGoodsAmount.Add(cart.RetailPrice.Mul(cart.Quantity))
+		}
+	}
+	cartSummary := response.CartSummaryDTO{}
+	cartTotal := response.CartTotalDTO{
+		GoodsCount:         int64(len(carts)),
+		CheckedGoodsCount:  checkedGoodsCount,
+		CheckedGoodsAmount: checkedGoodsAmount.StringFixed(2),
+	}
+	cartSummary.CartList = carts
+	cartSummary.CartTotal = cartTotal
+	return cartSummary
+}

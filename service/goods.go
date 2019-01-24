@@ -18,6 +18,18 @@ func init() {
 	GoodsServiceSingleton.attributeService = AttributeServiceSingleton
 }
 
+func GoodsServiceInstance() *GoodsService {
+	if GoodsServiceSingleton != nil {
+		return GoodsServiceSingleton
+	}
+	GoodsServiceSingleton = new(GoodsService)
+	GoodsServiceSingleton.goodsDao = dao.GoodsDaoSingleton
+	GoodsServiceSingleton.goodsAttributeDao = dao.GoodsAttributeDaoSingleton
+	GoodsServiceSingleton.goodsSpecDao = dao.GoodsSpecificationDaoSingleton
+	GoodsServiceSingleton.attributeService = AttributeServiceSingleton
+	return GoodsServiceSingleton
+}
+
 // GoodsService 作为类目服务，实现了api.GoodsService接口
 // 服务依赖 (1. attributeService)
 type GoodsService struct {

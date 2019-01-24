@@ -10,8 +10,16 @@ var GoodsImgServiceSingleton *GoodsImgService
 
 // init 在此实现spring中类似注入的功能
 func init() {
+	GoodsImgServiceInstance()
+}
+
+func GoodsImgServiceInstance() *GoodsImgService {
+	if GoodsImgServiceSingleton != nil {
+		return GoodsImgServiceSingleton
+	}
 	GoodsImgServiceSingleton = new(GoodsImgService)
 	GoodsImgServiceSingleton.dao = dao.GoodsImgDaoSingleton
+	return GoodsImgServiceSingleton
 }
 
 // GoodsImgService 作为类目服务，实现了api.GoodsImgService接口
