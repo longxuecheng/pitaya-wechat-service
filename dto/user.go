@@ -13,4 +13,7 @@ type UserAddressDTO struct {
 	Address    string `json:"address"`
 	Mobile     string `json:"mobile"`
 	IsDefault  bool   `json:"is_default"`
+	ProvinceID int
+	CityID     int
+	DistrictID int
 }

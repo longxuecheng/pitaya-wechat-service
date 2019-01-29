@@ -1,6 +1,7 @@
 package test
 
 import (
+	"database/sql"
 	"pitaya-wechat-service/dao"
 	"pitaya-wechat-service/sys"
 	"testing"
@@ -37,5 +38,40 @@ func TestDbUpdate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+}
+
+func TestDBTx(t *testing.T) {
+	edb := sys.GetEasyDB()
+	setMap1 := map[string]interface{}{
+		"user_id":  1,
+		"goods_id": 1,
+		"goods_sn": "SN-01005",
+		"stock_id": 100,
+	}
+	setMap2 := map[string]interface{}{
+		"user_id":  1,
+		"goods_id": 1,
+		"goods_sn": "SN-01006",
+		"stock_id": 100,
+	}
+
+	edb.ExecTx(func(tx *sql.Tx) error {
+		ra, id, err := edb.Insert("cart", setMap1, tx)
+		if err != nil {
+			return err
+		}
+		// err = errors.New("raise by me")
+		// if err != nil {
+		// 	return err
+		// }
+		t.Logf("affected rows %d , last inserted id = %d ", ra, id)
+		ra, id, err = edb.Insert("cart", setMap2, tx)
+		if err != nil {
+			return err
+		}
+		t.Logf("affected rows %d , last inserted id = %d ", ra, id)
+		return nil
+	})
 
 }

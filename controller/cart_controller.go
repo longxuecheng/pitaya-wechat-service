@@ -2,6 +2,7 @@ package controller
 
 import (
 	"pitaya-wechat-service/api"
+	"pitaya-wechat-service/dto"
 	"pitaya-wechat-service/dto/request"
 	"pitaya-wechat-service/dto/response"
 	"pitaya-wechat-service/facility/utils"
@@ -13,7 +14,8 @@ import (
 )
 
 var (
-	cartServiceRf api.ICartService = service.CartServiceSingleton
+	cartServiceRf      api.ICartService = service.CartServiceInstance()
+	cartRf_UserService api.IUserService = service.UserServiceInstance()
 )
 
 // AddCart 向购物车添加商品
@@ -63,6 +65,7 @@ func CartItemCheck(c *gin.Context) {
 	c.Set("data", summaryCart(carts))
 }
 
+// CartCheckout 结算台信息
 func CartCheckout(c *gin.Context) {
 	carts, err := cartServiceRf.ListCart4User(0)
 	utils.CheckAndPanic(err)
@@ -73,12 +76,23 @@ func CartCheckout(c *gin.Context) {
 	expressFee := decimal.NewFromFloat32(20.35)
 	goodsTotalPrice, _ := decimal.NewFromString(cartSum.CartTotal.CheckedGoodsAmount)
 	orderTotalPrice := goodsTotalPrice.Add(expressFee)
+	addressList, err := cartRf_UserService.AddressList(0)
+	var checkedAddress = dto.UserAddressDTO{}
+	for _, address := range addressList {
+		if address.IsDefault {
+			checkedAddress = address
+			break
+		}
+	}
+	utils.CheckAndPanic(err)
+
 	resultmap := map[string]interface{}{
 		"checkedGoodsList": cartsFiltered,
 		"expressFee":       expressFee.StringFixed(2),
 		"goodsTotalPrice":  goodsTotalPrice.StringFixed(2),
 		"orderTotalPrice":  orderTotalPrice.StringFixed(2),
 		"actualPrice":      orderTotalPrice.StringFixed(2),
+		"checkedAddress":   checkedAddress,
 	}
 	c.Set("data", resultmap)
 }

@@ -9,16 +9,18 @@ import (
 	"strings"
 )
 
-// CartServiceSingleton 是CartService的一个单例
-var CartServiceSingleton *CartService
+// cartServiceSingleton 是CartService的一个单例
+var cartServiceSingleton *CartService
 
-// init 在此实现spring中类似注入的功能
-func init() {
-	CartServiceSingleton = new(CartService)
-	CartServiceSingleton.dao = dao.CartDaoSingleton
-	CartServiceSingleton.goodsService = GoodsServiceInstance()
-	CartServiceSingleton.stockService = StockServiceInstance()
-	CartServiceSingleton.goodsImgService = GoodsImgServiceInstance()
+func CartServiceInstance() *CartService {
+	if cartServiceSingleton == nil {
+		cartServiceSingleton = new(CartService)
+		cartServiceSingleton.dao = dao.CartDaoSingleton
+		cartServiceSingleton.goodsService = GoodsServiceInstance()
+		cartServiceSingleton.stockService = StockServiceInstance()
+		cartServiceSingleton.goodsImgService = GoodsImgServiceInstance()
+	}
+	return cartServiceSingleton
 }
 
 // CartService 作为规格服务，实现了api.ICartService
