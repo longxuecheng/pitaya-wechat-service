@@ -45,3 +45,11 @@ ignored = ["github.com/mattn/go-isatty"]
 [[constraint]]
   name = "github.com/Masterminds/squirrel"
   version = "1.1.0"
+
+[[constraint]]
+  name = "github.com/dgrijalva/jwt-go"
+  version = "3.2.0"
+
+[[constraint]]
+  name = "github.com/muesli/cache2go"
+  version = "0.2.0"

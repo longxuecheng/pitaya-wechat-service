@@ -81,13 +81,57 @@ func (s *SaleOrderService) List(userID int64, req pagination.PaginationRequest) 
 	if err != nil {
 		return
 	}
-	s.saleDetailDao.SelectByOrderIDs()
-	dtos := buildSaleOrderItemDTOs(orders)
+	orderSet := newSaleOrderSet(orders)
+	details, err := s.saleDetailDao.SelectByOrderIDs(orderSet.orderIDList()...)
+	if err != nil {
+		return
+	}
+	orderSet.setSaleDetails(details)
 	if len(orders) > 0 {
 		page.SetCount(orders[0].Count)
 	}
-	page.Data = dtos
+	page.Data = orderSet.orderDTOs()
 	return
+}
+
+func (s *SaleOrderService) Info(orderID int64) (response.SaleOrderInfoDTO, error) {
+	orderInfo := response.SaleOrderInfoDTO{}
+	saleOrder, err := s.dao.SelectByID(orderID)
+	if err != nil {
+		return orderInfo, err
+	}
+	if err != nil {
+		return orderInfo, nil
+	}
+	return s.installSaleInfoDTO(saleOrder), nil
+}
+
+func (s *SaleOrderService) ListGoods(orderID int64) ([]response.SaleOrderGoodsDTO, error) {
+	goodsList, err := s.saleDetailDao.SelectByOrderID(orderID)
+	if err != nil {
+		return nil, err
+	}
+	dtos := make([]response.SaleOrderGoodsDTO, len(goodsList))
+	for i, goods := range goodsList {
+		dtos[i] = installSaleDetailDTO(goods)
+	}
+	return dtos, nil
+}
+
+func (s *SaleOrderService) installSaleInfoDTO(model model.SaleOrder) response.SaleOrderInfoDTO {
+	dto := response.SaleOrderInfoDTO{}
+	dto.ID = model.ID
+	dto.OrderNo = model.OrderNo.String
+	dto.Status = model.Status
+	dto.CreatedAt = model.CreateTime.Format("2006-01-02 15:04:05")
+	dto.Consignee = model.Receiver
+	dto.Mobile = model.PhoneNo
+	dto.FullRegion = "TODO"
+	dto.Address = model.Address
+	dto.GoodsAmt = model.GoodsAmt
+	dto.ExpressFee = model.ExpressFee
+	dto.OrderAmt = model.OrderAmt
+	return dto
 }
 
 func installSaleOrderItemDTO(model model.SaleOrder) response.SaleOrderItemDTO {
@@ -108,6 +152,15 @@ func buildSaleOrderItemDTOs(models []model.SaleOrder) []response.SaleOrderItemDT
 		dtos[i] = installSaleOrderItemDTO(model)
 	}
 	return dtos
+}
+
+func installSaleDetailDTO(model model.SaleDetail) response.SaleOrderGoodsDTO {
+	dto := response.SaleOrderGoodsDTO{}
+	dto.ID = model.ID
+	dto.GoodsName = model.GoodsName
+	dto.Quantity = model.Quantity
+	dto.ListPicURL = model.ListPicURL.String
+	return dto
 }
 
 // cartManger 是订单服务中特有的购物车管理
@@ -157,6 +210,7 @@ func (cm *cartManger) installSaleDetails(orderID int64) []model.SaleDetail {
 			SaleUnitPrice:        item.RetailPrice,
 			GoodsSpecIDs:         item.GoodsSpecIDs,
 			GoodsSpecDescription: item.GoodsSpecDescription,
+			ListPicURL:           sql.NullString{String: item.ListPicURL},
 		}
 		saleDetails[i] = saleDetail
 	}
@@ -164,7 +218,45 @@ func (cm *cartManger) installSaleDetails(orderID int64) []model.SaleDetail {
 }
 
 type SaleOrderSet struct {
-	orders []model.SaleOrder
-	idList []int64
-	goods  []model.SaleDetail
+	orders    []model.SaleOrder
+	orderIDs  []int64
+	goodsList []model.SaleDetail
+}
+
+func newSaleOrderSet(orders []model.SaleOrder) *SaleOrderSet {
+	set := &SaleOrderSet{}
+	set.orders = orders
+	orderIds := []int64{}
+	for _, order := range orders {
+		orderIds = append(orderIds, order.ID)
+	}
+	set.orderIDs = orderIds
+	return set
+}
+
+func (set *SaleOrderSet) setSaleDetails(details []model.SaleDetail) {
+	set.goodsList = details
+}
+
+func (set *SaleOrderSet) orderIDList() []int64 {
+	return set.orderIDs
+}
+
+func (set *SaleOrderSet) orderDTOs() []response.SaleOrderItemDTO {
+	if len(set.orders) == 0 {
+		return nil
+	}
+	dtos := make([]response.SaleOrderItemDTO, len(set.orders))
+	for i, model := range set.orders {
+		dto := installSaleOrderItemDTO(model)
+		goodsList := []response.SaleOrderGoodsDTO{}
+		for _, goods := range set.goodsList {
+			if model.ID == goods.OrderID {
+				goodsList = append(goodsList, installSaleDetailDTO(goods))
+			}
+		}
+		dto.GoodsList = goodsList
+		dtos[i] = dto
+	}
+	return dtos
 }

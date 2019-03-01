@@ -7,8 +7,8 @@ import (
 )
 
 type User1 struct {
-	Name    string `db:"name" exclude:"true"`
-	TestAge int    `db:"test_age"`
+	Name    string `ttt:"name" exclude:"true"`
+	TestAge int    `ttt:"test_age"`
 }
 
 func TestReflect(t *testing.T) {
@@ -54,5 +54,5 @@ func TestMyStruct2Map(t *testing.T) {
 		Name:    "lxc",
 		TestAge: 15,
 	}
-	t.Logf("transformed map is %v", utils.StructToMap(u, "db"))
+	t.Logf("transformed map is %v", utils.StructToMap(u, "ttt", "exclude"))
 }

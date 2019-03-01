@@ -1,6 +1,8 @@
 package model
 
 import (
+	"database/sql"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -18,4 +20,5 @@ type SaleDetail struct {
 	SaleUnitPrice        decimal.Decimal `db:"sale_unit_price"`
 	GoodsSpecIDs         string          `db:"goods_spec_ids"`
 	GoodsSpecDescription string          `db:"goods_spec_description"`
+	ListPicURL           sql.NullString  `db:"list_pic_url"`
 }

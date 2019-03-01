@@ -1,0 +1,11 @@
+
+syntax = "proto3";
+
+package rpc ;
+
+message AuthRequest {
+    string name = 1;
+    string password = 2;
+    string phoneNo = 3;
+    string code = 4;
+}

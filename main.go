@@ -33,6 +33,8 @@ func main() {
 	root.GET("/user/all", controller.GetUserListByConditions)
 	root.GET("/category/tree", controller.GetCatogoriesTree)
 	root.GET("/category/info", controller.GetCategoryInfo)
+	authGroup := root.Group("/auth")
+	authGroup.GET("login", controller.Login)
 	goodsGroup := root.Group("/goods")
 	goodsGroup.GET("/list", controller.GetGoodsListByCategory)
 	goodsGroup.GET("/detail", controller.GetGoodsInfo)
@@ -49,6 +51,7 @@ func main() {
 	orderGroup := root.Group("/order")
 	orderGroup.POST("submit", controller.SubmitSaleOrder)
 	orderGroup.POST("list", controller.ListSaleOrders)
+	orderGroup.GET("detail", controller.SaleOrderInfo)
 	srv := &http.Server{
 		Addr:    ":8081",
 		Handler: r,

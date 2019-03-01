@@ -59,7 +59,7 @@ func (dao *SaleOrderDao) SelectByUserID(userID int64) ([]model.SaleOrder, error)
 
 func (dao *SaleOrderDao) SelectByID(ID int64) (model.SaleOrder, error) {
 	order := model.SaleOrder{}
-	err := dao.db.SelectDSL(&order, columns_sale_order, model.Table_Sale_Order, sq.Eq{"id": ID})
+	err := dao.db.SelectOneDSL(&order, columns_sale_order, model.Table_Sale_Order, sq.Eq{"id": ID})
 	return order, err
 }
 

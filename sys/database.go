@@ -27,7 +27,7 @@ func GetEasyDB() *EasyDB {
 
 func connectDataBase() {
 	if dbConnection == nil {
-		db, err := sqlx.Connect("mysql", "root:6263272lxc@tcp(localhost:3306)/mymall?allowNativePasswords=true&parseTime=true")
+		db, err := sqlx.Connect("mysql", "root:6263272lxc@tcp(localdb:3306)/fan?allowNativePasswords=true&parseTime=true")
 		if err != nil {
 			log.Fatalln(err)
 		}

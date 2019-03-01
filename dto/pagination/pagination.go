@@ -8,13 +8,12 @@ type PaginationResonse struct {
 	Data       interface{} `json:"data"`
 }
 
-func (p PaginationResonse) SetCount(count int64) {
+func (p *PaginationResonse) SetCount(count int64) {
 	p.Count = count
-	pageNumber := count % int64(p.PageSize)
-	if pageNumber == 0 {
-		p.TotalPages = pageNumber
+	if count%int64(p.PageSize) == 0 {
+		p.TotalPages = count / int64(p.PageSize)
 	} else {
-		p.TotalPages = pageNumber + 1
+		p.TotalPages = count/int64(p.PageSize) + 1
 	}
 }
 
