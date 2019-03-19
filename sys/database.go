@@ -3,8 +3,11 @@ package sys
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
+	"os"
 	"pitaya-wechat-service/facility/utils"
+	"pitaya-wechat-service/settings"
 
 	sq "github.com/Masterminds/squirrel"
 	_ "github.com/go-sql-driver/mysql"
@@ -13,6 +16,12 @@ import (
 
 var easyDB *EasyDB
 var dbConnection *sqlx.DB
+
+// EasyDB is a
+type EasyDB struct {
+	connection *sqlx.DB
+	ctx        context.Context
+}
 
 // GetEasyDB is a method for getting a outer layer DB
 func GetEasyDB() *EasyDB {
@@ -27,7 +36,16 @@ func GetEasyDB() *EasyDB {
 
 func connectDataBase() {
 	if dbConnection == nil {
-		db, err := sqlx.Connect("mysql", "root:6263272lxc@tcp(localdb:3305)/mymall?allowNativePasswords=true&parseTime=true")
+		var db_host string
+		env := os.Getenv("ENV")
+		if env == settings.EnvProd {
+			db_host = settings.ProdDBHost
+		} else {
+			db_host = settings.DevDBHost
+		}
+		log.Println(fmt.Sprintf("connecting to database %s", db_host))
+		connect_url := fmt.Sprintf("%s:%s@tcp(%s)/mymall?allowNativePasswords=true&parseTime=true", "root", "6263272lxc", db_host)
+		db, err := sqlx.Connect("mysql", connect_url)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -42,12 +60,6 @@ func connectDataBase() {
 func DBConnection() *sqlx.DB {
 	connectDataBase()
 	return dbConnection
-}
-
-// EasyDB is a
-type EasyDB struct {
-	connection *sqlx.DB
-	ctx        context.Context
 }
 
 func (db *EasyDB) ExecTx(execFunc func(tx *sql.Tx) error) {
