@@ -9,4 +9,6 @@ type IGoodsService interface {
 	Info(goodsID int64) (*dto.GoodsInfoDTO, error)
 	Attributes(goodsID int64) ([]*dto.AttributeDTO, error)
 	Specifications(goodsID int64) ([]*dto.GoodsSpecificationDTO, error)
+	// HotGoods get hot saled goods
+	HotGoods() ([]*dto.GoodsItemDTO, error)
 }

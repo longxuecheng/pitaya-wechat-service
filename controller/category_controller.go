@@ -2,6 +2,8 @@ package controller
 
 import (
 	"pitaya-wechat-service/api"
+	"pitaya-wechat-service/facility/utils"
+	"pitaya-wechat-service/middle_ware"
 	"pitaya-wechat-service/service"
 	"strconv"
 
@@ -34,4 +36,10 @@ func GetCategoryInfo(c *gin.Context) {
 		panic(err)
 	}
 	defer c.Set("data", map[string]interface{}{"currentCategory": category, "brotherCategory": brothers})
+}
+
+func GetCategoryChannels(c *gin.Context) {
+	channels, err := categoryServiceReference.Channels()
+	defer middle_ware.SetResponseData(c, channels)
+	utils.CheckAndPanic(err)
 }

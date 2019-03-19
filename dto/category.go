@@ -10,3 +10,9 @@ type CategoryDTO struct {
 	SubCategoryList []*CategoryDTO `json:"subCategoryList"`
 	ParentID        int            `json:"parentId"`
 }
+
+type CategoryChannel struct {
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	IconURL string `json:"iconUrl"`
+}

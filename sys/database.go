@@ -27,7 +27,7 @@ func GetEasyDB() *EasyDB {
 
 func connectDataBase() {
 	if dbConnection == nil {
-		db, err := sqlx.Connect("mysql", "root:6263272lxc@tcp(localdb:3306)/fan?allowNativePasswords=true&parseTime=true")
+		db, err := sqlx.Connect("mysql", "root:6263272lxc@tcp(localdb:3305)/mymall?allowNativePasswords=true&parseTime=true")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -174,6 +174,6 @@ func (db *EasyDB) Update(tableName string, setMap map[string]interface{}, pred i
 }
 
 func (db *EasyDB) buildUpdtaSQL(tableName string, setMap map[string]interface{}, pred interface{}, args ...interface{}) (sql string, args1 []interface{}, err error) {
-	sql, args, err = sq.Update(tableName).SetMap(setMap).Where(pred, args...).ToSql()
+	sql, args1, err = sq.Update(tableName).SetMap(setMap).Where(pred, args...).ToSql()
 	return
 }

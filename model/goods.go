@@ -7,6 +7,15 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const Table_Goods = "goods"
+
+type GoodsStatus string
+
+const (
+	GoodsStatusOnSale  GoodsStatus = "ON_SALE"
+	GoodsStatusOffSale GoodsStatus = "OFF_SALE"
+)
+
 type Goods struct {
 	ID               int64           `db:"id"`
 	Name             string          `db:"name"`

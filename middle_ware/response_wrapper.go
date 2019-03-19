@@ -37,3 +37,7 @@ func newResponseDTO(data interface{}, errorMsg string, errorCode ErrorCode) Resp
 	}
 	return responseDTO
 }
+
+func SetResponseData(c *gin.Context, data interface{}) {
+	c.Set(DATA_KEY, data)
+}

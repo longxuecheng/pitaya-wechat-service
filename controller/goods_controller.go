@@ -3,6 +3,8 @@ package controller
 import (
 	"pitaya-wechat-service/api"
 	"pitaya-wechat-service/dto"
+	"pitaya-wechat-service/facility/utils"
+	"pitaya-wechat-service/middle_ware"
 	"pitaya-wechat-service/service"
 	"strconv"
 
@@ -11,9 +13,9 @@ import (
 )
 
 var (
-	goodsServiceRf         api.IGoodsService       = service.GoodsServiceSingleton
-	stockServiceRf         api.IGoodsStockService  = service.GoodsStockServiceSingleton
-	goodsImgServiceRf      api.IGoodsImgService    = service.GoodsImgServiceSingleton
+	goodsServiceRf         api.IGoodsService         = service.GoodsServiceSingleton
+	stockServiceRf         api.IGoodsStockService    = service.GoodsStockServiceSingleton
+	goodsImgServiceRf      api.IGoodsImgService      = service.GoodsImgServiceSingleton
 	specificationServiceRf api.ISpecificationService = service.SpecificationServiceSingleton
 )
 
@@ -75,5 +77,14 @@ func GetGoodsInfo(c *gin.Context) {
 		"attributes":        attributes,
 		"specificationList": specTree,
 		"productList":       stockDTOs,
+	})
+}
+
+// GetHotGoods 获取热门商品
+func GetHotGoods(c *gin.Context) {
+	hotGoods, err := goodsServiceRf.HotGoods()
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, map[string]interface{}{
+		"hotGoods": hotGoods,
 	})
 }

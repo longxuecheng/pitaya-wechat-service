@@ -9,15 +9,6 @@ import (
 
 var GoodsServiceSingleton *GoodsService
 
-// init 在此实现spring中类似注入的功能
-func init() {
-	GoodsServiceSingleton = new(GoodsService)
-	GoodsServiceSingleton.goodsDao = dao.GoodsDaoSingleton
-	GoodsServiceSingleton.goodsAttributeDao = dao.GoodsAttributeDaoSingleton
-	GoodsServiceSingleton.goodsSpecDao = dao.GoodsSpecificationDaoSingleton
-	GoodsServiceSingleton.attributeService = AttributeServiceSingleton
-}
-
 func GoodsServiceInstance() *GoodsService {
 	if GoodsServiceSingleton != nil {
 		return GoodsServiceSingleton
@@ -92,6 +83,14 @@ func (s *GoodsService) Specifications(goodsID int64) ([]*dto.GoodsSpecificationD
 		return nil, err
 	}
 	return buildGoodsSpecificationDTOs(goodsSpecs), nil
+}
+
+func (s *GoodsService) HotGoods() ([]*dto.GoodsItemDTO, error) {
+	goodsList, err := s.goodsDao.SelectAllByStatus(model.GoodsStatusOnSale)
+	if err != nil {
+		return nil, err
+	}
+	return buildGoodsDTOs(goodsList), nil
 }
 
 func buildGoodsSpecificationDTOs(models []*model.GoodsSpecification) []*dto.GoodsSpecificationDTO {

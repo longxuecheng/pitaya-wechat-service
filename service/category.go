@@ -64,6 +64,15 @@ func (cs *CategoryService) GetCategoriesByParentID(parentID int) ([]*dto.Categor
 	return childrenDTOs, nil
 }
 
+func (cs *CategoryService) Channels() ([]dto.CategoryChannel, error) {
+	list, err := cs.categoryDao.SelectChannels()
+	if err != nil {
+		return nil, err
+	}
+	channels := buildChannels(list)
+	return channels, nil
+}
+
 func installCategoryDTO(model *model.Category) *dto.CategoryDTO {
 	dto := new(dto.CategoryDTO)
 	dto.ID = model.ID
@@ -73,6 +82,21 @@ func installCategoryDTO(model *model.Category) *dto.CategoryDTO {
 	dto.WapBannerURL = model.WapBannerURL
 	dto.FrontName = model.FrontName
 	return dto
+}
+
+func buildChannels(models []*model.Category) []dto.CategoryChannel {
+	if models == nil || len(models) == 0 {
+		return nil
+	}
+	dtos := make([]dto.CategoryChannel, len(models))
+	for i, model := range models {
+		dtos[i] = dto.CategoryChannel{
+			ID:      model.ID,
+			Name:    model.Name,
+			IconURL: model.IconUrl,
+		}
+	}
+	return dtos
 }
 
 func buildCategoryDTOs(models []*model.Category) []*dto.CategoryDTO {
