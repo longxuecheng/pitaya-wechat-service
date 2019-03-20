@@ -77,7 +77,7 @@ func (s *SaleOrderService) List(userID int64, req pagination.PaginationRequest) 
 	page = pagination.PaginationResonse{
 		PaginationRequest: req,
 	}
-	orders, err := s.dao.SelectByUserIDWitPagination(userID, req.Offet(), req.Limit())
+	orders, total, err := s.dao.SelectByUserIDWitPagination(userID, req.Offet(), req.Limit())
 	if err != nil {
 		return
 	}
@@ -87,9 +87,7 @@ func (s *SaleOrderService) List(userID int64, req pagination.PaginationRequest) 
 		return
 	}
 	orderSet.setSaleDetails(details)
-	if len(orders) > 0 {
-		page.SetCount(orders[0].Count)
-	}
+	page.SetCount(total)
 	page.Data = orderSet.orderDTOs()
 	return
 }

@@ -1,13 +1,12 @@
 package controller
 
 import (
-	"context"
+	"log"
 	"net/http"
 	"pitaya-wechat-service/api"
 	"pitaya-wechat-service/dto/request"
 	"pitaya-wechat-service/facility/utils"
-	"pitaya-wechat-service/rpc"
-	"pitaya-wechat-service/rpc/client"
+	"pitaya-wechat-service/middle_ware"
 	"pitaya-wechat-service/service"
 
 	"github.com/gin-gonic/gin"
@@ -40,15 +39,16 @@ func AddNewAddress(c *gin.Context) {
 	c.Set("data", id)
 }
 
-func Login(c *gin.Context) {
-	cc := client.AuthRPCConnection()
-	authClient := rpc.NewAuthorizationServiceClient(cc)
-	authRequest := &rpc.AuthRequest{
-		Name:    "lxc",
-		Code:    "code-dfdf",
-		PhoneNo: "18911792314",
-	}
-	token, err := authClient.Authorize(context.Background(), authRequest)
+func LoginByWechat(c *gin.Context) {
+	code := request.WechatLogin{}
+	utils.CheckAndPanic(c.BindJSON(&code))
+	resp, err := service.GetWechatUserInfo(code.Code)
+	log.Println(resp)
 	utils.CheckAndPanic(err)
-	c.Set("data", token)
+	accessToken, err := service.Authorize()
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, map[string]interface{}{
+		"token":    accessToken,
+		"userInfo": code.WechatUser,
+	})
 }

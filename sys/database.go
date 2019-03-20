@@ -23,6 +23,10 @@ type EasyDB struct {
 	ctx        context.Context
 }
 
+type count struct {
+	Count int64 `db:"count"`
+}
+
 // GetEasyDB is a method for getting a outer layer DB
 func GetEasyDB() *EasyDB {
 	if easyDB != nil {
@@ -104,13 +108,19 @@ func (db *EasyDB) SelectDSL(destptr interface{}, columns []string, tableName str
 	return db.Select(destptr, sql, args...)
 }
 
-func (db *EasyDB) SelectPagination(destptr interface{}, columns []string, tableName string, offset uint64, limit uint64, pred interface{}) error {
-	columns = append(columns, "count(1) over() as count")
-	sql, args, err := sq.Select(columns...).From(tableName).Where(pred).Offset(offset).Limit(limit).ToSql()
+func (db *EasyDB) SelectPagination(destptr interface{}, columns []string, tableName string, offset uint64, limit uint64, pred interface{}) (int64, error) {
+	// columns = append(columns, "count(1) over() as count")
+	query_sql, query_args, err := sq.Select(columns...).From(tableName).Where(pred).Offset(offset).Limit(limit).ToSql()
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return db.Select(destptr, sql, args...)
+	count_sql, count_args, err := sq.Select("count(1) as count").From(tableName).Where(pred).ToSql()
+	count := new(count)
+	err = db.SelectOne(count, count_sql, count_args...)
+	if err != nil {
+		return 0, err
+	}
+	return count.Count, db.Select(destptr, query_sql, query_args...)
 }
 
 // SelectOne 是对sqlx包中的查询单个的简化

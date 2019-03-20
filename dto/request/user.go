@@ -11,3 +11,13 @@ type UserAddressAddRequest struct {
 	IsDefault  bool   `json:"is_default"`
 	UserID     int64  `json:"-"`
 }
+
+type WechatLogin struct {
+	Code       string `json:"code"`
+	WechatUser `json:"userInfo"`
+}
+
+type WechatUser struct {
+	AvatarURL string `json:"avatarUrl"`
+	NickName  string `json:"nickName"`
+}

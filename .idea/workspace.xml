@@ -2,19 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6117eee0-078d-484e-9eb0-d0b9e4894ce9" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/Gopkg.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Gopkg.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gopkg.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Gopkg.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/sale_order.go" beforeDir="false" afterPath="$PROJECT_DIR$/api/sale_order.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/controller/order_controller.go" beforeDir="false" afterPath="$PROJECT_DIR$/controller/order_controller.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/controller/user_controller.go" beforeDir="false" afterPath="$PROJECT_DIR$/controller/user_controller.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dao/sale_detail.go" beforeDir="false" afterPath="$PROJECT_DIR$/dao/sale_detail.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dao/sale_order.go" beforeDir="false" afterPath="$PROJECT_DIR$/dao/sale_order.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dto/pagination/pagination.go" beforeDir="false" afterPath="$PROJECT_DIR$/dto/pagination/pagination.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dto/response/sale.go" beforeDir="false" afterPath="$PROJECT_DIR$/dto/response/sale.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model/sale_detail.go" beforeDir="false" afterPath="$PROJECT_DIR$/model/sale_detail.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dto/request/user_address.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/router/api.go" beforeDir="false" afterPath="$PROJECT_DIR$/router/api.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/service/sale_order.go" beforeDir="false" afterPath="$PROJECT_DIR$/service/sale_order.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/reflect_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/test/reflect_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sys/database.go" beforeDir="false" afterPath="$PROJECT_DIR$/sys/database.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -26,37 +20,37 @@
     <session id="1449918981">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="13" />
+          <entry key="project.closed" value="14" />
           <entry key="project.open.time.0" value="1" />
           <entry key="project.open.time.1" value="1" />
-          <entry key="project.open.time.4" value="3" />
+          <entry key="project.open.time.4" value="4" />
           <entry key="project.open.time.5" value="5" />
           <entry key="project.open.time.6" value="3" />
-          <entry key="project.opened" value="13" />
+          <entry key="project.opened" value="14" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="go" value="71" />
+          <entry key="go" value="87" />
           <entry key="json" value="1" />
           <entry key="s" value="3" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Go" value="71" />
+          <entry key="Go" value="87" />
           <entry key="JSON" value="1" />
           <entry key="x86 Plan9 Assembly" value="3" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="go" value="1172" />
+          <entry key="go" value="1237" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Go" value="1172" />
+          <entry key="Go" value="1237" />
         </counts>
       </usages-collector>
     </session>
@@ -66,85 +60,89 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="418">
-              <caret line="34" column="16" selection-start-line="34" selection-start-column="16" selection-end-line="34" selection-end-column="16" />
+            <state relative-caret-position="133">
+              <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/controller/user_controller.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="629">
+              <caret line="44" column="33" lean-forward="true" selection-start-line="44" selection-start-column="33" selection-end-line="44" selection-end-column="33" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/.vscode/launch.json">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/rpc/server/rpc_auth_server.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="420">
-              <caret line="59" column="13" lean-forward="true" selection-start-line="59" selection-start-column="13" selection-end-line="59" selection-end-column="13" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/service/cart.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1349">
-              <caret line="75" column="52" selection-start-line="75" selection-start-column="52" selection-end-line="75" selection-end-column="52" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/dto/goods_stock.go">
+        <entry file="file://$PROJECT_DIR$/service/wechat.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="190">
-              <caret line="12" column="54" selection-start-line="12" selection-start-column="54" selection-end-line="12" selection-end-column="54" />
+              <caret line="14" column="5" selection-start-line="14" selection-start-column="5" selection-end-line="14" selection-end-column="5" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/service/goods.go">
+        <entry file="file://$PROJECT_DIR$/facility/http_util/http_util.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="342">
-              <caret line="23" column="5" selection-start-line="23" selection-start-column="5" selection-end-line="23" selection-end-column="5" />
+            <state relative-caret-position="399">
+              <caret line="27" selection-start-line="27" selection-end-line="27" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/dto/request/cart_add.go">
+        <entry file="file:///usr/local/go/src/io/ioutil/ioutil.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="318">
+              <caret line="44" column="15" selection-start-line="44" selection-start-column="15" selection-end-line="44" selection-end-column="15" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file:///usr/local/go/src/bytes/buffer.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="292">
+              <caret line="159" column="17" selection-start-line="159" selection-start-column="17" selection-end-line="159" selection-end-column="17" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file:///usr/local/go/src/io/io.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="675">
+              <caret line="77" column="4" selection-start-line="77" selection-start-column="4" selection-end-line="77" selection-end-column="4" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/service/login.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="209">
-              <caret line="18" selection-start-line="18" selection-end-line="18" />
+              <caret line="16" column="10" selection-start-line="16" selection-start-column="10" selection-end-line="16" selection-end-column="10" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/service/goods_stock.go">
+        <entry file="file://$PROJECT_DIR$/router/api.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="76">
-              <caret line="8" column="4" selection-start-line="8" selection-start-column="4" selection-end-line="8" selection-end-column="4" />
+            <state relative-caret-position="532">
+              <caret line="32" column="54" lean-forward="true" selection-start-line="32" selection-start-column="54" selection-end-line="32" selection-end-column="54" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/model/good_stock.go">
+        <entry file="file://$PROJECT_DIR$/controller/goods_controller.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="133">
-              <caret line="11" column="5" selection-start-line="11" selection-start-column="5" selection-end-line="11" selection-end-column="5" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/sys/database.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1615">
-              <caret line="87" selection-start-line="87" selection-end-line="87" />
+            <state relative-caret-position="1239">
+              <caret line="84" selection-start-line="84" selection-end-line="84" />
             </state>
           </provider>
         </entry>
@@ -177,7 +175,6 @@
         <option value="$PROJECT_DIR$/sys/db_connection.go" />
         <option value="$PROJECT_DIR$/dto/user.go" />
         <option value="$PROJECT_DIR$/middle_ware/recover_handler.go" />
-        <option value="$PROJECT_DIR$/middle_ware/response_wrapper.go" />
         <option value="$PROJECT_DIR$/main.go" />
         <option value="$PROJECT_DIR$/controller/category_controller.go" />
         <option value="$PROJECT_DIR$/dao/category_dao.go" />
@@ -200,6 +197,11 @@
         <option value="$PROJECT_DIR$/service/goods.go" />
         <option value="$PROJECT_DIR$/service/goods_stock.go" />
         <option value="$PROJECT_DIR$/service/cart.go" />
+        <option value="$PROJECT_DIR$/middle_ware/response_wrapper.go" />
+        <option value="$PROJECT_DIR$/router/api.go" />
+        <option value="$PROJECT_DIR$/controller/user_controller.go" />
+        <option value="$PROJECT_DIR$/service/wechat.go" />
+        <option value="$PROJECT_DIR$/facility/http_util/http_util.go" />
       </list>
     </option>
   </component>
@@ -209,7 +211,7 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
-  <component name="ProjectFrameBounds">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="-2560" />
     <option name="y" value="-163" />
     <option name="width" value="2560" />
@@ -237,7 +239,32 @@
               <item name="pitaya-wechat-service" type="b2602c69:ProjectViewProjectNode" />
               <item name="pitaya-wechat-service" type="47feb1d3:ProjectViewModuleNode" />
               <item name="pitaya-wechat-service" type="462c0819:PsiDirectoryNode" />
-              <item name=".vscode" type="462c0819:PsiDirectoryNode" />
+              <item name="controller" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="pitaya-wechat-service" type="b2602c69:ProjectViewProjectNode" />
+              <item name="pitaya-wechat-service" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="pitaya-wechat-service" type="462c0819:PsiDirectoryNode" />
+              <item name="facility" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="pitaya-wechat-service" type="b2602c69:ProjectViewProjectNode" />
+              <item name="pitaya-wechat-service" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="pitaya-wechat-service" type="462c0819:PsiDirectoryNode" />
+              <item name="facility" type="462c0819:PsiDirectoryNode" />
+              <item name="http_util" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="pitaya-wechat-service" type="b2602c69:ProjectViewProjectNode" />
+              <item name="pitaya-wechat-service" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="pitaya-wechat-service" type="462c0819:PsiDirectoryNode" />
+              <item name="middle_ware" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="pitaya-wechat-service" type="b2602c69:ProjectViewProjectNode" />
+              <item name="pitaya-wechat-service" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="pitaya-wechat-service" type="462c0819:PsiDirectoryNode" />
+              <item name="router" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="pitaya-wechat-service" type="b2602c69:ProjectViewProjectNode" />
@@ -305,15 +332,15 @@
     </recent_temporary>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-2560" y="-163" width="2560" height="1417" extended-state="6" />
+    <frame x="-2560" y="-196" width="2560" height="1417" extended-state="6" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.08895949" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.08935663" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.32981133" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.30339622" />
+      <window_info active="true" anchor="bottom" id="Debug" order="3" sideWeight="0.49960285" visible="true" weight="0.30339622" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -321,7 +348,7 @@
       <window_info anchor="bottom" id="Database Changes" order="8" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="9" />
       <window_info anchor="bottom" id="Terminal" order="10" />
-      <window_info anchor="bottom" id="Event Log" order="11" side_tool="true" />
+      <window_info anchor="bottom" id="Event Log" order="11" sideWeight="0.50039715" side_tool="true" visible="true" weight="0.30339622" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -358,95 +385,24 @@
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/controller/user_controller.go</url>
-          <line>19</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/controller/goods_controller.go</url>
-          <line>56</line>
-          <option name="timeStamp" value="18" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+        <line-breakpoint type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/service/cart.go</url>
           <line>34</line>
           <option name="timeStamp" value="22" />
         </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/main.go</url>
-          <line>22</line>
+        <line-breakpoint type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/facility/http_util/http_util.go</url>
+          <line>11</line>
           <properties />
-          <option name="timeStamp" value="26" />
+          <option name="timeStamp" value="33" />
         </line-breakpoint>
       </breakpoints>
+      <breakpoints-dialog>
+        <breakpoints-dialog />
+      </breakpoints-dialog>
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file:///usr/local/go/src/runtime/asm_amd64.s">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="10868">
-          <caret line="572" selection-start-line="572" selection-end-line="572" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/middle_ware/time_logger.go">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/model/category.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="38">
-          <caret line="2" column="5" selection-start-line="2" selection-start-column="5" selection-end-line="2" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/dto/category.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="190">
-          <caret line="10" column="52" selection-start-line="10" selection-start-column="52" selection-end-line="10" selection-end-column="52" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file:///usr/local/go/src/strings/strings.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8113">
-          <caret line="430" selection-start-line="430" selection-end-line="430" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/middle_ware/recover_handler.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="21" selection-start-line="21" selection-end-line="21" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/middle_ware/response_wrapper.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="342">
-          <caret line="22" selection-start-line="22" selection-end-line="22" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/api/category_interface.go" />
-    <entry file="file://$PROJECT_DIR$/service/category_service.go" />
-    <entry file="file://$PROJECT_DIR$/dao/category_dao.go" />
-    <entry file="file://$PROJECT_DIR$/controller/category_controller.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="399">
-          <caret line="27" column="51" selection-start-line="27" selection-start-column="51" selection-end-line="27" selection-end-column="51" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/vendor/github.com/gin-gonic/gin/context.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1710">
-          <caret line="106" selection-start-line="106" selection-end-line="106" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/service/goods_service.go" />
-    <entry file="file://$PROJECT_DIR$/dao/goods_dao.go" />
     <entry file="file://$PROJECT_DIR$/dao/goods_Img.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="361">
@@ -564,13 +520,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/controller/goods_controller.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1178">
-          <caret line="70" selection-start-line="70" selection-end-line="70" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/dto/specification.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1045">
@@ -620,9 +569,16 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/rpc/server/rpc_auth_server.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1311">
+          <caret line="69" column="13" selection-start-line="69" selection-start-column="13" selection-end-line="69" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/service/cart.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1349">
+        <state relative-caret-position="1292">
           <caret line="75" column="52" selection-start-line="75" selection-start-column="52" selection-end-line="75" selection-end-column="52" />
         </state>
       </provider>
@@ -636,14 +592,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/service/goods.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="342">
-          <caret line="23" column="5" selection-start-line="23" selection-start-column="5" selection-end-line="23" selection-end-column="5" />
+        <state relative-caret-position="171">
+          <caret line="14" column="5" selection-start-line="14" selection-start-column="5" selection-end-line="14" selection-end-column="5" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/dto/request/cart_add.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="209">
+        <state relative-caret-position="304">
           <caret line="18" selection-start-line="18" selection-end-line="18" />
         </state>
       </provider>
@@ -664,27 +620,117 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/sys/database.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1615">
-          <caret line="87" selection-start-line="87" selection-end-line="87" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/rpc/server/rpc_auth_server.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="420">
-          <caret line="59" column="13" lean-forward="true" selection-start-line="59" selection-start-column="13" selection-end-line="59" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="418">
-          <caret line="34" column="16" selection-start-line="34" selection-start-column="16" selection-end-line="34" selection-end-column="16" />
+        <state relative-caret-position="1900">
+          <caret line="103" selection-start-line="103" selection-end-line="103" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/.vscode/launch.json">
       <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/middle_ware/auth_handler.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vendor/github.com/gin-gonic/gin/context.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="515">
+          <caret line="94" column="28" lean-forward="true" selection-start-line="94" selection-start-column="28" selection-end-line="94" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/middle_ware/recover_handler.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="171">
+          <caret line="21" selection-start-line="21" selection-end-line="21" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/middle_ware/time_logger.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/router/server.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="266">
+          <caret line="24" column="11" selection-start-line="24" selection-start-column="11" selection-end-line="24" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/middle_ware/response_wrapper.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="399">
+          <caret line="25" column="12" lean-forward="true" selection-start-line="25" selection-start-column="4" selection-end-line="25" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/controller/goods_controller.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1239">
+          <caret line="84" selection-start-line="84" selection-end-line="84" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/router/api.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="532">
+          <caret line="32" column="54" lean-forward="true" selection-start-line="32" selection-start-column="54" selection-end-line="32" selection-end-column="54" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/service/login.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="209">
+          <caret line="16" column="10" selection-start-line="16" selection-start-column="10" selection-end-line="16" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/go/src/io/io.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="675">
+          <caret line="77" column="4" selection-start-line="77" selection-start-column="4" selection-end-line="77" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/go/src/bytes/buffer.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="292">
+          <caret line="159" column="17" selection-start-line="159" selection-start-column="17" selection-end-line="159" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/go/src/io/ioutil/ioutil.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="318">
+          <caret line="44" column="15" selection-start-line="44" selection-start-column="15" selection-end-line="44" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="133">
+          <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facility/http_util/http_util.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="399">
+          <caret line="27" selection-start-line="27" selection-end-line="27" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/controller/user_controller.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="629">
+          <caret line="44" column="33" lean-forward="true" selection-start-line="44" selection-start-column="33" selection-end-line="44" selection-end-column="33" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/service/wechat.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="190">
+          <caret line="14" column="5" selection-start-line="14" selection-start-column="5" selection-end-line="14" selection-end-column="5" />
+        </state>
+      </provider>
     </entry>
   </component>
 </project>

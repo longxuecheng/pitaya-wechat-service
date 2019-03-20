@@ -63,8 +63,8 @@ func (dao *SaleOrderDao) SelectByID(ID int64) (model.SaleOrder, error) {
 	return order, err
 }
 
-func (dao *SaleOrderDao) SelectByUserIDWitPagination(userID int64, offset uint64, limit uint64) ([]model.SaleOrder, error) {
+func (dao *SaleOrderDao) SelectByUserIDWitPagination(userID int64, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
-	err := dao.db.SelectPagination(&orderList, columns_sale_order, model.Table_Sale_Order, offset, limit, sq.Eq{"user_id": userID})
-	return orderList, err
+	totalRecords, err := dao.db.SelectPagination(&orderList, columns_sale_order, model.Table_Sale_Order, offset, limit, sq.Eq{"user_id": userID})
+	return orderList, totalRecords, err
 }
