@@ -131,6 +131,11 @@ func (db *EasyDB) SelectOne(target interface{}, query string, args ...interface{
 	}
 	if rows.Next() {
 		err = rows.StructScan(target)
+		if err != nil {
+			return err
+		}
+	} else {
+		return sql.ErrNoRows
 	}
 	return nil
 }

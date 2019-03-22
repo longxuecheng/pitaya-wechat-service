@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"pitaya-wechat-service/api"
@@ -39,16 +40,24 @@ func AddNewAddress(c *gin.Context) {
 	c.Set("data", id)
 }
 
+// LoginByWechat 微信登录
 func LoginByWechat(c *gin.Context) {
-	code := request.WechatLogin{}
-	utils.CheckAndPanic(c.BindJSON(&code))
-	resp, err := service.GetWechatUserInfo(code.Code)
-	log.Println(resp)
+	req := request.WechatLogin{}
+	utils.CheckAndPanic(c.BindJSON(&req))
+	wechatResp, err := service.GetWechatUserInfo(req.Code)
 	utils.CheckAndPanic(err)
-	accessToken, err := service.Authorize()
+	user, err := userServiceRf.Login(wechatResp.OpenID, req.NickName, req.AvatarURL)
 	utils.CheckAndPanic(err)
+	log.Println(fmt.Sprintf("LoginByWechat response code is %d jscode is %s nickname %s avatar url %s", wechatResp.ErrorCode, req.Code, req.NickName, req.AvatarURL))
+	utils.CheckAndPanic(err)
+	accessToken, err := service.BuildToken(user.ID, 3600)
+	utils.CheckAndPanic(err)
+	wechatUser := request.WechatUser{
+		NickName:  user.NickName,
+		AvatarURL: user.AvatarURL,
+	}
 	middle_ware.SetResponseData(c, map[string]interface{}{
 		"token":    accessToken,
-		"userInfo": code.WechatUser,
+		"userInfo": wechatUser,
 	})
 }

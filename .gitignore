@@ -88,7 +88,7 @@ _testmain.go
 *.exe
 *.test
 *.prof
-
+debug
 
 ### Vim ###
 # swap

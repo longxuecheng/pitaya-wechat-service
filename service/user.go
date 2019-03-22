@@ -80,6 +80,31 @@ func (s *UserService) CreateAddress(req request.UserAddressAddRequest) (id int64
 	return s.addressDao.Create(setMap)
 }
 
+func (s *UserService) Login(openID string, nickName string, avatarURL string) (*model.User, error) {
+	user, err := s.userDao.SelectByWechatID(openID)
+	if err != nil {
+		return nil, err
+	}
+	if user != nil {
+		return user, nil
+	}
+	setmap := map[string]interface{}{
+		"wechat_id":  openID,
+		"nick_name":  nickName,
+		"avatar_url": avatarURL,
+	}
+	id, err := s.userDao.CreateUser(setmap)
+	if err != nil {
+		return nil, err
+	}
+	user = &model.User{
+		ID:        id,
+		NickName:  nickName,
+		AvatarURL: avatarURL,
+	}
+	return user, nil
+}
+
 func installUserAddressDTO(ad model.UserAddress) dto.UserAddressDTO {
 	dto := dto.UserAddressDTO{}
 	dto.ID = ad.ID
@@ -95,9 +120,9 @@ func installUserAddressDTO(ad model.UserAddress) dto.UserAddressDTO {
 
 func installUserDTO(model *model.User) *dto.UserDTO {
 	userDto := new(dto.UserDTO)
-	userDto.Name = model.Name
-	userDto.PhoneNo = model.PhoneNo
-	userDto.Email = model.Email
+	userDto.Name = model.Name.String
+	userDto.PhoneNo = model.PhoneNo.String
+	userDto.Email = model.Email.String
 	return userDto
 }
 

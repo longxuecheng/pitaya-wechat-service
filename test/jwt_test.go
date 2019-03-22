@@ -1,8 +1,10 @@
 package test
 
 import (
-	"fmt"
+	"pitaya-wechat-service/model"
+	"pitaya-wechat-service/service"
 	"testing"
+	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 )
@@ -10,35 +12,24 @@ import (
 var hmacSampleSecret = []byte("my_secret_key")
 
 func TestBuildToken(t *testing.T) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"name": "lxc",
-		"id":   1,
-	})
-
-	// Sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString(hmacSampleSecret)
-	t.Log(tokenString, err)
+	token, err := service.BuildToken(100, time.Now().Add(time.Second).Unix())
+	t.Logf("token is %s err is %v", token, err)
+	parseCustom(token, t)
 }
 
-func TestParseToken(t *testing.T) {
-	tokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwibmFtZSI6Imx4YyJ9.5w5_6VDv6S6wVpWy2gVNtcSt4Tp4-1N_Fe-wchgT9CM"
-	// Parse takes the token string and a function for looking up the key. The latter is especially
-	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
-	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
-	// to the callback, providing flexibility.
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-
-		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+// sample token is expired.  override time so it parses as valid
+func parseCustom(ss string, t *testing.T) {
+	token, err := jwt.ParseWithClaims(ss, &model.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return hmacSampleSecret, nil
 	})
-
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		t.Log(claims["name"], claims["id"])
+	time.Sleep(4 * time.Second)
+	if claims, ok := token.Claims.(*model.UserClaims); ok && token.Valid {
+		expiresAt := claims.StandardClaims.ExpiresAt
+		t.Logf("user id is %v expires at %v", claims.UserID, expiresAt)
+		if time.Now().Unix() >= expiresAt {
+			t.Logf("now is %d and token is now expired already %d !", time.Now().Unix(), expiresAt)
+		}
 	} else {
-		t.Error(err)
+		t.Fatal(err)
 	}
 }

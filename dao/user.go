@@ -1,29 +1,48 @@
 package dao
 
 import (
+	"database/sql"
 	"pitaya-wechat-service/model"
 	"pitaya-wechat-service/sys"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/Masterminds/squirrel"
 )
 
 var UserDaoSingleton *UserDao
 
 func init() {
 	UserDaoSingleton = new(UserDao)
-	UserDaoSingleton.dbDriver = sys.DBConnection()
+	UserDaoSingleton.db = sys.GetEasyDB()
 }
 
 type UserDao struct {
-	dbDriver *sqlx.DB
+	db *sys.EasyDB
 }
+
+var columns_user = []string{"id", "name", "phone_no", "email", "wechat_id", "avatar_url", "nick_name"}
 
 func (dao *UserDao) SelectAll() ([]*model.User, error) {
 	users := []*model.User{}
-	err := dao.dbDriver.Select(&users, "SELECT id,name,phone_no,email FROM user ORDER BY id ASC")
+	err := dao.db.SelectDSL(&users, columns_user, model.Table_User, nil)
 	if err != nil {
 		return nil, err
 	}
 	return users, err
 }
 
+func (dao *UserDao) SelectByWechatID(wechatID string) (*model.User, error) {
+	users := new(model.User)
+	err := dao.db.SelectOneDSL(users, columns_user, model.Table_User, squirrel.Eq{"wechat_id": wechatID})
+	if err != nil {
+		if sql.ErrNoRows == err {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return users, err
+}
+
+func (dao *UserDao) CreateUser(setMap map[string]interface{}) (int64, error) {
+	_, id, err := dao.db.Insert(model.Table_User, setMap)
+	return id, err
+}
