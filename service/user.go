@@ -66,7 +66,7 @@ func (s *UserService) GetAddressByID(ID int64) (dto dto.UserAddressDTO, err erro
 	return installUserAddressDTO(uad), nil
 }
 
-func (s *UserService) CreateAddress(req request.UserAddressAddRequest) (id int64, err error) {
+func (s *UserService) CreateAddress(userID int64, req request.UserAddressAddRequest) (id int64, err error) {
 	setMap := map[string]interface{}{
 		"name":        req.Name,
 		"mobile":      req.Mobile,
@@ -75,7 +75,7 @@ func (s *UserService) CreateAddress(req request.UserAddressAddRequest) (id int64
 		"district_id": req.DistrictID,
 		"address":     req.Address,
 		"is_default":  req.IsDefault,
-		"user_id":     req.UserID,
+		"user_id":     userID,
 	}
 	return s.addressDao.Create(setMap)
 }

@@ -10,6 +10,6 @@ import (
 type IUserService interface {
 	GetList() ([]*dto.UserDTO, error)
 	AddressList(userID int64) ([]dto.UserAddressDTO, error)
-	CreateAddress(req request.UserAddressAddRequest) (id int64, err error)
+	CreateAddress(userID int64, req request.UserAddressAddRequest) (id int64, err error)
 	Login(openID string, nickName string, avatarURL string) (user *model.User, err error)
 }

@@ -15,8 +15,6 @@ type Cart struct {
 	GoodsSN              string          `db:"goods_sn"`
 	StockID              int64           `db:"stock_id"`
 	GoodsName            string          `db:"goods_name"`
-	MarketPrice          decimal.Decimal `db:"market_price"`
-	RetailPrice          decimal.Decimal `db:"sale_unit_price"`
 	Quantity             decimal.Decimal `db:"quantity"`
 	GoodsSpecDescription string          `db:"goods_spec_description"`
 	GoodsSpecIDs         string          `db:"goods_spec_ids"`

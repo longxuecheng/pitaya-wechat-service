@@ -5,6 +5,7 @@ import (
 	"pitaya-wechat-service/dto/pagination"
 	"pitaya-wechat-service/dto/request"
 	"pitaya-wechat-service/facility/utils"
+	"pitaya-wechat-service/middle_ware"
 	"pitaya-wechat-service/service"
 	"strconv"
 
@@ -18,12 +19,12 @@ var (
 // SubmitSaleOrder 提交销售订单
 func SubmitSaleOrder(c *gin.Context) {
 	req := request.SaleOrderAddRequest{}
-	req.UserID = 0
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
-	orderID, err := saleOrderServiceRf.Create(req)
+	userID := middle_ware.MustGetCurrentUser(c)
+	orderID, err := saleOrderServiceRf.Create(userID, req)
 	utils.CheckAndPanic(err)
-	c.Set("data", orderID)
+	middle_ware.SetResponseData(c, orderID)
 }
 
 // ListSaleOrders 获取用户的所有订单
@@ -31,9 +32,10 @@ func ListSaleOrders(c *gin.Context) {
 	req := pagination.PaginationRequest{}
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
-	result, err := saleOrderServiceRf.List(0, req)
+	userID := middle_ware.MustGetCurrentUser(c)
+	result, err := saleOrderServiceRf.List(userID, req)
 	utils.CheckAndPanic(err)
-	c.Set("data", result)
+	middle_ware.SetResponseData(c, result)
 }
 
 // SaleOrderInfo 获取订单详情
@@ -45,7 +47,7 @@ func SaleOrderInfo(c *gin.Context) {
 	utils.CheckAndPanic(err)
 	goodsList, err := saleOrderServiceRf.ListGoods(orderID)
 	utils.CheckAndPanic(err)
-	c.Set("data", map[string]interface{}{
+	middle_ware.SetResponseData(c, map[string]interface{}{
 		"orderInfo":  info,
 		"orderGoods": goodsList,
 	})

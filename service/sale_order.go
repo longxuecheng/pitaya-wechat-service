@@ -7,7 +7,10 @@ import (
 	"pitaya-wechat-service/dto/request"
 	"pitaya-wechat-service/dto/response"
 	"pitaya-wechat-service/model"
+	"pitaya-wechat-service/sys"
+	"strconv"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/shopspring/decimal"
 )
 
@@ -17,10 +20,11 @@ func SaleOrderServiceInstance() *SaleOrderService {
 	if saleOrderServiceSingleton == nil {
 		saleOrderServiceSingleton = new(SaleOrderService)
 		saleOrderServiceSingleton.dao = dao.SaleOrderDaoInstance()
+		saleOrderServiceSingleton.stockDao = dao.GoodsStockDaoSingleton
+		saleOrderServiceSingleton.goodsDao = dao.GoodsDaoSingleton
 		saleOrderServiceSingleton.saleDetailDao = dao.SaleDetailDaoInstance()
 		saleOrderServiceSingleton.cartService = CartServiceInstance()
 		saleOrderServiceSingleton.userService = UserServiceInstance()
-
 	}
 	return saleOrderServiceSingleton
 }
@@ -29,13 +33,69 @@ func SaleOrderServiceInstance() *SaleOrderService {
 type SaleOrderService struct {
 	dao           *dao.SaleOrderDao
 	saleDetailDao *dao.SaleDetailDao
+	stockDao      *dao.GoodsStockDao
+	goodsDao      *dao.GoodsDao
 	cartService   *CartService
 	userService   *UserService
 }
 
-// Create 创建订单有 1. 创建订单 2. 创建订单明细 3. 删除购物车所选中的项目
-func (s *SaleOrderService) Create(req request.SaleOrderAddRequest) (id int64, err error) {
-	allCarts, err := s.cartService.ListCart4User(req.UserID)
+func (s *SaleOrderService) QuickCreate(req request.SaleOrderQuickAddRequest) error {
+	stock, err := s.stockDao.SelectByID(req.StockID)
+	if err != nil {
+		return err
+	}
+	address, err := s.userService.GetAddressByID(req.AddressID)
+	if err != nil {
+		return err
+	}
+	goods, err := s.goodsDao.SelectByID(stock.GoodsID)
+	if err != nil {
+		return err
+	}
+	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+		for i := 0; i < req.Amount; i++ {
+			orderNo, err := generateOrderNumber(1)
+			if err != nil {
+				return err
+			}
+			totalGoodsPrice := decimal.Zero
+			setMap := map[string]interface{}{
+				"order_no":    orderNo,
+				"user_id":     req.UserID,
+				"receiver":    address.Name,
+				"phone_no":    address.Mobile,
+				"goods_amt":   totalGoodsPrice,
+				"express_fee": decimal.Zero,
+				"order_amt":   totalGoodsPrice.Add(decimal.Zero),
+				"province_id": address.ProvinceID,
+				"city_id":     address.CityID,
+				"district_id": address.DistrictID,
+				"address":     address.Address,
+			}
+			orderID, err := s.dao.Create(setMap)
+			if err != nil {
+				return err
+			}
+			saleDetail := installSaleDetailFromStock(orderID, stock, goods)
+			_, err = s.saleDetailDao.Create(saleDetail, tx)
+			if err != nil {
+				return err
+			}
+
+		}
+
+		return nil
+	})
+
+	return nil
+}
+
+// Create 从购物车创建订单
+// 1. 创建订单
+// 2. 创建订单明细
+// 3. 删除购物车所选中的项目
+func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest) (id int64, err error) {
+	allCarts, err := s.cartService.ListCart4User(userID)
 	if err != nil {
 		return
 	}
@@ -43,26 +103,30 @@ func (s *SaleOrderService) Create(req request.SaleOrderAddRequest) (id int64, er
 	if err != nil {
 		return
 	}
-	cartManager := newCartManger(allCarts)
+	orderCreator := newSaleOrderCreator(allCarts)
+	orderNo, err := generateOrderNumber(1)
+	if err != nil {
+		return
+	}
 	setMap := map[string]interface{}{
-		"order_no":    nil,
-		"user_id":     req.UserID,
+		"order_no":    orderNo,
+		"user_id":     userID,
 		"receiver":    address.Name,
 		"phone_no":    address.Mobile,
-		"goods_amt":   cartManager.totalGoodsPrice(),
+		"goods_amt":   orderCreator.totalGoodsPrice(),
 		"express_fee": decimal.Zero,
-		"order_amt":   cartManager.totalGoodsPrice().Add(decimal.Zero),
+		"order_amt":   orderCreator.totalGoodsPrice().Add(decimal.Zero),
 		"province_id": address.ProvinceID,
 		"city_id":     address.CityID,
 		"district_id": address.DistrictID,
 		"address":     address.Address,
 	}
-	s.dao.ExecTx(func(tx *sql.Tx) error {
+	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 		id, err = s.dao.Create(setMap)
 		if err != nil {
 			return err
 		}
-		for _, detail := range cartManager.installSaleDetails(id) {
+		for _, detail := range orderCreator.installSaleItemsFromCart(id) {
 			_, err := s.saleDetailDao.Create(detail)
 			if err != nil {
 				return err
@@ -116,19 +180,30 @@ func (s *SaleOrderService) ListGoods(orderID int64) ([]response.SaleOrderGoodsDT
 	return dtos, nil
 }
 
-func (s *SaleOrderService) installSaleInfoDTO(model model.SaleOrder) response.SaleOrderInfoDTO {
+func generateOrderNumber(nodeNo int64) (string, error) {
+	// Create a new Node with a Node number of 1
+	node, err := snowflake.NewNode(nodeNo)
+	if err != nil {
+		return "", err
+	}
+	// Generate a snowflake ID.
+	id := node.Generate()
+	return strconv.FormatInt(id.Int64(), 10), nil
+}
+
+func (s *SaleOrderService) installSaleInfoDTO(order model.SaleOrder) response.SaleOrderInfoDTO {
 	dto := response.SaleOrderInfoDTO{}
-	dto.ID = model.ID
-	dto.OrderNo = model.OrderNo.String
-	dto.Status = model.Status
-	dto.CreatedAt = model.CreateTime.Format("2006-01-02 15:04:05")
-	dto.Consignee = model.Receiver
-	dto.Mobile = model.PhoneNo
+	dto.ID = order.ID
+	dto.OrderNo = order.OrderNo.String
+	dto.Status = order.Status
+	dto.CreatedAt = order.CreateTime.Format("2006-01-02 15:04:05")
+	dto.Consignee = order.Receiver
+	dto.Mobile = order.PhoneNo
 	dto.FullRegion = "TODO"
-	dto.Address = model.Address
-	dto.GoodsAmt = model.GoodsAmt
-	dto.ExpressFee = model.ExpressFee
-	dto.OrderAmt = model.OrderAmt
+	dto.Address = order.Address
+	dto.GoodsAmt = order.GoodsAmt
+	dto.ExpressFee = order.ExpressFee
+	dto.OrderAmt = order.OrderAmt
 	return dto
 }
 
@@ -161,17 +236,33 @@ func installSaleDetailDTO(model model.SaleDetail) response.SaleOrderGoodsDTO {
 	return dto
 }
 
-// cartManger 是订单服务中特有的购物车管理
+// installSaleDetailFromStock 从库存创建一个订单明细,且数量为1个用于目前的供应商
+func installSaleDetailFromStock(orderID int64, stock *model.GoodsStock, goods *model.Goods) model.SaleDetail {
+	sd := model.SaleDetail{
+		OrderID:       orderID,
+		GoodsID:       stock.GoodsID,
+		GoodsName:     goods.Name,
+		ListPicURL:    goods.ListPicURL,
+		Quantity:      decimal.NewFromFloat32(1.0),
+		StockID:       stock.ID,
+		SaleUnitPrice: stock.SaleUnitPrice,
+		CostUnitPrice: stock.CostUnitPrice,
+		GoodsSpecIDs:  stock.Specification.String,
+	}
+	return sd
+}
+
+// SaleOrderCreator 是订单服务中特有的购物车管理
 // 若进行为服务拆分，那么购物车可能会作为一个单独的服务提供数据，
 // 该对象对返回的购物车数据进行业务处理
-type cartManger struct {
+type SaleOrderCreator struct {
 	checkedItems         []response.CartItemDTO
 	checkedGoodsAmt      decimal.Decimal
 	checkedGoodsQuantity decimal.Decimal
 }
 
-func newCartManger(totalItems []response.CartItemDTO) *cartManger {
-	manager := new(cartManger)
+func newSaleOrderCreator(totalItems []response.CartItemDTO) *SaleOrderCreator {
+	manager := new(SaleOrderCreator)
 	checkedCarts := []response.CartItemDTO{}
 	checkedGoodsQuantity := decimal.Zero
 	checkedGoodsAmt := decimal.Zero
@@ -188,15 +279,15 @@ func newCartManger(totalItems []response.CartItemDTO) *cartManger {
 	return manager
 }
 
-func (cm *cartManger) totalGoodsPrice() decimal.Decimal {
+func (cm *SaleOrderCreator) totalGoodsPrice() decimal.Decimal {
 	return cm.checkedGoodsAmt
 }
 
-func (cm *cartManger) totalGoodsQuantity() decimal.Decimal {
+func (cm *SaleOrderCreator) totalGoodsQuantity() decimal.Decimal {
 	return cm.checkedGoodsQuantity
 }
 
-func (cm *cartManger) installSaleDetails(orderID int64) []model.SaleDetail {
+func (cm *SaleOrderCreator) installSaleItemsFromCart(orderID int64) []model.SaleDetail {
 	saleDetails := make([]model.SaleDetail, len(cm.checkedItems))
 	for i, item := range cm.checkedItems {
 		saleDetail := model.SaleDetail{

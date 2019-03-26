@@ -42,10 +42,6 @@ type SaleOrderDao struct {
 	db *sys.EasyDB
 }
 
-func (dao *SaleOrderDao) ExecTx(execFunc func(tx *sql.Tx) error) {
-	dao.db.ExecTx(execFunc)
-}
-
 func (dao *SaleOrderDao) Create(setMap map[string]interface{}, tx ...*sql.Tx) (id int64, err error) {
 	_, id, err = dao.db.Insert(model.Table_Sale_Order, setMap, tx...)
 	return

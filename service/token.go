@@ -1,8 +1,8 @@
 package service
 
 import (
-	"fmt"
 	"pitaya-wechat-service/model"
+	"pitaya-wechat-service/sys"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -25,23 +25,32 @@ func BuildToken(userID int64, ttl int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("%v %v", ss, err)
+	// cacheCurrentUser(ss, userID)
 	return ss, nil
 }
 
-// ValidateToken validate signed string
-func ValidateToken(ss string) error {
+func cacheCurrentUser(token string, userID int64) {
+	sys.UserCache().Add(token, 0, userID)
+}
+
+// ParseToken validate signed token and return claims
+func ParseToken(ss string) (*model.UserClaims, error) {
 	token, err := jwt.ParseWithClaims(ss, &model.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return signSecrete, nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if claims, ok := token.Claims.(*model.UserClaims); ok && token.Valid {
-		expiresAt := claims.StandardClaims.ExpiresAt
-		if time.Now().Unix() >= expiresAt {
-			return jwt.NewValidationError("token has already expired", jwt.ValidationErrorExpired)
+	if claims, ok := token.Claims.(*model.UserClaims); ok {
+		if token.Valid {
+			expiresAt := claims.StandardClaims.ExpiresAt
+			if time.Now().Unix() >= expiresAt {
+				return nil, jwt.NewValidationError("token has already expired", jwt.ValidationErrorExpired)
+			}
+			return claims, nil
 		}
+		return nil, jwt.NewValidationError("token invalid", jwt.ValidationErrorNotValidYet)
+
 	}
-	return nil
+	return nil, jwt.NewValidationError("token claims invalid", jwt.ValidationErrorClaimsInvalid)
 }

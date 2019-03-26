@@ -16,6 +16,7 @@ func CartServiceInstance() *CartService {
 	if cartServiceSingleton == nil {
 		cartServiceSingleton = new(CartService)
 		cartServiceSingleton.dao = dao.CartDaoSingleton
+		cartServiceSingleton.stockDao = dao.GoodsStockDaoSingleton
 		cartServiceSingleton.goodsService = GoodsServiceInstance()
 		cartServiceSingleton.stockService = StockServiceInstance()
 		cartServiceSingleton.goodsImgService = GoodsImgServiceInstance()
@@ -26,6 +27,7 @@ func CartServiceInstance() *CartService {
 // CartService 作为规格服务，实现了api.ICartService
 type CartService struct {
 	dao             *dao.CartDao
+	stockDao        *dao.GoodsStockDao
 	goodsService    *GoodsService
 	goodsImgService *GoodsImgService
 	stockService    *GoodsStockService
@@ -69,6 +71,7 @@ func (s *CartService) AddGoods(request request.CartAddRequest) (id int64, err er
 	specDesc := strings.Join(specNames, ";") // 商品规格组合描述
 
 	setMap := map[string]interface{}{
+		"user_id":                request.UserID,
 		"goods_id":               goods.ID,
 		"stock_id":               request.StockID,
 		"quantity":               request.Quantity,
@@ -87,11 +90,18 @@ func (s *CartService) AddGoods(request request.CartAddRequest) (id int64, err er
 }
 
 func (s *CartService) ListCart4User(userID int64) ([]response.CartItemDTO, error) {
-	carts, err := s.dao.SelectByUserID(userID)
+	cartItems, err := s.dao.SelectByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
-	return buildCartItemDTOs(carts), nil
+	cartSet := newCartSet(cartItems)
+	stockIDs := cartSet.stockIDs()
+	stocks, err := s.stockDao.SelectByIDs(stockIDs)
+	cartSet.bindStocks(stocks)
+	if err != nil {
+		return nil, err
+	}
+	return cartSet.DTOItems(), nil
 }
 
 func (s *CartService) GoodsCount(userID int64) (count int64, err error) {
@@ -105,32 +115,54 @@ func (s *CartService) CheckItem(req request.CartCheckRequest) error {
 	return s.dao.UpdateByID(req.ID, setMap)
 }
 
-func installCartItemDTO(model model.Cart) response.CartItemDTO {
-	dto := response.CartItemDTO{}
-	dto.ID = model.ID
-	dto.GoodsName = model.GoodsName
-	dto.GoodsSN = model.GoodsSN
-	dto.GoodsSpecDescription = model.GoodsSpecDescription
-	dto.GoodsSpecIDs = model.GoodsSpecIDs
-	dto.MarketPrice = model.MarketPrice
-	dto.RetailPrice = model.RetailPrice
-	dto.Quantity = model.Quantity
-	dto.StockID = model.StockID
-	dto.GoodsID = model.GoodsID
-	dto.GoodsSpecIDs = model.GoodsSpecIDs
-	dto.ListPicURL = model.ListPicURL
-	dto.SessionID = model.SessionID
-	dto.Checked = model.Checked
-	return dto
+type cartSet struct {
+	items    []model.Cart
+	stockMap map[int64]*model.GoodsStock
 }
 
-func buildCartItemDTOs(models []model.Cart) []response.CartItemDTO {
-	if models == nil || len(models) == 0 {
-		return nil
+func newCartSet(items []model.Cart) *cartSet {
+	return &cartSet{
+		items: items,
 	}
-	dtos := make([]response.CartItemDTO, len(models))
-	for i, model := range models {
-		dtos[i] = installCartItemDTO(model)
+}
+
+func (set *cartSet) bindStocks(stocks []*model.GoodsStock) {
+	set.stockMap = model.NewStockMap(stocks)
+}
+
+func (set *cartSet) stockIDs() []int64 {
+	stockIDs := []int64{}
+	stockIDMap := map[int64]bool{}
+	for _, item := range set.items {
+		stockIDMap[item.StockID] = true
+	}
+	for k := range stockIDMap {
+		stockIDs = append(stockIDs, k)
+	}
+	return stockIDs
+}
+
+func (set *cartSet) DTOItems() []response.CartItemDTO {
+	dtos := make([]response.CartItemDTO, len(set.items))
+	for i, model := range set.items {
+		dto := response.CartItemDTO{}
+		dto.ID = model.ID
+		dto.GoodsName = model.GoodsName
+		dto.GoodsSN = model.GoodsSN
+		dto.GoodsSpecDescription = model.GoodsSpecDescription
+		dto.GoodsSpecIDs = model.GoodsSpecIDs
+		if stock, ok := set.stockMap[model.ID]; ok {
+			dto.MarketPrice = stock.SaleUnitPrice
+			dto.RetailPrice = stock.SaleUnitPrice
+		}
+		dto.Quantity = model.Quantity
+		dto.StockID = model.StockID
+		dto.GoodsID = model.GoodsID
+		dto.GoodsSpecIDs = model.GoodsSpecIDs
+		dto.ListPicURL = model.ListPicURL
+		dto.SessionID = model.SessionID
+		dto.Checked = model.Checked
+		dtos[i] = dto
 	}
 	return dtos
 }

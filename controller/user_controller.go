@@ -25,19 +25,20 @@ func GetUserListByConditions(c *gin.Context) {
 }
 
 func UserAddressList(c *gin.Context) {
-	addresses, err := userServiceRf.AddressList(0)
+	userID := middle_ware.MustGetCurrentUser(c)
+	addresses, err := userServiceRf.AddressList(userID)
 	utils.CheckAndPanic(err)
-	c.Set("data", addresses)
+	middle_ware.SetResponseData(c, addresses)
 }
 
 func AddNewAddress(c *gin.Context) {
 	req := request.UserAddressAddRequest{}
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
-	req.UserID = 0
-	id, err := userServiceRf.CreateAddress(req)
+	userID := middle_ware.MustGetCurrentUser(c)
+	id, err := userServiceRf.CreateAddress(userID, req)
 	utils.CheckAndPanic(err)
-	c.Set("data", id)
+	middle_ware.SetResponseData(c, id)
 }
 
 // LoginByWechat 微信登录

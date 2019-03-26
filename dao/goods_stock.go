@@ -15,7 +15,7 @@ func init() {
 	GoodsStockDaoSingleton.db = sys.GetEasyDB()
 }
 
-var columns_goods_stock = []string{"id", "goods_id", "sale_unit_price", "available_quantity", "specification"}
+var columns_goods_stock = []string{"id", "goods_id", "sale_unit_price", "cost_unit_price", "available_quantity", "specification"}
 
 // GoodsStockDao is dao
 type GoodsStockDao struct {
@@ -34,6 +34,15 @@ func (dao *GoodsStockDao) SelectByID(ID int64) (*model.GoodsStock, error) {
 func (dao *GoodsStockDao) SelectByGoodsID(goodsID int64) ([]*model.GoodsStock, error) {
 	stocks := []*model.GoodsStock{}
 	err := dao.db.SelectDSL(&stocks, columns_goods_stock, model.Table_Stock, sq.Eq{"goods_id": goodsID})
+	if err != nil {
+		return nil, err
+	}
+	return stocks, nil
+}
+
+func (dao *GoodsStockDao) SelectByIDs(ids []int64) ([]*model.GoodsStock, error) {
+	stocks := []*model.GoodsStock{}
+	err := dao.db.SelectDSL(&stocks, columns_goods_stock, model.Table_Stock, sq.Eq{"id": ids})
 	if err != nil {
 		return nil, err
 	}

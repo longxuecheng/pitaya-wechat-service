@@ -6,6 +6,7 @@ import (
 	"pitaya-wechat-service/dto/request"
 	"pitaya-wechat-service/dto/response"
 	"pitaya-wechat-service/facility/utils"
+	"pitaya-wechat-service/middle_ware"
 	"pitaya-wechat-service/service"
 
 	"github.com/shopspring/decimal"
@@ -25,6 +26,8 @@ func AddCart(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
+	userID := middle_ware.MustGetCurrentUser(c)
+	req.UserID = userID
 	_, err = cartServiceRf.AddGoods(req)
 	if err != nil {
 		panic(err)
@@ -43,11 +46,12 @@ func AddCart(c *gin.Context) {
 
 // CartIndex 获取某个用户下的购物车列表
 func CartIndex(c *gin.Context) {
-	carts, err := cartServiceRf.ListCart4User(0)
+	userID := middle_ware.MustGetCurrentUser(c)
+	carts, err := cartServiceRf.ListCart4User(userID)
 	if err != nil {
 		panic(err)
 	}
-	c.Set("data", summaryCart(carts))
+	middle_ware.SetResponseData(c, summaryCart(carts))
 }
 
 // CartItemCheck 操作购物车条目的选择
@@ -61,13 +65,15 @@ func CartItemCheck(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	carts, err := cartServiceRf.ListCart4User(0)
-	c.Set("data", summaryCart(carts))
+	userID := middle_ware.MustGetCurrentUser(c)
+	carts, err := cartServiceRf.ListCart4User(userID)
+	middle_ware.SetResponseData(c, summaryCart(carts))
 }
 
 // CartCheckout 结算台信息
 func CartCheckout(c *gin.Context) {
-	carts, err := cartServiceRf.ListCart4User(0)
+	userID := middle_ware.MustGetCurrentUser(c)
+	carts, err := cartServiceRf.ListCart4User(userID)
 	utils.CheckAndPanic(err)
 	cartsFiltered := filterCartItem(carts, func(cart response.CartItemDTO) bool {
 		return cart.Checked == 1
@@ -76,7 +82,7 @@ func CartCheckout(c *gin.Context) {
 	expressFee := decimal.NewFromFloat32(20.35)
 	goodsTotalPrice, _ := decimal.NewFromString(cartSum.CartTotal.CheckedGoodsAmount)
 	orderTotalPrice := goodsTotalPrice.Add(expressFee)
-	addressList, err := cartRf_UserService.AddressList(0)
+	addressList, err := cartRf_UserService.AddressList(userID)
 	var checkedAddress = dto.UserAddressDTO{}
 	for _, address := range addressList {
 		if address.IsDefault {
