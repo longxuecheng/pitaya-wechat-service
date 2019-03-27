@@ -13,11 +13,13 @@ type GoodsItemDTO struct {
 
 type GoodsInfoDTO struct {
 	ID          int64           `json:"id"`
+	SupplierID  int64           `json:"supplierId"`
 	Name        string          `json:"name"`
 	BriefDesc   string          `json:"briefDesc"`
 	RetailPrice decimal.Decimal `json:"retailPrice"`
 	Unit        string          `json:"unit"`
 	Description string          `json:"description"`
+	ListPicURL  string          `json:"listPicUrl"`
 }
 
 type GoodsGalleryDTO struct {

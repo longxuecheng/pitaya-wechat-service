@@ -42,6 +42,15 @@ func (dao *GoodsDao) SelectByID(ID int64) (*model.Goods, error) {
 	return goods, nil
 }
 
+func (dao *GoodsDao) SelectByIDs(IDs []int64) ([]*model.Goods, error) {
+	goods := []*model.Goods{}
+	err := dao.db.SelectDSL(&goods, columns_goods, model.Table_Goods, sq.Eq{"id": IDs})
+	if err != nil {
+		return nil, err
+	}
+	return goods, nil
+}
+
 func (dao *GoodsDao) SelectAllByStatus(status model.GoodsStatus) ([]*model.Goods, error) {
 	goods := []*model.Goods{}
 	err := dao.db.SelectDSL(&goods, columns_goods, model.Table_Goods, sq.Eq{"status": string(status)})

@@ -42,14 +42,6 @@ func (s *CartService) AddGoods(request request.CartAddRequest) (id int64, err er
 	if err != nil {
 		return
 	}
-	gallery, err := s.goodsImgService.GetByGoodsID(request.GoodsID)
-	if err != nil {
-		return
-	}
-	var listPic = "" // 列表图片
-	if len(gallery) > 0 {
-		listPic = gallery[0].ImgURL
-	}
 	stock, err := s.stockService.GetByID(request.StockID)
 	if err != nil {
 		return
@@ -73,14 +65,13 @@ func (s *CartService) AddGoods(request request.CartAddRequest) (id int64, err er
 	setMap := map[string]interface{}{
 		"user_id":                request.UserID,
 		"goods_id":               goods.ID,
+		"supplier_id":            goods.SupplierID,
 		"stock_id":               request.StockID,
 		"quantity":               request.Quantity,
 		"goods_name":             goods.Name,
-		"market_price":           goods.RetailPrice,
-		"sale_unit_price":        goods.RetailPrice,
 		"goods_spec_description": specDesc,
 		"goods_spec_ids":         stock.GoodsSpecificationIDs,
-		"list_pic_url":           listPic,
+		"list_pic_url":           goods.ListPicURL,
 	}
 	id, err = s.dao.AddCart(setMap)
 	if err != nil {
@@ -94,14 +85,15 @@ func (s *CartService) ListCart4User(userID int64) ([]response.CartItemDTO, error
 	if err != nil {
 		return nil, err
 	}
-	cartSet := newCartSet(cartItems)
-	stockIDs := cartSet.stockIDs()
+	cartSet := model.NewCartSet(cartItems)
+	stockIDs := cartSet.StockIDs()
 	stocks, err := s.stockDao.SelectByIDs(stockIDs)
-	cartSet.bindStocks(stocks)
 	if err != nil {
 		return nil, err
 	}
-	return cartSet.DTOItems(), nil
+	stockMap := model.NewStockSet(stocks).Map()
+	wrapper := newCartResponseWrapper(cartItems, stockMap)
+	return wrapper.DTOItems(), nil
 }
 
 func (s *CartService) GoodsCount(userID int64) (count int64, err error) {
@@ -115,34 +107,27 @@ func (s *CartService) CheckItem(req request.CartCheckRequest) error {
 	return s.dao.UpdateByID(req.ID, setMap)
 }
 
-type cartSet struct {
+func (s *CartService) checkedItems(userID int64) ([]model.Cart, error) {
+	checkedItems, err := s.dao.SelectChecked(userID)
+	if err != nil {
+		return nil, err
+	}
+	return checkedItems, nil
+}
+
+type cartResposneWrapper struct {
 	items    []model.Cart
 	stockMap map[int64]*model.GoodsStock
 }
 
-func newCartSet(items []model.Cart) *cartSet {
-	return &cartSet{
-		items: items,
+func newCartResponseWrapper(items []model.Cart, stockMap map[int64]*model.GoodsStock) *cartResposneWrapper {
+	return &cartResposneWrapper{
+		items:    items,
+		stockMap: stockMap,
 	}
 }
 
-func (set *cartSet) bindStocks(stocks []*model.GoodsStock) {
-	set.stockMap = model.NewStockMap(stocks)
-}
-
-func (set *cartSet) stockIDs() []int64 {
-	stockIDs := []int64{}
-	stockIDMap := map[int64]bool{}
-	for _, item := range set.items {
-		stockIDMap[item.StockID] = true
-	}
-	for k := range stockIDMap {
-		stockIDs = append(stockIDs, k)
-	}
-	return stockIDs
-}
-
-func (set *cartSet) DTOItems() []response.CartItemDTO {
+func (set *cartResposneWrapper) DTOItems() []response.CartItemDTO {
 	dtos := make([]response.CartItemDTO, len(set.items))
 	for i, model := range set.items {
 		dto := response.CartItemDTO{}
@@ -151,7 +136,7 @@ func (set *cartSet) DTOItems() []response.CartItemDTO {
 		dto.GoodsSN = model.GoodsSN
 		dto.GoodsSpecDescription = model.GoodsSpecDescription
 		dto.GoodsSpecIDs = model.GoodsSpecIDs
-		if stock, ok := set.stockMap[model.ID]; ok {
+		if stock, ok := set.stockMap[model.StockID]; ok {
 			dto.MarketPrice = stock.SaleUnitPrice
 			dto.RetailPrice = stock.SaleUnitPrice
 		}

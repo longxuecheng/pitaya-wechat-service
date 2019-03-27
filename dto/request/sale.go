@@ -1,5 +1,9 @@
 package request
 
+import (
+	"github.com/shopspring/decimal"
+)
+
 type SaleOrderAddRequest struct {
 	AddressID int64 `json:"addressId"`
 	CouponID  int64 `json:"couponId"`
@@ -7,7 +11,7 @@ type SaleOrderAddRequest struct {
 
 type SaleOrderQuickAddRequest struct {
 	SaleOrderAddRequest
-	UserID  int64 `json:"-"`
-	StockID int64 `json:"stockId"`
-	Amount  int   `json:"amount"`
+	UserID   int64           `json:"-"`
+	StockID  int64           `json:"stockId"`
+	Quantity decimal.Decimal `json:"quantity"`
 }

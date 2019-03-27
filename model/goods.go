@@ -29,3 +29,21 @@ type Goods struct {
 	ListPicURL       sql.NullString  `db:"list_pic_url"`
 	RetailPrice      decimal.Decimal `db:"retail_price"`
 }
+
+type GoodsSet struct {
+	items []*Goods
+}
+
+func NewGoodsSet(items []*Goods) *GoodsSet {
+	return &GoodsSet{
+		items: items,
+	}
+}
+
+func (s *GoodsSet) Map() map[int64]*Goods {
+	goodsMap := map[int64]*Goods{}
+	for _, item := range s.items {
+		goodsMap[item.ID] = item
+	}
+	return goodsMap
+}

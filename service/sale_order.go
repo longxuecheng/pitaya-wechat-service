@@ -2,7 +2,9 @@ package service
 
 import (
 	"database/sql"
+	"errors"
 	"pitaya-wechat-service/dao"
+	"pitaya-wechat-service/dto"
 	"pitaya-wechat-service/dto/pagination"
 	"pitaya-wechat-service/dto/request"
 	"pitaya-wechat-service/dto/response"
@@ -16,6 +18,7 @@ import (
 
 var saleOrderServiceSingleton *SaleOrderService
 
+// SaleOrderServiceInstance get a service instance of singleton
 func SaleOrderServiceInstance() *SaleOrderService {
 	if saleOrderServiceSingleton == nil {
 		saleOrderServiceSingleton = new(SaleOrderService)
@@ -39,54 +42,72 @@ type SaleOrderService struct {
 	userService   *UserService
 }
 
-func (s *SaleOrderService) QuickCreate(req request.SaleOrderQuickAddRequest) error {
+// QuickCreate 快速下单
+func (s *SaleOrderService) QuickCreate(req request.SaleOrderQuickAddRequest) (int64, error) {
 	stock, err := s.stockDao.SelectByID(req.StockID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	address, err := s.userService.GetAddressByID(req.AddressID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	goods, err := s.goodsDao.SelectByID(stock.GoodsID)
 	if err != nil {
-		return err
+		return 0, err
 	}
+	var orderID int64
+	// 由于目前水果的包装都是按照一个快递单来进行的，所以目前对每一个项目创建一个订单
 	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
-		for i := 0; i < req.Amount; i++ {
-			orderNo, err := generateOrderNumber(1)
-			if err != nil {
-				return err
-			}
-			totalGoodsPrice := decimal.Zero
-			setMap := map[string]interface{}{
-				"order_no":    orderNo,
-				"user_id":     req.UserID,
-				"receiver":    address.Name,
-				"phone_no":    address.Mobile,
-				"goods_amt":   totalGoodsPrice,
-				"express_fee": decimal.Zero,
-				"order_amt":   totalGoodsPrice.Add(decimal.Zero),
-				"province_id": address.ProvinceID,
-				"city_id":     address.CityID,
-				"district_id": address.DistrictID,
-				"address":     address.Address,
-			}
-			orderID, err := s.dao.Create(setMap)
-			if err != nil {
-				return err
-			}
-			saleDetail := installSaleDetailFromStock(orderID, stock, goods)
-			_, err = s.saleDetailDao.Create(saleDetail, tx)
-			if err != nil {
-				return err
-			}
-
+		ss := []supplierStock{
+			supplierStock{
+				SupplierID: goods.SupplierID,
+				Quantity:   req.Quantity,
+				Stock:      stock,
+				Goods:      goods,
+			},
 		}
-
+		so := &supplierOrder{
+			supplierID:     goods.SupplierID,
+			supplierStocks: ss,
+		}
+		so.bindBasically(req.UserID, address)
+		if so.splitable() {
+			splittedSupplierOrders := so.split()
+			for _, splittedSupplierOrder := range splittedSupplierOrders {
+				err := s.persistSaleOrder(splittedSupplierOrder, tx)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			err := s.persistSaleOrder(so, tx)
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 
+	return orderID, nil
+}
+
+func (s *SaleOrderService) persistSaleOrder(so *supplierOrder, tx *sql.Tx) error {
+	saleOrder, saleDetails, err := so.transfer()
+	if err != nil {
+		return err
+	}
+	orderID, err := s.dao.Create(saleOrder, tx)
+	if err != nil {
+		return err
+	}
+	for _, detail := range saleDetails {
+		detail.OrderID = orderID
+		_, err := s.saleDetailDao.Create(detail)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -95,7 +116,7 @@ func (s *SaleOrderService) QuickCreate(req request.SaleOrderQuickAddRequest) err
 // 2. 创建订单明细
 // 3. 删除购物车所选中的项目
 func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest) (id int64, err error) {
-	allCarts, err := s.cartService.ListCart4User(userID)
+	checkedItems, err := s.cartService.checkedItems(userID)
 	if err != nil {
 		return
 	}
@@ -103,31 +124,23 @@ func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest)
 	if err != nil {
 		return
 	}
-	orderCreator := newSaleOrderCreator(allCarts)
-	orderNo, err := generateOrderNumber(1)
+	cartSet := model.NewCartSet(checkedItems)
+	goodsIDs := cartSet.GoodsIDs()
+	goodsList, err := s.goodsDao.SelectByIDs(goodsIDs)
 	if err != nil {
 		return
 	}
-	setMap := map[string]interface{}{
-		"order_no":    orderNo,
-		"user_id":     userID,
-		"receiver":    address.Name,
-		"phone_no":    address.Mobile,
-		"goods_amt":   orderCreator.totalGoodsPrice(),
-		"express_fee": decimal.Zero,
-		"order_amt":   orderCreator.totalGoodsPrice().Add(decimal.Zero),
-		"province_id": address.ProvinceID,
-		"city_id":     address.CityID,
-		"district_id": address.DistrictID,
-		"address":     address.Address,
+	stocks, err := s.stockDao.SelectByIDs(cartSet.StockIDs())
+	if err != nil {
+		return
 	}
+	orderCreator := newSaleOrderCreator(cartSet)
+	orderCreator.setGoods(goodsList)
+	orderCreator.bindNecessary(stocks, userID, address)
+	supplierOrders := orderCreator.rawSupplierOrders()
 	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
-		id, err = s.dao.Create(setMap)
-		if err != nil {
-			return err
-		}
-		for _, detail := range orderCreator.installSaleItemsFromCart(id) {
-			_, err := s.saleDetailDao.Create(detail)
+		for _, so := range supplierOrders {
+			err := s.persistSaleOrder(so, tx)
 			if err != nil {
 				return err
 			}
@@ -252,58 +265,166 @@ func installSaleDetailFromStock(orderID int64, stock *model.GoodsStock, goods *m
 	return sd
 }
 
+// supplierStock 是供应商的购买库存信息
+type supplierStock struct {
+	SupplierID int64
+	Quantity   decimal.Decimal
+	Stock      *model.GoodsStock
+	Goods      *model.Goods
+}
+
+func (ss supplierStock) saleDetail() model.SaleDetail {
+	return model.SaleDetail{
+		OrderID:       0,
+		GoodsID:       ss.Stock.GoodsID,
+		GoodsName:     ss.Goods.Name,
+		Quantity:      ss.Quantity,
+		StockID:       ss.Stock.ID,
+		SaleUnitPrice: ss.Stock.SaleUnitPrice,
+		GoodsSpecIDs:  ss.Stock.Specification.String,
+		ListPicURL:    ss.Goods.ListPicURL,
+	}
+
+}
+
+// supplierOrder 是供应商的订单信息
+type supplierOrder struct {
+	supplierID     int64
+	userID         int64
+	address        dto.UserAddressDTO
+	supplierStocks []supplierStock
+}
+
+func (so *supplierOrder) bindBasically(userID int64, address dto.UserAddressDTO) {
+	so.userID = userID
+	so.address = address
+}
+
+func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error) {
+	if so.userID == 0 || so.address.ID == 0 {
+		return model.SaleOrder{}, nil, errors.New("user id and address must be bound first")
+	}
+	orderNo, err := generateOrderNumber(1)
+	if err != nil {
+		return model.SaleOrder{}, nil, err
+	}
+	saleOrder := model.SaleOrder{
+		OrderNo:    sql.NullString{String: orderNo},
+		UserID:     so.userID,
+		ProvinceID: so.address.ProvinceID,
+		CityID:     so.address.CityID,
+		DistrictID: so.address.DistrictID,
+		Address:    so.address.Address,
+		Receiver:   so.address.Name,
+		PhoneNo:    so.address.Mobile,
+	}
+	saleOrder.OrderAmt = decimal.Zero
+	saleOrder.GoodsAmt = decimal.Zero
+	saleDetails := []model.SaleDetail{}
+	for _, ss := range so.supplierStocks {
+		sum := ss.Stock.SaleUnitPrice.Mul(ss.Quantity)
+		saleOrder.GoodsAmt = saleOrder.GoodsAmt.Add(sum)
+		saleDetail := ss.saleDetail()
+		saleDetails = append(saleDetails, saleDetail)
+	}
+	return saleOrder, saleDetails, nil
+}
+
+// split 按照库存单位1对一个供应商的原始订单进行拆分
+func (so *supplierOrder) split() []*supplierOrder {
+	sos := []*supplierOrder{}
+	for _, ss := range so.supplierStocks {
+		for i := 0; i < int(ss.Quantity.IntPart()); i++ {
+			ssList := []supplierStock{
+				supplierStock{
+					SupplierID: so.supplierID,
+					Quantity:   decimal.NewFromFloat32(1.0),
+					Stock:      ss.Stock,
+					Goods:      ss.Goods,
+				},
+			}
+			sorder := &supplierOrder{
+				supplierID:     so.supplierID,
+				supplierStocks: ssList,
+			}
+			sos = append(sos, sorder)
+		}
+	}
+	return sos
+}
+
+// splitable 判断订单是否可以拆分，目前只有供应商ID为1时可以拆
+func (so *supplierOrder) splitable() bool {
+	return so.supplierID == 1
+}
+
 // SaleOrderCreator 是订单服务中特有的购物车管理
 // 若进行为服务拆分，那么购物车可能会作为一个单独的服务提供数据，
 // 该对象对返回的购物车数据进行业务处理
-type SaleOrderCreator struct {
-	checkedItems         []response.CartItemDTO
-	checkedGoodsAmt      decimal.Decimal
-	checkedGoodsQuantity decimal.Decimal
+type saleOrderCreator struct {
+	goodsMap map[int64]*model.Goods
+	// 供应商购物车项目
+	supplierCart map[int64][]model.Cart
+	// 供应商订单
+	supplierOrders []*supplierOrder
+	stocks         map[int64]*model.GoodsStock
 }
 
-func newSaleOrderCreator(totalItems []response.CartItemDTO) *SaleOrderCreator {
-	manager := new(SaleOrderCreator)
-	checkedCarts := []response.CartItemDTO{}
-	checkedGoodsQuantity := decimal.Zero
-	checkedGoodsAmt := decimal.Zero
-	for _, cart := range totalItems {
-		if cart.Checked == 1 {
-			checkedCarts = append(checkedCarts, cart)
-			checkedGoodsQuantity = checkedGoodsQuantity.Add(cart.Quantity)
-			checkedGoodsAmt = checkedGoodsAmt.Add(cart.Quantity.Mul(cart.RetailPrice))
+func newSaleOrderCreator(cartSet *model.CartSet) *saleOrderCreator {
+	creator := new(saleOrderCreator)
+	supplierCart := map[int64][]model.Cart{}
+	supplierIDs := cartSet.SupplierIDs()
+	// Classify cart items of different suppliers
+	for _, supplierID := range supplierIDs {
+		carts := []model.Cart{}
+		for _, cart := range cartSet.List() {
+			if cart.SupplierID == supplierID {
+				carts = append(carts, cart)
+			}
 		}
+		supplierCart[supplierID] = carts
 	}
-	manager.checkedItems = checkedCarts
-	manager.checkedGoodsAmt = checkedGoodsAmt
-	manager.checkedGoodsQuantity = checkedGoodsQuantity
-	return manager
+	creator.supplierCart = supplierCart
+	return creator
 }
 
-func (cm *SaleOrderCreator) totalGoodsPrice() decimal.Decimal {
-	return cm.checkedGoodsAmt
+func (c *saleOrderCreator) setGoods(goods []*model.Goods) {
+	goodsSet := model.NewGoodsSet(goods)
+	c.goodsMap = goodsSet.Map()
 }
 
-func (cm *SaleOrderCreator) totalGoodsQuantity() decimal.Decimal {
-	return cm.checkedGoodsQuantity
-}
-
-func (cm *SaleOrderCreator) installSaleItemsFromCart(orderID int64) []model.SaleDetail {
-	saleDetails := make([]model.SaleDetail, len(cm.checkedItems))
-	for i, item := range cm.checkedItems {
-		saleDetail := model.SaleDetail{
-			OrderID:              orderID,
-			GoodsID:              item.GoodsID,
-			GoodsName:            item.GoodsName,
-			Quantity:             item.Quantity,
-			StockID:              item.StockID,
-			SaleUnitPrice:        item.RetailPrice,
-			GoodsSpecIDs:         item.GoodsSpecIDs,
-			GoodsSpecDescription: item.GoodsSpecDescription,
-			ListPicURL:           sql.NullString{String: item.ListPicURL},
+func (c *saleOrderCreator) bindNecessary(stocks []*model.GoodsStock, userID int64, address dto.UserAddressDTO) {
+	stockSet := model.NewStockSet(stocks)
+	stockMap := stockSet.Map()
+	supplierOrders := []*supplierOrder{}
+	for supplierID, carts := range c.supplierCart {
+		supplierOrder := &supplierOrder{
+			supplierID: supplierID,
+			userID:     userID,
+			address:    address,
 		}
-		saleDetails[i] = saleDetail
+		supplierStocks := make([]supplierStock, len(carts))
+		for idx, cart := range carts {
+			supplierStock := supplierStock{
+				SupplierID: supplierID,
+				Quantity:   cart.Quantity,
+			}
+			if stock, ok := stockMap[cart.StockID]; ok {
+				supplierStock.Stock = stock
+			}
+			if goods, ok := c.goodsMap[cart.GoodsID]; ok {
+				supplierStock.Goods = goods
+			}
+			supplierStocks[idx] = supplierStock
+		}
+		supplierOrder.supplierStocks = supplierStocks
+		supplierOrders = append(supplierOrders, supplierOrder)
 	}
-	return saleDetails
+	c.supplierOrders = supplierOrders
+}
+
+func (c *saleOrderCreator) rawSupplierOrders() []*supplierOrder {
+	return c.supplierOrders
 }
 
 type SaleOrderSet struct {

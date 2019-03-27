@@ -3,6 +3,7 @@ package sys
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -70,16 +71,16 @@ func (db *EasyDB) ExecTx(execFunc func(tx *sql.Tx) error) {
 	tx, err := db.connection.Begin()
 	utils.CheckAndPanic(err)
 	err = execFunc(tx)
-	utils.CheckAndPanic(err)
 	defer func() {
 		if err == nil {
 			err = tx.Commit()
 			utils.CheckAndPanic(err)
 		} else {
 			if tx == nil {
-				panic(err)
+				panic(errors.New("transaction not exists"))
 			} else {
 				tx.Rollback()
+				panic(err)
 			}
 		}
 	}()

@@ -2,6 +2,7 @@ package dao
 
 import (
 	"database/sql"
+	"pitaya-wechat-service/facility/utils"
 	"pitaya-wechat-service/model"
 	"pitaya-wechat-service/sys"
 
@@ -42,7 +43,8 @@ type SaleOrderDao struct {
 	db *sys.EasyDB
 }
 
-func (dao *SaleOrderDao) Create(setMap map[string]interface{}, tx ...*sql.Tx) (id int64, err error) {
+func (dao *SaleOrderDao) Create(order model.SaleOrder, tx ...*sql.Tx) (id int64, err error) {
+	setMap := utils.StructToMap(order, "db", "exclude")
 	_, id, err = dao.db.Insert(model.Table_Sale_Order, setMap, tx...)
 	return
 }

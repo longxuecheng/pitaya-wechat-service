@@ -111,7 +111,9 @@ func buildGoodsSpecificationDTOs(models []*model.GoodsSpecification) []*dto.Good
 func installGoodsInfoDTO(model *model.Goods) *dto.GoodsInfoDTO {
 	dto := new(dto.GoodsInfoDTO)
 	dto.ID = model.ID
+	dto.SupplierID = model.SupplierID
 	dto.Name = model.Name
+	dto.ListPicURL = model.ListPicURL.String
 	if model.Description.Valid {
 		dto.Description = model.Description.String
 	}

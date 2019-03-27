@@ -3,7 +3,7 @@ package utils
 import "reflect"
 
 // StructToMap 将一个stuct转换成map
-func StructToMap(i interface{}, filedTag string, excludeTag ...string) map[string]interface{} {
+func StructToMap(i interface{}, fieldTag string, excludeTag ...string) map[string]interface{} {
 	v_t := reflect.ValueOf(i)
 	u_t := reflect.TypeOf(i)
 	v_kind := v_t.Kind()
@@ -22,7 +22,7 @@ func StructToMap(i interface{}, filedTag string, excludeTag ...string) map[strin
 		if excludeTag != nil && struct_field.Tag.Get(excludeTag[0]) == "true" {
 			continue
 		}
-		field_tag := struct_field.Tag.Get(filedTag)
+		field_tag := struct_field.Tag.Get(fieldTag)
 		field_val := v_t.Field(i)
 		filed_interface := field_val.Interface()
 		field_map[field_tag] = filed_interface
