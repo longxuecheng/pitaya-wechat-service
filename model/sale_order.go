@@ -10,11 +10,11 @@ import (
 var Table_Sale_Order string = "sale_order"
 
 type SaleOrder struct {
-	ID         int64           `db:"id"`
+	ID         int64           `db:"id" exclude:"true"`
 	OrderNo    sql.NullString  `db:"order_no"`
-	CreateTime time.Time       `db:"create_time"`
+	CreateTime time.Time       `db:"create_time" exclude:"true"`
 	UserID     int64           `db:"user_id"`
-	Status     string          `db:"status"`
+	Status     string          `db:"status" exclude:"true"`
 	Receiver   string          `db:"receiver"`
 	ProvinceID int             `db:"province_id"`
 	CityID     int             `db:"city_id"`
@@ -25,5 +25,5 @@ type SaleOrder struct {
 	OrderAmt   decimal.Decimal `db:"order_amt"`
 	GoodsAmt   decimal.Decimal `db:"goods_amt"`
 	ExpressFee decimal.Decimal `db:"express_fee"`
-	Count      int64           `db:"count"`
+	Count      int64           `db:"count" exclude:"true"`
 }

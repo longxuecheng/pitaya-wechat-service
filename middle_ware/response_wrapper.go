@@ -33,7 +33,7 @@ func WrapResponse(c *gin.Context) {
 		return
 	}
 	data, _ := c.Get(DATA_KEY)
-	responseDTO := newResponseDTO(data, "", STATUS_SUCCESS)
+	responseDTO := newResponseDTO(data, "Ok", STATUS_SUCCESS)
 	c.JSON(http.StatusOK, responseDTO)
 }
 

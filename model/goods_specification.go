@@ -10,3 +10,21 @@ type GoodsSpecification struct {
 	Value           string `db:"value"`
 	PicURL          string `db:"pic_url"`
 }
+
+type GoodsSpecSet struct {
+	items []*GoodsSpecification
+}
+
+func NewGoodsSpecSet(items []*GoodsSpecification) *GoodsSpecSet {
+	return &GoodsSpecSet{
+		items: items,
+	}
+}
+
+func (s *GoodsSpecSet) Map() map[int64]*GoodsSpecification {
+	result := map[int64]*GoodsSpecification{}
+	for _, item := range s.items {
+		result[item.ID] = item
+	}
+	return result
+}

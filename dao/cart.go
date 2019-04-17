@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"pitaya-wechat-service/facility/utils"
 	"pitaya-wechat-service/model"
 	"pitaya-wechat-service/sys"
 
@@ -22,7 +23,8 @@ type CartDao struct {
 	db *sys.EasyDB
 }
 
-func (dao *CartDao) AddCart(setMap map[string]interface{}) (id int64, err error) {
+func (dao *CartDao) AddCart(cart model.Cart) (id int64, err error) {
+	setMap := utils.StructToMap(cart, "db", "exclude")
 	_, id, err = dao.db.Insert(model.Table_Cart, setMap)
 	return
 }

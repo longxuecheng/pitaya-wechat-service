@@ -11,6 +11,7 @@ type CategoryDTO struct {
 	ParentID        int            `json:"parentId"`
 }
 
+// CategoryChannel 是商城首页展示分类频道的信息
 type CategoryChannel struct {
 	ID      int    `json:"id"`
 	Name    string `json:"name"`

@@ -2,11 +2,13 @@ package service
 
 import (
 	"pitaya-wechat-service/dao"
+	"pitaya-wechat-service/dto"
 	"pitaya-wechat-service/dto/request"
 	"pitaya-wechat-service/dto/response"
 	"pitaya-wechat-service/facility/utils"
 	"pitaya-wechat-service/model"
-	"strings"
+
+	"github.com/shopspring/decimal"
 )
 
 // cartServiceSingleton 是CartService的一个单例
@@ -38,49 +40,29 @@ func (s *CartService) AddGoods(request request.CartAddRequest) (id int64, err er
 	if err != nil {
 		return
 	}
-	specs, err := s.goodsService.Specifications(request.GoodsID) // 商品规格
-	if err != nil {
-		return
-	}
+
 	stock, err := s.stockService.GetByID(request.StockID)
 	if err != nil {
 		return
 	}
-	specNames := []string{}
+
 	stockSpecIDs, err := utils.ParseIntArray(stock.GoodsSpecificationIDs, "_", 10, 64)
 	if err != nil {
 		return
 	}
-	for _, stockSpecID := range stockSpecIDs {
-		for _, spec := range specs {
-			if stockSpecID == spec.ID {
-				specNames = append(specNames, spec.Value)
-				break
-			}
-		}
+	specDesc, err := s.goodsService.SpecificationDesc(request.GoodsID, stockSpecIDs, "/")
+	if err != nil {
+		return
 	}
-
-	specDesc := strings.Join(specNames, ";") // 商品规格组合描述
-
-	setMap := map[string]interface{}{
-		"user_id":                request.UserID,
-		"goods_id":               goods.ID,
-		"supplier_id":            goods.SupplierID,
-		"stock_id":               request.StockID,
-		"quantity":               request.Quantity,
-		"goods_name":             goods.Name,
-		"goods_spec_description": specDesc,
-		"goods_spec_ids":         stock.GoodsSpecificationIDs,
-		"list_pic_url":           goods.ListPicURL,
-	}
-	id, err = s.dao.AddCart(setMap)
+	cartCreator := newCartCreator(goods, stock, request.UserID, request.Quantity)
+	id, err = s.dao.AddCart(cartCreator.create(specDesc))
 	if err != nil {
 		return
 	}
 	return
 }
 
-func (s *CartService) ListCart4User(userID int64) ([]response.CartItemDTO, error) {
+func (s *CartService) List(userID int64) ([]response.CartItemDTO, error) {
 	cartItems, err := s.dao.SelectByUserID(userID)
 	if err != nil {
 		return nil, err
@@ -150,4 +132,35 @@ func (set *cartResposneWrapper) DTOItems() []response.CartItemDTO {
 		dtos[i] = dto
 	}
 	return dtos
+}
+
+type cartCreator struct {
+	goods    *dto.GoodsInfoDTO
+	stock    *dto.GoodsStockDTO
+	userID   int64
+	quantity decimal.Decimal
+}
+
+func newCartCreator(goods *dto.GoodsInfoDTO,
+	stock *dto.GoodsStockDTO, userID int64, quantity decimal.Decimal) *cartCreator {
+	cc := new(cartCreator)
+	cc.goods = goods
+	cc.stock = stock
+	cc.userID = userID
+	cc.quantity = quantity
+	return cc
+}
+
+func (cc *cartCreator) create(specDesc string) model.Cart {
+	return model.Cart{
+		UserID:               cc.userID,
+		GoodsID:              cc.goods.ID,
+		SupplierID:           cc.goods.SupplierID,
+		StockID:              cc.stock.ID,
+		Quantity:             cc.quantity,
+		GoodsName:            cc.goods.Name,
+		GoodsSpecDescription: specDesc,
+		GoodsSpecIDs:         cc.stock.GoodsSpecificationIDs,
+		ListPicURL:           cc.goods.ListPicURL,
+	}
 }

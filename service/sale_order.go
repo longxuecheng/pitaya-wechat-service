@@ -92,6 +92,7 @@ func (s *SaleOrderService) QuickCreate(req request.SaleOrderQuickAddRequest) (in
 	return orderID, nil
 }
 
+// persistSaleOrder 将业务模型转换成数据库模型并持久化
 func (s *SaleOrderService) persistSaleOrder(so *supplierOrder, tx *sql.Tx) error {
 	saleOrder, saleDetails, err := so.transfer()
 	if err != nil {
@@ -140,10 +141,21 @@ func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest)
 	supplierOrders := orderCreator.rawSupplierOrders()
 	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 		for _, so := range supplierOrders {
-			err := s.persistSaleOrder(so, tx)
-			if err != nil {
-				return err
+			if so.splitable() {
+				splittedSupplierOrders := so.split()
+				for _, splittedSupplierOrder := range splittedSupplierOrders {
+					err := s.persistSaleOrder(splittedSupplierOrder, tx)
+					if err != nil {
+						return err
+					}
+				}
+			} else {
+				err := s.persistSaleOrder(so, tx)
+				if err != nil {
+					return err
+				}
 			}
+
 		}
 		return nil
 	})
@@ -309,7 +321,7 @@ func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error)
 		return model.SaleOrder{}, nil, err
 	}
 	saleOrder := model.SaleOrder{
-		OrderNo:    sql.NullString{String: orderNo},
+		OrderNo:    sql.NullString{Valid: true, String: orderNo},
 		UserID:     so.userID,
 		ProvinceID: so.address.ProvinceID,
 		CityID:     so.address.CityID,
@@ -327,6 +339,7 @@ func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error)
 		saleDetail := ss.saleDetail()
 		saleDetails = append(saleDetails, saleDetail)
 	}
+	saleOrder.OrderAmt = saleOrder.GoodsAmt
 	return saleOrder, saleDetails, nil
 }
 
@@ -347,6 +360,7 @@ func (so *supplierOrder) split() []*supplierOrder {
 				supplierID:     so.supplierID,
 				supplierStocks: ssList,
 			}
+			sorder.bindBasically(so.userID, so.address)
 			sos = append(sos, sorder)
 		}
 	}
@@ -400,9 +414,8 @@ func (c *saleOrderCreator) bindNecessary(stocks []*model.GoodsStock, userID int6
 	for supplierID, carts := range c.supplierCart {
 		supplierOrder := &supplierOrder{
 			supplierID: supplierID,
-			userID:     userID,
-			address:    address,
 		}
+		supplierOrder.bindBasically(userID, address)
 		supplierStocks := make([]supplierStock, len(carts))
 		for idx, cart := range carts {
 			supplierStock := supplierStock{

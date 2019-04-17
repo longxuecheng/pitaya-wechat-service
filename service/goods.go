@@ -5,6 +5,7 @@ import (
 	"pitaya-wechat-service/dao"
 	"pitaya-wechat-service/dto"
 	"pitaya-wechat-service/model"
+	"strings"
 )
 
 var GoodsServiceSingleton *GoodsService
@@ -83,6 +84,23 @@ func (s *GoodsService) Specifications(goodsID int64) ([]*dto.GoodsSpecificationD
 		return nil, err
 	}
 	return buildGoodsSpecificationDTOs(goodsSpecs), nil
+}
+
+func (s *GoodsService) SpecificationDesc(goodsID int64, specIDs []int64, sep string) (string, error) {
+	specs, err := s.Specifications(goodsID)
+	if err != nil {
+		return "", err
+	}
+	specNames := []string{}
+	for _, specID := range specIDs {
+		for _, spec := range specs {
+			if specID == spec.ID {
+				specNames = append(specNames, spec.Value)
+				break
+			}
+		}
+	}
+	return strings.Join(specNames, sep), nil // 商品规格组合描述
 }
 
 func (s *GoodsService) HotGoods() ([]*dto.GoodsItemDTO, error) {

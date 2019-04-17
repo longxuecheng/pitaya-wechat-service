@@ -6,21 +6,16 @@ import (
 	"pitaya-wechat-service/model"
 )
 
-var GoodsStockServiceSingleton *GoodsStockService
-
-// init 在此实现spring中类似注入的功能
-func init() {
-	GoodsStockServiceSingleton = new(GoodsStockService)
-	GoodsStockServiceSingleton.stockDao = dao.GoodsStockDaoSingleton
-}
+var goodsStockServiceSingleton *GoodsStockService
 
 func StockServiceInstance() *GoodsStockService {
-	if GoodsStockServiceSingleton != nil {
-		return GoodsStockServiceSingleton
+	if goodsStockServiceSingleton != nil {
+		return goodsStockServiceSingleton
 	}
-	GoodsStockServiceSingleton = new(GoodsStockService)
-	GoodsStockServiceSingleton.stockDao = dao.GoodsStockDaoSingleton
-	return GoodsStockServiceSingleton
+	goodsStockServiceSingleton = &GoodsStockService{
+		stockDao: dao.GoodsStockDaoSingleton,
+	}
+	return goodsStockServiceSingleton
 }
 
 // GoodsStockService 作为类目服务，实现了api.GoodsStockService接口

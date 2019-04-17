@@ -41,13 +41,13 @@ func AddCart(c *gin.Context) {
 		GoodsCount: total,
 	}
 	cartSummary.CartTotal = cartTotal
-	c.Set("data", cartSummary)
+	middle_ware.SetResponseData(c, cartSummary)
 }
 
 // CartIndex 获取某个用户下的购物车列表
 func CartIndex(c *gin.Context) {
 	userID := middle_ware.MustGetCurrentUser(c)
-	carts, err := cartServiceRf.ListCart4User(userID)
+	carts, err := cartServiceRf.List(userID)
 	if err != nil {
 		panic(err)
 	}
@@ -66,14 +66,14 @@ func CartItemCheck(c *gin.Context) {
 		panic(err)
 	}
 	userID := middle_ware.MustGetCurrentUser(c)
-	carts, err := cartServiceRf.ListCart4User(userID)
+	carts, err := cartServiceRf.List(userID)
 	middle_ware.SetResponseData(c, summaryCart(carts))
 }
 
 // CartCheckout 结算台信息
 func CartCheckout(c *gin.Context) {
 	userID := middle_ware.MustGetCurrentUser(c)
-	carts, err := cartServiceRf.ListCart4User(userID)
+	carts, err := cartServiceRf.List(userID)
 	utils.CheckAndPanic(err)
 	cartsFiltered := filterCartItem(carts, func(cart response.CartItemDTO) bool {
 		return cart.Checked == 1
@@ -100,7 +100,7 @@ func CartCheckout(c *gin.Context) {
 		"actualPrice":      orderTotalPrice.StringFixed(2),
 		"checkedAddress":   checkedAddress,
 	}
-	c.Set("data", resultmap)
+	middle_ware.SetResponseData(c, resultmap)
 }
 
 func filterCartItem(carts []response.CartItemDTO, filterFunc func(input response.CartItemDTO) bool) []response.CartItemDTO {

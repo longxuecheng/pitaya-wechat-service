@@ -8,7 +8,7 @@ var Table_Cart string = "cart"
 
 // Cart 购物车数据库模型
 type Cart struct {
-	ID                   int64           `db:"id"`
+	ID                   int64           `db:"id" exclude:"true"`
 	SupplierID           int64           `db:"supplier_id"`
 	UserID               int64           `db:"user_id"`
 	SessionID            string          `db:"session_id"`

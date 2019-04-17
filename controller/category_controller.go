@@ -43,3 +43,11 @@ func GetCategoryChannels(c *gin.Context) {
 	defer middle_ware.SetResponseData(c, channels)
 	utils.CheckAndPanic(err)
 }
+
+func GetTopCategories(c *gin.Context) {
+	categories, err := categoryServiceReference.GetTopList()
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, map[string]interface{}{
+		"categories": categories,
+	})
+}

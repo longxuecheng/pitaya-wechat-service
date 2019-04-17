@@ -14,6 +14,7 @@ func apiRouter(r *gin.Engine) {
 	categoryGroup.GET("/tree", controller.GetCatogoriesTree)
 	categoryGroup.GET("/info", controller.GetCategoryInfo)
 	categoryGroup.GET("/channel", controller.GetCategoryChannels)
+	categoryGroup.GET("/top/list", controller.GetTopCategories)
 	authGroup := root.Group("/auth")
 	authGroup.POST("/login", controller.LoginByWechat)
 	goodsGroup := root.Group("/goods")
