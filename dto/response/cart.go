@@ -4,8 +4,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// CartItemDTO 购物车列表条目
-type CartItemDTO struct {
+// CartItem 购物车列表条目
+type CartItem struct {
 	ID                   int64           `json:"id"`
 	UserID               int64           `json:"user_id"`
 	SessionID            string          `json:"session_id"`
@@ -22,12 +22,12 @@ type CartItemDTO struct {
 	ListPicURL           string          `json:"list_pic_url"`
 }
 
-type CartSummaryDTO struct {
-	CartList  []CartItemDTO `json:"cartList"`
-	CartTotal CartTotalDTO  `json:"cartTotal"`
+type CartSummary struct {
+	CartList  []CartItem `json:"cartList"`
+	CartTotal CartTotal  `json:"cartTotal"`
 }
 
-type CartTotalDTO struct {
+type CartTotal struct {
 	GoodsCount         int64  `json:"goodsCount"`
 	CheckedGoodsCount  int    `json:"checkedGoodsCount"`
 	CheckedGoodsAmount string `json:"checkedGoodsAmount"`

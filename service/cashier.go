@@ -116,12 +116,12 @@ func (gc *goodsCashier) summary() *response.Cashier {
 
 // cartCashier购物车结算台
 type cartCashier struct {
-	items []response.CartItemDTO
+	items []response.CartItem
 }
 
-func newCartCashier(items []response.CartItemDTO) *cartCashier {
-	filter := func(carts []response.CartItemDTO, filterFunc func(input response.CartItemDTO) bool) []response.CartItemDTO {
-		results := []response.CartItemDTO{}
+func newCartCashier(items []response.CartItem) *cartCashier {
+	filter := func(carts []response.CartItem, filterFunc func(input response.CartItem) bool) []response.CartItem {
+		results := []response.CartItem{}
 		for _, cart := range carts {
 			if filterFunc(cart) {
 				results = append(results, cart)
@@ -130,7 +130,7 @@ func newCartCashier(items []response.CartItemDTO) *cartCashier {
 		return results
 	}
 	cc := &cartCashier{
-		items: filter(items, func(input response.CartItemDTO) bool {
+		items: filter(items, func(input response.CartItem) bool {
 			return input.Checked == 1
 		}),
 	}

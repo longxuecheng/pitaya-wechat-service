@@ -62,7 +62,7 @@ func (s *CartService) AddGoods(request request.CartAddRequest) (id int64, err er
 	return
 }
 
-func (s *CartService) List(userID int64) ([]response.CartItemDTO, error) {
+func (s *CartService) List(userID int64) ([]response.CartItem, error) {
 	cartItems, err := s.dao.SelectByUserID(userID)
 	if err != nil {
 		return nil, err
@@ -109,10 +109,10 @@ func newCartResponseWrapper(items []model.Cart, stockMap map[int64]*model.GoodsS
 	}
 }
 
-func (set *cartResposneWrapper) DTOItems() []response.CartItemDTO {
-	dtos := make([]response.CartItemDTO, len(set.items))
+func (set *cartResposneWrapper) DTOItems() []response.CartItem {
+	dtos := make([]response.CartItem, len(set.items))
 	for i, model := range set.items {
-		dto := response.CartItemDTO{}
+		dto := response.CartItem{}
 		dto.ID = model.ID
 		dto.GoodsName = model.GoodsName
 		dto.GoodsSN = model.GoodsSN

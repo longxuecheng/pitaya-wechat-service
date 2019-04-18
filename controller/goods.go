@@ -14,7 +14,7 @@ import (
 
 var (
 	goodsServiceRf         api.IGoodsService         = service.GoodsServiceSingleton
-	stockServiceRf         api.IGoodsStockService    = service.GoodsStockServiceSingleton
+	stockServiceRf         api.IGoodsStockService    = service.StockServiceInstance()
 	goodsImgServiceRf      api.IGoodsImgService      = service.GoodsImgServiceSingleton
 	specificationServiceRf api.ISpecificationService = service.SpecificationServiceSingleton
 )

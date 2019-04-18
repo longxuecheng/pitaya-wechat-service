@@ -2,10 +2,8 @@ package controller
 
 import (
 	"pitaya-wechat-service/api"
-	"pitaya-wechat-service/dto"
 	"pitaya-wechat-service/dto/request"
 	"pitaya-wechat-service/dto/response"
-	"pitaya-wechat-service/facility/utils"
 	"pitaya-wechat-service/middle_ware"
 	"pitaya-wechat-service/service"
 
@@ -36,8 +34,8 @@ func AddCart(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	cartSummary := response.CartSummaryDTO{}
-	cartTotal := response.CartTotalDTO{
+	cartSummary := response.CartSummary{}
+	cartTotal := response.CartTotal{
 		GoodsCount: total,
 	}
 	cartSummary.CartTotal = cartTotal
@@ -70,50 +68,7 @@ func CartItemCheck(c *gin.Context) {
 	middle_ware.SetResponseData(c, summaryCart(carts))
 }
 
-// CartCheckout 结算台信息
-func CartCheckout(c *gin.Context) {
-	userID := middle_ware.MustGetCurrentUser(c)
-	carts, err := cartServiceRf.List(userID)
-	utils.CheckAndPanic(err)
-	cartsFiltered := filterCartItem(carts, func(cart response.CartItemDTO) bool {
-		return cart.Checked == 1
-	})
-	cartSum := summaryCart(cartsFiltered)
-	expressFee := decimal.NewFromFloat32(20.35)
-	goodsTotalPrice, _ := decimal.NewFromString(cartSum.CartTotal.CheckedGoodsAmount)
-	orderTotalPrice := goodsTotalPrice.Add(expressFee)
-	addressList, err := cartRf_UserService.AddressList(userID)
-	var checkedAddress = dto.UserAddressDTO{}
-	for _, address := range addressList {
-		if address.IsDefault {
-			checkedAddress = address
-			break
-		}
-	}
-	utils.CheckAndPanic(err)
-
-	resultmap := map[string]interface{}{
-		"checkedGoodsList": cartsFiltered,
-		"expressFee":       expressFee.StringFixed(2),
-		"goodsTotalPrice":  goodsTotalPrice.StringFixed(2),
-		"orderTotalPrice":  orderTotalPrice.StringFixed(2),
-		"actualPrice":      orderTotalPrice.StringFixed(2),
-		"checkedAddress":   checkedAddress,
-	}
-	middle_ware.SetResponseData(c, resultmap)
-}
-
-func filterCartItem(carts []response.CartItemDTO, filterFunc func(input response.CartItemDTO) bool) []response.CartItemDTO {
-	results := []response.CartItemDTO{}
-	for _, cart := range carts {
-		if filterFunc(cart) {
-			results = append(results, cart)
-		}
-	}
-	return results
-}
-
-func summaryCart(carts []response.CartItemDTO) response.CartSummaryDTO {
+func summaryCart(carts []response.CartItem) response.CartSummary {
 	checkedGoodsCount := 0
 	checkedGoodsAmount := decimal.Zero
 	for _, cart := range carts {
@@ -122,8 +77,8 @@ func summaryCart(carts []response.CartItemDTO) response.CartSummaryDTO {
 			checkedGoodsAmount = checkedGoodsAmount.Add(cart.RetailPrice.Mul(cart.Quantity))
 		}
 	}
-	cartSummary := response.CartSummaryDTO{}
-	cartTotal := response.CartTotalDTO{
+	cartSummary := response.CartSummary{}
+	cartTotal := response.CartTotal{
 		GoodsCount:         int64(len(carts)),
 		CheckedGoodsCount:  checkedGoodsCount,
 		CheckedGoodsAmount: checkedGoodsAmount.StringFixed(2),
