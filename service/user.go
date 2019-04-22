@@ -31,39 +31,39 @@ func (s *UserService) GetList() ([]*dto.UserDTO, error) {
 	return buildUserDTOs(users), nil
 }
 
-func (s *UserService) DefaultAddress(userID int64) (dto.UserAddressDTO, error) {
-	var uad = dto.UserAddressDTO{}
+func (s *UserService) DefaultAddress(userID int64) (dto.UserAddress, error) {
+	var uad = dto.UserAddress{}
 	ads, err := s.addressDao.SelectByUserID(userID)
 	if err != nil {
 		return uad, err
 	}
 	for _, ad := range ads {
 		if ad.IsDefault {
-			uad = installUserAddressDTO(ad)
+			uad = installUserAddress(ad)
 			break
 		}
 	}
 	return uad, nil
 }
 
-func (s *UserService) AddressList(userID int64) ([]dto.UserAddressDTO, error) {
+func (s *UserService) AddressList(userID int64) ([]dto.UserAddress, error) {
 	ads, err := s.addressDao.SelectByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
-	dtos := make([]dto.UserAddressDTO, len(ads))
+	dtos := make([]dto.UserAddress, len(ads))
 	for i, ad := range ads {
-		dtos[i] = installUserAddressDTO(ad)
+		dtos[i] = installUserAddress(ad)
 	}
 	return dtos, nil
 }
 
-func (s *UserService) GetAddressByID(ID int64) (dto dto.UserAddressDTO, err error) {
+func (s *UserService) GetAddressByID(ID int64) (dto dto.UserAddress, err error) {
 	uad, err := s.addressDao.SelectByID(ID)
 	if err != nil {
 		return
 	}
-	return installUserAddressDTO(uad), nil
+	return installUserAddress(uad), nil
 }
 
 func (s *UserService) CreateAddress(userID int64, req request.UserAddressAddRequest) (id int64, err error) {
@@ -105,8 +105,8 @@ func (s *UserService) Login(openID string, nickName string, avatarURL string) (*
 	return user, nil
 }
 
-func installUserAddressDTO(ad model.UserAddress) dto.UserAddressDTO {
-	dto := dto.UserAddressDTO{}
+func installUserAddress(ad model.UserAddress) dto.UserAddress {
+	dto := dto.UserAddress{}
 	dto.ID = ad.ID
 	dto.Name = ad.Name
 	dto.IsDefault = ad.IsDefault

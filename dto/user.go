@@ -6,7 +6,7 @@ type UserDTO struct {
 	Email   string `json:"email"`
 }
 
-type UserAddressDTO struct {
+type UserAddress struct {
 	ID         int    `json:"id"`
 	Name       string `json:"name"`
 	FullRegion string `json:"full_region"`

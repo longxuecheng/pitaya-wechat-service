@@ -6,16 +6,16 @@ import (
 	"pitaya-wechat-service/model"
 )
 
-var goodsStockServiceSingleton *GoodsStockService
+var stockServiceSingleton *GoodsStockService
 
 func StockServiceInstance() *GoodsStockService {
-	if goodsStockServiceSingleton != nil {
-		return goodsStockServiceSingleton
+	if stockServiceSingleton != nil {
+		return stockServiceSingleton
 	}
-	goodsStockServiceSingleton = &GoodsStockService{
+	stockServiceSingleton = &GoodsStockService{
 		stockDao: dao.GoodsStockDaoSingleton,
 	}
-	return goodsStockServiceSingleton
+	return stockServiceSingleton
 }
 
 // GoodsStockService 作为类目服务，实现了api.GoodsStockService接口

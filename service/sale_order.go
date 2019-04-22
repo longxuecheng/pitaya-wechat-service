@@ -75,13 +75,13 @@ func (s *SaleOrderService) QuickCreate(req request.SaleOrderQuickAddRequest) (in
 		if so.splitable() {
 			splittedSupplierOrders := so.split()
 			for _, splittedSupplierOrder := range splittedSupplierOrders {
-				err := s.persistSaleOrder(splittedSupplierOrder, tx)
+				err := s.save(splittedSupplierOrder, tx)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			err := s.persistSaleOrder(so, tx)
+			err := s.save(so, tx)
 			if err != nil {
 				return err
 			}
@@ -92,8 +92,8 @@ func (s *SaleOrderService) QuickCreate(req request.SaleOrderQuickAddRequest) (in
 	return orderID, nil
 }
 
-// persistSaleOrder 将业务模型转换成数据库模型并持久化
-func (s *SaleOrderService) persistSaleOrder(so *supplierOrder, tx *sql.Tx) error {
+// save 将业务模型转换成数据库模型并持久化
+func (s *SaleOrderService) save(so *supplierOrder, tx *sql.Tx) error {
 	saleOrder, saleDetails, err := so.transfer()
 	if err != nil {
 		return err
@@ -144,13 +144,13 @@ func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest)
 			if so.splitable() {
 				splittedSupplierOrders := so.split()
 				for _, splittedSupplierOrder := range splittedSupplierOrders {
-					err := s.persistSaleOrder(splittedSupplierOrder, tx)
+					err := s.save(splittedSupplierOrder, tx)
 					if err != nil {
 						return err
 					}
 				}
 			} else {
-				err := s.persistSaleOrder(so, tx)
+				err := s.save(so, tx)
 				if err != nil {
 					return err
 				}
@@ -303,11 +303,11 @@ func (ss supplierStock) saleDetail() model.SaleDetail {
 type supplierOrder struct {
 	supplierID     int64
 	userID         int64
-	address        dto.UserAddressDTO
+	address        dto.UserAddress
 	supplierStocks []supplierStock
 }
 
-func (so *supplierOrder) bindBasically(userID int64, address dto.UserAddressDTO) {
+func (so *supplierOrder) bindBasically(userID int64, address dto.UserAddress) {
 	so.userID = userID
 	so.address = address
 }
@@ -407,7 +407,7 @@ func (c *saleOrderCreator) setGoods(goods []*model.Goods) {
 	c.goodsMap = goodsSet.Map()
 }
 
-func (c *saleOrderCreator) bindNecessary(stocks []*model.GoodsStock, userID int64, address dto.UserAddressDTO) {
+func (c *saleOrderCreator) bindNecessary(stocks []*model.GoodsStock, userID int64, address dto.UserAddress) {
 	stockSet := model.NewStockSet(stocks)
 	stockMap := stockSet.Map()
 	supplierOrders := []*supplierOrder{}
