@@ -1,6 +1,6 @@
 package api
 
-import "pitaya-wechat-service/dto"
+import "gotrue/dto"
 
 type IAttributeService interface {
 	GetByIDs(IDs []int64) ([]*dto.AttributeDTO, error)

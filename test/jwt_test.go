@@ -1,8 +1,8 @@
 package test
 
 import (
-	"pitaya-wechat-service/model"
-	"pitaya-wechat-service/service"
+	"gotrue/model"
+	"gotrue/service"
 	"testing"
 	"time"
 

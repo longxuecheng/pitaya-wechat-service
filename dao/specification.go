@@ -1,8 +1,8 @@
 package dao
 
 import (
-	"pitaya-wechat-service/model"
-	"pitaya-wechat-service/sys"
+	"gotrue/model"
+	"gotrue/sys"
 
 	sq "github.com/Masterminds/squirrel"
 )

@@ -1,9 +1,9 @@
 package service
 
 import (
-	"pitaya-wechat-service/dao"
-	"pitaya-wechat-service/dto/response"
-	"pitaya-wechat-service/model"
+	"gotrue/dao"
+	"gotrue/dto/response"
+	"gotrue/model"
 )
 
 // RegionServiceSingleton 是RegionService的一个单例

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"pitaya-wechat-service/facility/utils"
-	"pitaya-wechat-service/settings"
+	"gotrue/facility/utils"
+	"gotrue/settings"
 
 	sq "github.com/Masterminds/squirrel"
 	_ "github.com/go-sql-driver/mysql"

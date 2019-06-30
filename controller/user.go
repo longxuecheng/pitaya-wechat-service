@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"pitaya-wechat-service/api"
-	"pitaya-wechat-service/dto/request"
-	"pitaya-wechat-service/facility/utils"
-	"pitaya-wechat-service/middle_ware"
-	"pitaya-wechat-service/service"
+	"gotrue/api"
+	"gotrue/dto/request"
+	"gotrue/facility/utils"
+	"gotrue/middle_ware"
+	"gotrue/service"
+	"gotrue/wechat"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,7 +46,7 @@ func AddNewAddress(c *gin.Context) {
 func LoginByWechat(c *gin.Context) {
 	req := request.WechatLogin{}
 	utils.CheckAndPanic(c.BindJSON(&req))
-	wechatResp, err := service.GetWechatUserInfo(req.Code)
+	wechatResp, err := wechat.WechatService().UserInfo(req.Code)
 	utils.CheckAndPanic(err)
 	user, err := userServiceRf.Login(wechatResp.OpenID, req.NickName, req.AvatarURL)
 	utils.CheckAndPanic(err)
@@ -57,7 +58,7 @@ func LoginByWechat(c *gin.Context) {
 		NickName:  user.NickName,
 		AvatarURL: user.AvatarURL,
 	}
-	middle_ware.SetResponseData(c, map[string]interface{}{
+	middle_ware.SetResponseData(c, gin.H{
 		"token":    accessToken,
 		"userInfo": wechatUser,
 	})

@@ -1,10 +1,10 @@
 package service
 
 import (
-	"pitaya-wechat-service/dao"
-	"pitaya-wechat-service/dto"
-	"pitaya-wechat-service/dto/request"
-	"pitaya-wechat-service/model"
+	"gotrue/dao"
+	"gotrue/dto"
+	"gotrue/dto/request"
+	"gotrue/model"
 )
 
 var UserServiceSingleton *UserService
@@ -66,6 +66,14 @@ func (s *UserService) GetAddressByID(ID int64) (dto dto.UserAddress, err error) 
 	return installUserAddress(uad), nil
 }
 
+func (s *UserService) GetUserByID(userID int64) (dto *dto.UserDTO, err error) {
+	user, err := s.userDao.SelectByID(userID)
+	if err != nil {
+		return
+	}
+	return installUserDTO(user), nil
+}
+
 func (s *UserService) CreateAddress(userID int64, req request.UserAddressAddRequest) (id int64, err error) {
 	setMap := map[string]interface{}{
 		"name":        req.Name,
@@ -123,6 +131,7 @@ func installUserDTO(model *model.User) *dto.UserDTO {
 	userDto.Name = model.Name.String
 	userDto.PhoneNo = model.PhoneNo.String
 	userDto.Email = model.Email.String
+	userDto.OpenID = model.WechatID
 	return userDto
 }
 

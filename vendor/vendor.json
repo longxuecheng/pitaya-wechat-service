@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "oxgG63/gZpO2y+HRksKib9P4bCI=",
+			"path": "github.com/mileusna/crontab",
+			"revision": "f182897de5d8487e9bf486332700b6e41e3320d5",
+			"revisionTime": "2018-09-09T01:30:13Z"
+		}
+	],
+	"rootPath": "gotrue"
+}

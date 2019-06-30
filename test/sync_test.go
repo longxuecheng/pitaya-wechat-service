@@ -10,6 +10,29 @@ import (
 	"time"
 )
 
+var a int
+var once sync.Once
+
+func setup() {
+	a = a + 1
+}
+
+func doprint() {
+	once.Do(setup)
+	println(a)
+}
+
+func twoprint() {
+	for n := 0; n < 100; n++ {
+		go doprint()
+		println(n)
+	}
+}
+
+func TestOnece(t *testing.T) {
+	twoprint()
+}
+
 func TestPool(t *testing.T) {
 	w := sync.WaitGroup{}
 	for i := 0; i < 100; i++ {

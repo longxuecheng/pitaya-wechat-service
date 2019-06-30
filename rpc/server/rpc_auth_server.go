@@ -10,7 +10,7 @@ import (
 	"net"
 	"time"
 
-	"pitaya-wechat-service/rpc"
+	"gotrue/rpc"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/muesli/cache2go"

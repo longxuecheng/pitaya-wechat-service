@@ -2,7 +2,7 @@ package middle_ware
 
 import (
 	"net/http"
-	"pitaya-wechat-service/service"
+	"gotrue/service"
 
 	"github.com/gin-gonic/gin"
 )

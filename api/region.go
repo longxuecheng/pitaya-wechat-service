@@ -1,7 +1,7 @@
 package api
 
 import (
-	"pitaya-wechat-service/dto/response"
+	"gotrue/dto/response"
 )
 
 // IRegionService 是区域相关服务

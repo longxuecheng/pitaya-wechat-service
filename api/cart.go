@@ -1,8 +1,8 @@
 package api
 
 import (
-	"pitaya-wechat-service/dto/request"
-	"pitaya-wechat-service/dto/response"
+	"gotrue/dto/request"
+	"gotrue/dto/response"
 )
 
 // ICartService 是购物车相关服务

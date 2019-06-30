@@ -22,10 +22,20 @@ func StructToMap(i interface{}, fieldTag string, excludeTag ...string) map[strin
 		if excludeTag != nil && struct_field.Tag.Get(excludeTag[0]) == "true" {
 			continue
 		}
-		field_tag := struct_field.Tag.Get(fieldTag)
-		field_val := v_t.Field(i)
-		filed_interface := field_val.Interface()
-		field_map[field_tag] = filed_interface
+		if struct_field.Anonymous && v_t.Field(i).Kind() == reflect.Struct {
+			fv := v_t.Field(i)
+			fi := fv.Interface()
+			m1 := StructToMap(fi, fieldTag, excludeTag...)
+			for k, v := range m1 {
+				field_map[k] = v
+			}
+		} else {
+			field_tag := struct_field.Tag.Get(fieldTag)
+			field_val := v_t.Field(i)
+			filed_interface := field_val.Interface()
+			field_map[field_tag] = filed_interface
+		}
+
 	}
 	return field_map
 }

@@ -1,12 +1,12 @@
 package service
 
 import (
-	"pitaya-wechat-service/dao"
-	"pitaya-wechat-service/dto"
-	"pitaya-wechat-service/dto/request"
-	"pitaya-wechat-service/dto/response"
-	"pitaya-wechat-service/facility/utils"
-	"pitaya-wechat-service/model"
+	"gotrue/dao"
+	"gotrue/dto"
+	"gotrue/dto/request"
+	"gotrue/dto/response"
+	"gotrue/facility/utils"
+	"gotrue/model"
 
 	"github.com/shopspring/decimal"
 )

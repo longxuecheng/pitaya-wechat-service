@@ -1,4 +1,4 @@
-BINARY_NAME=pitaya-wechat-service
+BINARY_NAME=gotrue
 DEST_DIR=/usr/pitaya/
 APP_SERVER=root@tencent_vm
 

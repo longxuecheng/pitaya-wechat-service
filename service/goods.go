@@ -1,10 +1,10 @@
 package service
 
 import (
-	"pitaya-wechat-service/api"
-	"pitaya-wechat-service/dao"
-	"pitaya-wechat-service/dto"
-	"pitaya-wechat-service/model"
+	"gotrue/api"
+	"gotrue/dao"
+	"gotrue/dto"
+	"gotrue/model"
 	"strings"
 )
 

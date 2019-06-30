@@ -2,8 +2,8 @@ package test
 
 import (
 	"database/sql"
-	"pitaya-wechat-service/dao"
-	"pitaya-wechat-service/sys"
+	"gotrue/dao"
+	"gotrue/sys"
 	"testing"
 )
 

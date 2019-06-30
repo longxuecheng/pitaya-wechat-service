@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"pitaya-wechat-service/dto/request"
-	"pitaya-wechat-service/facility/utils"
-	"pitaya-wechat-service/middle_ware"
-	"pitaya-wechat-service/service"
+	"gotrue/dto/request"
+	"gotrue/facility/utils"
+	"gotrue/middle_ware"
+	"gotrue/service"
 
 	"github.com/gin-gonic/gin"
 )

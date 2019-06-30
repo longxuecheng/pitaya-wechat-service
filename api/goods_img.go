@@ -1,6 +1,6 @@
 package api
 
-import "pitaya-wechat-service/dto"
+import "gotrue/dto"
 
 type IGoodsImgService interface {
 	GetByGoodsID(goodsID int64) ([]*dto.GoodsGalleryDTO, error)

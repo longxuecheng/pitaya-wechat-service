@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -50,4 +51,19 @@ func TestCache(t *testing.T) {
 
 	// And wipe the entire cache table.
 	cache.Flush()
+}
+
+func TestMultiSameKeyCache(t *testing.T) {
+	cache := cache2go.Cache("myCache")
+	item := cache.Add("k1", 5*time.Second, "v1")
+	fmt.Println(item.CreatedOn())
+	time.Sleep(4 * time.Second)
+	cache.Add("k1", 5*time.Second, "v2")
+	item, err := cache.Value("k1")
+	if err != nil {
+		t.Error("item of k1 is not exists!")
+	}
+	fmt.Println(item.CreatedOn())
+	fmt.Println("total item number is ", cache.Count())
+	fmt.Println(item.Data())
 }

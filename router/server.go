@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"pitaya-wechat-service/middle_ware"
+	"gotrue/middle_ware"
 	"time"
 
 	"github.com/gin-gonic/gin"

@@ -1,6 +1,6 @@
 package api
 
-import "pitaya-wechat-service/dto"
+import "gotrue/dto"
 
 // ICategoryService is a category service's interface
 type ICategoryService interface {

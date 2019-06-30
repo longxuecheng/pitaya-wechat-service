@@ -4,6 +4,7 @@ type UserDTO struct {
 	Name    string `json:"name"`
 	PhoneNo string `json:"phoneNo"`
 	Email   string `json:"email"`
+	OpenID  string `json:"-"`
 }
 
 type UserAddress struct {

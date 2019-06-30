@@ -2,9 +2,9 @@ package dao
 
 import (
 	"database/sql"
-	"pitaya-wechat-service/facility/utils"
-	"pitaya-wechat-service/model"
-	"pitaya-wechat-service/sys"
+	"gotrue/facility/utils"
+	"gotrue/model"
+	"gotrue/sys"
 
 	sq "github.com/Masterminds/squirrel"
 )

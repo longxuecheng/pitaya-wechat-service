@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"pitaya-wechat-service/api"
-	"pitaya-wechat-service/facility/utils"
-	"pitaya-wechat-service/service"
+	"gotrue/api"
+	"gotrue/facility/utils"
+	"gotrue/service"
 	"strconv"
 
 	"github.com/gin-gonic/gin"

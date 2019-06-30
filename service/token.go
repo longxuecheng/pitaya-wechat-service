@@ -1,8 +1,8 @@
 package service
 
 import (
-	"pitaya-wechat-service/model"
-	"pitaya-wechat-service/sys"
+	"gotrue/model"
+	"gotrue/sys"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"

@@ -1,9 +1,9 @@
 package service
 
 import (
-	"pitaya-wechat-service/dao"
-	"pitaya-wechat-service/dto"
-	"pitaya-wechat-service/model"
+	"gotrue/dao"
+	"gotrue/dto"
+	"gotrue/model"
 )
 
 var AttributeServiceSingleton *AttributeService

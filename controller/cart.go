@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"pitaya-wechat-service/api"
-	"pitaya-wechat-service/dto/request"
-	"pitaya-wechat-service/dto/response"
-	"pitaya-wechat-service/middle_ware"
-	"pitaya-wechat-service/service"
+	"gotrue/api"
+	"gotrue/dto/request"
+	"gotrue/dto/response"
+	"gotrue/middle_ware"
+	"gotrue/service"
 
 	"github.com/shopspring/decimal"
 

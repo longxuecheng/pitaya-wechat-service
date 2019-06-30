@@ -1,9 +1,9 @@
 package api
 
 import (
-	"pitaya-wechat-service/dto"
-	"pitaya-wechat-service/dto/request"
-	"pitaya-wechat-service/model"
+	"gotrue/dto"
+	"gotrue/dto/request"
+	"gotrue/model"
 )
 
 // IUserService is a user service interface

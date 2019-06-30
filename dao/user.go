@@ -2,8 +2,8 @@ package dao
 
 import (
 	"database/sql"
-	"pitaya-wechat-service/model"
-	"pitaya-wechat-service/sys"
+	"gotrue/model"
+	"gotrue/sys"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -33,6 +33,18 @@ func (dao *UserDao) SelectAll() ([]*model.User, error) {
 func (dao *UserDao) SelectByWechatID(wechatID string) (*model.User, error) {
 	users := new(model.User)
 	err := dao.db.SelectOneDSL(users, columns_user, model.Table_User, squirrel.Eq{"wechat_id": wechatID})
+	if err != nil {
+		if sql.ErrNoRows == err {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return users, err
+}
+
+func (dao *UserDao) SelectByID(userID int64) (*model.User, error) {
+	users := new(model.User)
+	err := dao.db.SelectOneDSL(users, columns_user, model.Table_User, squirrel.Eq{"id": userID})
 	if err != nil {
 		if sql.ErrNoRows == err {
 			return nil, nil

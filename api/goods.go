@@ -1,6 +1,6 @@
 package api
 
-import "pitaya-wechat-service/dto"
+import "gotrue/dto"
 
 // IGoodsService 商品服务
 type IGoodsService interface {

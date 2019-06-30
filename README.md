@@ -1,1 +1,1 @@
-# pitaya-wechat-service
+# gotrue

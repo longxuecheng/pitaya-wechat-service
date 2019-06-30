@@ -1,6 +1,6 @@
 package api
 
-import "pitaya-wechat-service/dto"
+import "gotrue/dto"
 
 // ISpecificationService 规格属性服务
 type ISpecificationService interface {

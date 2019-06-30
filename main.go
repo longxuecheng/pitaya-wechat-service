@@ -1,8 +1,8 @@
 package main
 
 import (
+	"gotrue/router"
 	_ "net/http/pprof"
-	"pitaya-wechat-service/router"
 )
 
 func main() {

@@ -1,9 +1,9 @@
 package api
 
 import (
-	"pitaya-wechat-service/dto/pagination"
-	"pitaya-wechat-service/dto/request"
-	"pitaya-wechat-service/dto/response"
+	"gotrue/dto/pagination"
+	"gotrue/dto/request"
+	"gotrue/dto/response"
 )
 
 // ISaleOrderService is a order service interface

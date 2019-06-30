@@ -1,7 +1,8 @@
 package test
 
 import (
-	"pitaya-wechat-service/facility/utils"
+	"fmt"
+	"gotrue/facility/utils"
 	"reflect"
 	"testing"
 )
@@ -9,6 +10,11 @@ import (
 type User1 struct {
 	Name    string `ttt:"name" exclude:"true"`
 	TestAge int    `ttt:"test_age"`
+	Addr
+}
+
+type Addr struct {
+	Hello string `ttt:"address"`
 }
 
 func TestReflect(t *testing.T) {
@@ -50,9 +56,13 @@ func TestReflect(t *testing.T) {
 }
 
 func TestMyStruct2Map(t *testing.T) {
+	ad := Addr{
+		Hello: "address",
+	}
 	var u interface{} = &User1{
 		Name:    "lxc",
 		TestAge: 15,
+		Addr:    ad,
 	}
-	t.Logf("transformed map is %v", utils.StructToMap(u, "ttt", "exclude"))
+	fmt.Printf("transformed map is %v \n", utils.StructToMap(u, "ttt", "exclude"))
 }
