@@ -1,24 +1,29 @@
 package controller
 
 import (
+	"gotrue/dto"
 	"gotrue/dto/request"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
 	"gotrue/service"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	cashierServiceRef     = service.CashierServiceServiceInstance()
-	userServiceRf4Cashier = service.UserServiceInstance()
-)
-
+// PreviewCashierFromCart 从购物车进入结算台预览
 func PreviewCashierFromCart(c *gin.Context) {
 	userID := middle_ware.MustGetCurrentUser(c)
-	cashier, err := cashierServiceRef.CartCheckout(userID)
+	addressIDString := c.Query("addressId")
+	if addressIDString == "" {
+		middle_ware.SetResponseDataWithStatus(c, nil, http.StatusBadRequest)
+		return
+	}
+	addressID, err := utils.ParseInt64(addressIDString)
 	utils.CheckAndPanic(err)
-	address, err := userServiceRf4Cashier.DefaultAddress(userID)
+	cashier, err := service.CashierServiceServiceInstance().CartCheckout(userID)
+	utils.CheckAndPanic(err)
+	address, err := getUserAddress(addressID, userID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, gin.H{
 		"cashier": cashier,
@@ -26,17 +31,25 @@ func PreviewCashierFromCart(c *gin.Context) {
 	})
 }
 
+// PreviewCashierFromStock 从商品直接进入结算台
 func PreviewCashierFromStock(c *gin.Context) {
 	userID := middle_ware.MustGetCurrentUser(c)
 	req := &request.CashierPreview{}
 	err := c.BindJSON(req)
 	utils.CheckAndPanic(err)
-	cashier, err := cashierServiceRef.QuickCheckout(*req)
+	cashier, err := service.CashierServiceServiceInstance().QuickCheckout(*req)
 	utils.CheckAndPanic(err)
-	address, err := userServiceRf4Cashier.DefaultAddress(userID)
+	address, err := getUserAddress(req.AddressID, userID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, gin.H{
 		"cashier": cashier,
 		"address": address,
 	})
+}
+
+func getUserAddress(addressID, userID int64) (*dto.UserAddress, error) {
+	if addressID == 0 {
+		return service.UserServiceInstance().DefaultAddress(userID)
+	}
+	return service.UserServiceInstance().GetAddressByID(addressID)
 }

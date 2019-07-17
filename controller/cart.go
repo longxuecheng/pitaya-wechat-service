@@ -1,20 +1,15 @@
 package controller
 
 import (
-	"gotrue/api"
 	"gotrue/dto/request"
 	"gotrue/dto/response"
+	"gotrue/facility/utils"
 	"gotrue/middle_ware"
 	"gotrue/service"
 
 	"github.com/shopspring/decimal"
 
 	"github.com/gin-gonic/gin"
-)
-
-var (
-	cartServiceRf      api.ICartService = service.CartServiceInstance()
-	cartRf_UserService api.IUserService = service.UserServiceInstance()
 )
 
 // AddCart 向购物车添加商品
@@ -26,11 +21,11 @@ func AddCart(c *gin.Context) {
 	}
 	userID := middle_ware.MustGetCurrentUser(c)
 	req.UserID = userID
-	_, err = cartServiceRf.AddGoods(req)
+	_, err = service.CartServiceInstance().AddGoods(req)
 	if err != nil {
 		panic(err)
 	}
-	total, err := cartServiceRf.GoodsCount(req.UserID)
+	total, err := service.CartServiceInstance().GoodsCount(req.UserID)
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +40,7 @@ func AddCart(c *gin.Context) {
 // CartIndex 获取某个用户下的购物车列表
 func CartIndex(c *gin.Context) {
 	userID := middle_ware.MustGetCurrentUser(c)
-	carts, err := cartServiceRf.List(userID)
+	carts, err := service.CartServiceInstance().List(userID)
 	if err != nil {
 		panic(err)
 	}
@@ -59,13 +54,20 @@ func CartItemCheck(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	err = cartServiceRf.CheckItem(req)
+	err = service.CartServiceInstance().CheckItem(req)
 	if err != nil {
 		panic(err)
 	}
 	userID := middle_ware.MustGetCurrentUser(c)
-	carts, err := cartServiceRf.List(userID)
+	carts, err := service.CartServiceInstance().List(userID)
 	middle_ware.SetResponseData(c, summaryCart(carts))
+}
+
+func CartGoodsCount(c *gin.Context) {
+	userID := middle_ware.MustGetCurrentUser(c)
+	count, err := service.CartServiceInstance().GoodsCount(userID)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, count)
 }
 
 func summaryCart(carts []response.CartItem) response.CartSummary {

@@ -68,6 +68,7 @@ func DBConnection() *sqlx.DB {
 }
 
 func (db *EasyDB) ExecTx(execFunc func(tx *sql.Tx) error) {
+
 	tx, err := db.connection.Begin()
 	utils.CheckAndPanic(err)
 	err = execFunc(tx)
@@ -167,13 +168,13 @@ func (db *EasyDB) Insert(tableName string, setMap map[string]interface{}, tx ...
 }
 
 func (db *EasyDB) UpdateTx(tx *sql.Tx, tableName string, setMap map[string]interface{}, pred interface{}, args ...interface{}) (rowsAffected int64, err error) {
-	query, args, err := db.buildUpdtaSQL(tableName, setMap, pred, args)
+	query, args, err := db.buildUpdtaSQL(tableName, setMap, pred, args...)
 	if err != nil {
 		return
 	}
 	var result sql.Result
 	if tx != nil {
-		result, err = tx.ExecContext(db.ctx, query, args)
+		result, err = tx.ExecContext(db.ctx, query, args...)
 		if err != nil {
 			return
 		}

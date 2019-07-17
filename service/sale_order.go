@@ -72,6 +72,7 @@ func (s *SaleOrderService) QuickCreate(req request.SaleOrderQuickAddRequest) (in
 			supplierStocks: ss,
 		}
 		so.bindBasically(req.UserID, address)
+
 		if so.splitable() {
 			splittedSupplierOrders := so.split()
 			for _, splittedSupplierOrder := range splittedSupplierOrders {
@@ -303,11 +304,11 @@ func (ss supplierStock) saleDetail() model.SaleDetail {
 type supplierOrder struct {
 	supplierID     int64
 	userID         int64
-	address        dto.UserAddress
+	address        *dto.UserAddress
 	supplierStocks []supplierStock
 }
 
-func (so *supplierOrder) bindBasically(userID int64, address dto.UserAddress) {
+func (so *supplierOrder) bindBasically(userID int64, address *dto.UserAddress) {
 	so.userID = userID
 	so.address = address
 }
@@ -407,7 +408,7 @@ func (c *saleOrderCreator) setGoods(goods []*model.Goods) {
 	c.goodsMap = goodsSet.Map()
 }
 
-func (c *saleOrderCreator) bindNecessary(stocks []*model.GoodsStock, userID int64, address dto.UserAddress) {
+func (c *saleOrderCreator) bindNecessary(stocks []*model.GoodsStock, userID int64, address *dto.UserAddress) {
 	stockSet := model.NewStockSet(stocks)
 	stockMap := stockSet.Map()
 	supplierOrders := []*supplierOrder{}

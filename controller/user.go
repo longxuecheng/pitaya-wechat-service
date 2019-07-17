@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"gotrue/api"
 	"gotrue/dto/request"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
@@ -14,11 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var userServiceRf api.IUserService = service.UserServiceInstance()
-
 // GetUserListByConditions 获取用户列表
 func GetUserListByConditions(c *gin.Context) {
-	users, err := userServiceRf.GetList()
+	users, err := service.UserServiceInstance().GetList()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, "")
 	}
@@ -30,7 +27,7 @@ func UserAddressDelete(c *gin.Context) {
 
 func UserAddressList(c *gin.Context) {
 	userID := middle_ware.MustGetCurrentUser(c)
-	addresses, err := userServiceRf.AddressList(userID)
+	addresses, err := service.UserServiceInstance().AddressList(userID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, addresses)
 }
@@ -49,7 +46,7 @@ func AddNewAddress(c *gin.Context) {
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	id, err := userServiceRf.CreateAddress(userID, req)
+	id, err := service.UserServiceInstance().CreateAddress(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, id)
 }
@@ -60,7 +57,7 @@ func LoginByWechat(c *gin.Context) {
 	utils.CheckAndPanic(c.BindJSON(&req))
 	wechatResp, err := wechat.WechatService().UserInfo(req.Code)
 	utils.CheckAndPanic(err)
-	user, err := userServiceRf.Login(wechatResp.OpenID, req.NickName, req.AvatarURL)
+	user, err := service.UserServiceInstance().Login(wechatResp.OpenID, req.NickName, req.AvatarURL)
 	utils.CheckAndPanic(err)
 	log.Println(fmt.Sprintf("LoginByWechat response code is %d jscode is %s nickname %s avatar url %s", wechatResp.ErrorCode, req.Code, req.NickName, req.AvatarURL))
 	utils.CheckAndPanic(err)

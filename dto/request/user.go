@@ -1,7 +1,7 @@
 package request
 
 type UserAddressAddRequest struct {
-	ID         int    `json:"id"`
+	ID         int64  `json:"id"`
 	Name       string `json:"name"`
 	ProvinceID int    `json:"province_id"`
 	CityID     int    `json:"city_id"`

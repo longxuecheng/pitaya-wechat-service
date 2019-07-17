@@ -28,6 +28,7 @@ func apiRouter(r *gin.Engine) {
 	cartGroup.POST("add", controller.AddCart)
 	cartGroup.GET("index", controller.CartIndex)
 	cartGroup.POST("checked", controller.CartItemCheck)
+	cartGroup.GET("goodscount", controller.CartGoodsCount)
 
 	cashierGroup := root.Group("/cashier", middle_ware.AuthCheck())
 	cashierGroup.GET("preview/cart", controller.PreviewCashierFromCart)

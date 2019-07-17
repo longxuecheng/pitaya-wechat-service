@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"gotrue/api"
 	"gotrue/dto"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
@@ -10,13 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-)
-
-var (
-	goodsServiceRf         api.IGoodsService         = service.GoodsServiceSingleton
-	stockServiceRf         api.IGoodsStockService    = service.StockServiceInstance()
-	goodsImgServiceRf      api.IGoodsImgService      = service.GoodsImgServiceSingleton
-	specificationServiceRf api.ISpecificationService = service.SpecificationServiceSingleton
 )
 
 // GetGoodsListByCategory 按照商品分类获取商品列表
@@ -29,7 +21,7 @@ func GetGoodsListByCategory(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	goods, err := goodsServiceRf.GetGoodsByCategory(categoryID)
+	goods, err := service.GoodsServiceSingleton.GetGoodsByCategory(categoryID)
 	if err != nil {
 		panic(err)
 	}
@@ -44,28 +36,28 @@ func GetGoodsInfo(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	goodsInfo, err := goodsServiceRf.Info(goodsID)
+	goodsInfo, err := service.GoodsServiceSingleton.Info(goodsID)
 	if err != nil {
 		panic(err)
 	}
-	gallery, err := goodsImgServiceRf.GetByGoodsID(goodsID)
+	gallery, err := service.GoodsImgServiceSingleton.GetByGoodsID(goodsID)
 	if err != nil {
 		panic(err)
 	}
-	attributes, err := goodsServiceRf.Attributes(goodsID)
+	attributes, err := service.GoodsServiceSingleton.Attributes(goodsID)
 	if err != nil {
 		panic(err)
 	}
-	goodsSpecDTOs, err := goodsServiceRf.Specifications(goodsID)
+	goodsSpecDTOs, err := service.GoodsServiceSingleton.Specifications(goodsID)
 	if err != nil {
 		panic(err)
 	}
 	goodsSpecSet := dto.NewGoodsSpecSet(goodsSpecDTOs)
-	stockDTOs, err := stockServiceRf.GetStocksByGoodsID(goodsID)
+	stockDTOs, err := service.StockServiceInstance().GetStocksByGoodsID(goodsID)
 	if err != nil {
 		panic(err)
 	}
-	specDTOs, err := specificationServiceRf.GetByIDs(goodsSpecSet.DistinctSpecIDs())
+	specDTOs, err := service.SpecificationServiceSingleton.GetByIDs(goodsSpecSet.DistinctSpecIDs())
 	if err != nil {
 		panic(err)
 	}
@@ -82,7 +74,7 @@ func GetGoodsInfo(c *gin.Context) {
 
 // GetHotGoods 获取热门商品
 func GetHotGoods(c *gin.Context) {
-	hotGoods, err := goodsServiceRf.HotGoods()
+	hotGoods, err := service.GoodsServiceSingleton.HotGoods()
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, map[string]interface{}{
 		"hotGoods": hotGoods,
