@@ -39,6 +39,7 @@ func apiRouter(r *gin.Engine) {
 	addressGroup := root.Group("/address", middle_ware.AuthCheck())
 	addressGroup.GET("list", controller.UserAddressList)
 	addressGroup.POST("save", controller.AddNewAddress)
+	addressGroup.GET("detail", controller.UserAddressDetail)
 
 	orderGroup := root.Group("/order", middle_ware.AuthCheck())
 	orderGroup.POST("submit", controller.SubmitSaleOrder)

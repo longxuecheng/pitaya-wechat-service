@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 func Get(url string, dst interface{}) error {
@@ -68,4 +69,28 @@ func PostXml(dst interface{}, url string, data io.Reader) error {
 		return err
 	}
 	return nil
+}
+
+type Handler func(*http.Request) error
+
+func Send(method, target string, data io.Reader, handlers ...Handler) (*http.Response, error) {
+	req, err := http.NewRequest(method, target, data)
+	if err != nil {
+		return nil, err
+	}
+	if handlers != nil {
+		if len(req.Form) == 0 {
+			req.Form = url.Values{}
+		}
+		for _, handler := range handlers {
+			if err := handler(req); err != nil {
+				return nil, err
+			}
+		}
+		if http.MethodGet == method {
+			req.Form = nil
+		}
+
+	}
+	return http.DefaultClient.Do(req)
 }

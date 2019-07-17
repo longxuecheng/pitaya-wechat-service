@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"gotrue/facility/utils"
 	"gotrue/settings"
+	"log"
+	"os"
 
 	sq "github.com/Masterminds/squirrel"
 	_ "github.com/go-sql-driver/mysql"
@@ -101,8 +101,8 @@ func (db *EasyDB) SelectOneDSL(destptr interface{}, columns []string, tableName 
 }
 
 // SelectDSL 使用ORM的DSL进行SQL语句的初始化
-func (db *EasyDB) SelectDSL(destptr interface{}, columns []string, tableName string, pred interface{}) error {
-	sql, args, err := sq.Select(columns...).From(tableName).Where(pred).ToSql()
+func (db *EasyDB) SelectDSL(destptr interface{}, columns []string, tableName string, pred interface{}, orderBys ...string) error {
+	sql, args, err := sq.Select(columns...).From(tableName).Where(pred).OrderBy(orderBys...).ToSql()
 	if err != nil {
 		return err
 	}

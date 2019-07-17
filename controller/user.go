@@ -2,14 +2,14 @@ package controller
 
 import (
 	"fmt"
-	"log"
-	"net/http"
 	"gotrue/api"
 	"gotrue/dto/request"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
 	"gotrue/service"
 	"gotrue/wechat"
+	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,11 +25,23 @@ func GetUserListByConditions(c *gin.Context) {
 	c.JSON(http.StatusOK, users)
 }
 
+func UserAddressDelete(c *gin.Context) {
+}
+
 func UserAddressList(c *gin.Context) {
 	userID := middle_ware.MustGetCurrentUser(c)
 	addresses, err := userServiceRf.AddressList(userID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, addresses)
+}
+
+func UserAddressDetail(c *gin.Context) {
+	id := c.Query("id")
+	addressID, err := utils.ParseInt64(id)
+	utils.CheckAndPanic(err)
+	address, err := service.UserServiceInstance().GetAddressByID(addressID)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, address)
 }
 
 func AddNewAddress(c *gin.Context) {

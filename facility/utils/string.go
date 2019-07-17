@@ -19,3 +19,7 @@ func ParseIntArray(str string, sep string, base int, bitsize int) ([]int64, erro
 	}
 	return interArray, nil
 }
+
+func ParseInt64(str string) (int64, error) {
+	return strconv.ParseInt(str, 10, 64)
+}

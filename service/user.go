@@ -5,15 +5,18 @@ import (
 	"gotrue/dto"
 	"gotrue/dto/request"
 	"gotrue/model"
+	"strings"
 )
 
 var UserServiceSingleton *UserService
 
 func UserServiceInstance() *UserService {
 	if UserServiceSingleton == nil {
-		UserServiceSingleton = new(UserService)
-		UserServiceSingleton.userDao = dao.UserDaoSingleton
-		UserServiceSingleton.addressDao = dao.UserAddressDaoInstance()
+		UserServiceSingleton = &UserService{
+			userDao:    dao.UserDaoSingleton,
+			addressDao: dao.UserAddressDaoInstance(),
+			regionDao:  dao.RegionDaoInstance(),
+		}
 	}
 	return UserServiceSingleton
 }
@@ -21,6 +24,35 @@ func UserServiceInstance() *UserService {
 type UserService struct {
 	userDao    *dao.UserDao
 	addressDao *dao.UserAddressDao
+	regionDao  *dao.RegionDao
+}
+
+type address struct {
+	data model.UserAddress
+}
+
+func newAddress(data model.UserAddress) *address {
+	return &address{
+		data,
+	}
+}
+
+func (a *address) regionIDs() []int {
+	ids := []int{}
+	ids = append(ids, a.data.ProvinceID)
+	ids = append(ids, a.data.CityID)
+	ids = append(ids, a.data.DistricID)
+	return ids
+}
+
+func (a *address) userAddressDTO(regions []*model.Region) dto.UserAddress {
+	regionNames := []string{}
+	for _, r := range regions {
+		regionNames = append(regionNames, r.Name)
+	}
+	dto := installUserAddress(a.data)
+	dto.FullRegion = strings.Join(regionNames, "-")
+	return dto
 }
 
 func (s *UserService) GetList() ([]*dto.UserDTO, error) {
@@ -46,6 +78,10 @@ func (s *UserService) DefaultAddress(userID int64) (dto.UserAddress, error) {
 	return uad, nil
 }
 
+func (s *UserService) DeleteAddressByID(id int64) error {
+	return nil
+}
+
 func (s *UserService) AddressList(userID int64) ([]dto.UserAddress, error) {
 	ads, err := s.addressDao.SelectByUserID(userID)
 	if err != nil {
@@ -63,7 +99,12 @@ func (s *UserService) GetAddressByID(ID int64) (dto dto.UserAddress, err error) 
 	if err != nil {
 		return
 	}
-	return installUserAddress(uad), nil
+	address := newAddress(uad)
+	regions, err := s.regionDao.SelectByIDs(address.regionIDs())
+	if err != nil {
+		return
+	}
+	return address.userAddressDTO(regions), nil
 }
 
 func (s *UserService) GetUserByID(userID int64) (dto *dto.UserDTO, err error) {
