@@ -7,6 +7,9 @@ import (
 
 // ParseIntArray parse a seperated string into a int64 array
 func ParseIntArray(str string, sep string, base int, bitsize int) ([]int64, error) {
+	if str == "" {
+		return nil, nil
+	}
 	strArray := strings.Split(str, sep)
 	// transform string array to int array
 	interArray := make([]int64, len(strArray))

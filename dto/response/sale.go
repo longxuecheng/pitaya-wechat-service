@@ -22,15 +22,17 @@ type SaleOrderGoodsDTO struct {
 }
 
 type SaleOrderInfoDTO struct {
-	ID         int64           `json:"id"`
-	CreatedAt  string          `json:"add_time"`
-	OrderNo    string          `json:"order_sn"`
-	OrderAmt   decimal.Decimal `json:"actual_price"`
-	Status     string          `json:"order_status_text"`
-	FullRegion string          `json:"rull_region"`
-	Address    string          `json:"address"`
-	Consignee  string          `json:"consignee"`
-	Mobile     string          `json:"mobile"`
-	GoodsAmt   decimal.Decimal `json:"goods_amt"`
-	ExpressFee decimal.Decimal `json:"express_fee"`
+	ID            int64           `json:"id"`
+	CreatedAt     string          `json:"add_time"`
+	OrderNo       string          `json:"order_sn"`
+	OrderAmt      decimal.Decimal `json:"actual_price"`
+	Status        string          `json:"order_status_text"`
+	FullRegion    string          `json:"rull_region"`
+	Address       string          `json:"address"`
+	Consignee     string          `json:"consignee"`
+	Mobile        string          `json:"mobile"`
+	GoodsAmt      decimal.Decimal `json:"goods_amt"`
+	ExpressMethod string          `json:"express_method"`
+	ExpressNo     string          `json:"express_no"`
+	ExpressFee    decimal.Decimal `json:"express_fee"`
 }

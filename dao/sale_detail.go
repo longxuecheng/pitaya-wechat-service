@@ -37,14 +37,14 @@ func (dao *SaleDetailDao) Create(detail model.SaleDetail, tx ...*sql.Tx) (id int
 	return
 }
 
-func (dao *SaleDetailDao) SelectByOrderIDs(orderIDs ...int64) ([]model.SaleDetail, error) {
-	details := []model.SaleDetail{}
+func (dao *SaleDetailDao) SelectByOrderIDs(orderIDs ...int64) ([]*model.SaleDetail, error) {
+	details := []*model.SaleDetail{}
 	err := dao.db.SelectDSL(&details, columns_sale_detail_all, model.Table_Sale_Detail, sq.Eq{"order_id": orderIDs})
 	return details, err
 }
 
-func (dao *SaleDetailDao) SelectByOrderID(orderID int64) ([]model.SaleDetail, error) {
-	details := []model.SaleDetail{}
+func (dao *SaleDetailDao) SelectByOrderID(orderID int64) ([]*model.SaleDetail, error) {
+	details := []*model.SaleDetail{}
 	err := dao.db.SelectDSL(&details, columns_sale_detail_all, model.Table_Sale_Detail, sq.Eq{"order_id": orderID})
 	return details, err
 }

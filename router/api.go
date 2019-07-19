@@ -46,5 +46,6 @@ func apiRouter(r *gin.Engine) {
 	orderGroup.POST("submit", controller.SubmitSaleOrder)
 	orderGroup.POST("list", controller.ListSaleOrders)
 	orderGroup.GET("detail", controller.SaleOrderInfo)
+	orderGroup.GET("express", controller.SaleOrderExpressInfo)
 	orderGroup.GET("prepay", controller.Pay)
 }

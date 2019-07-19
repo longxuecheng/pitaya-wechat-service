@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"gotrue/facility/utils"
 
 	"github.com/shopspring/decimal"
 )
@@ -21,4 +22,9 @@ type SaleDetail struct {
 	GoodsSpecIDs         string          `db:"goods_spec_ids"`
 	GoodsSpecDescription string          `db:"goods_spec_description"`
 	ListPicURL           sql.NullString  `db:"list_pic_url"`
+}
+
+func (s *SaleDetail) SpecIDs() []int64 {
+	ids, _ := utils.ParseIntArray(s.GoodsSpecIDs, "_", 10, 64)
+	return ids
 }

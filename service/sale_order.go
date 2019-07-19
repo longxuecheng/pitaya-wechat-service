@@ -16,20 +16,21 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var saleOrderServiceSingleton *SaleOrderService
+var saleOrderService *SaleOrderService
 
-// SaleOrderServiceInstance get a service instance of singleton
+// SaleOrderServiceInstance get a service instance of saleOrderService
 func SaleOrderServiceInstance() *SaleOrderService {
-	if saleOrderServiceSingleton == nil {
-		saleOrderServiceSingleton = new(SaleOrderService)
-		saleOrderServiceSingleton.dao = dao.SaleOrderDaoInstance()
-		saleOrderServiceSingleton.stockDao = dao.GoodsStockDaoSingleton
-		saleOrderServiceSingleton.goodsDao = dao.GoodsDaoSingleton
-		saleOrderServiceSingleton.saleDetailDao = dao.SaleDetailDaoInstance()
-		saleOrderServiceSingleton.cartService = CartServiceInstance()
-		saleOrderServiceSingleton.userService = UserServiceInstance()
+	if saleOrderService == nil {
+		saleOrderService = new(SaleOrderService)
+		saleOrderService.dao = dao.SaleOrderDaoInstance()
+		saleOrderService.stockDao = dao.GoodsStockDaoSingleton
+		saleOrderService.goodsDao = dao.GoodsDaoSingleton
+		saleOrderService.saleDetailDao = dao.SaleDetailDaoInstance()
+		saleOrderService.cartService = CartServiceInstance()
+		saleOrderService.userService = UserServiceInstance()
+		saleOrderService.goodsService = GoodsServiceInstance()
 	}
-	return saleOrderServiceSingleton
+	return saleOrderService
 }
 
 // SaleOrderService 作为销售订单服务，实现了api.IOrderService
@@ -38,6 +39,7 @@ type SaleOrderService struct {
 	saleDetailDao *dao.SaleDetailDao
 	stockDao      *dao.GoodsStockDao
 	goodsDao      *dao.GoodsDao
+	goodsService  *GoodsService
 	cartService   *CartService
 	userService   *UserService
 }
@@ -171,6 +173,7 @@ func (s *SaleOrderService) List(userID int64, req pagination.PaginationRequest) 
 	if err != nil {
 		return
 	}
+
 	orderSet := newSaleOrderSet(orders)
 	details, err := s.saleDetailDao.SelectByOrderIDs(orderSet.orderIDList()...)
 	if err != nil {
@@ -182,14 +185,13 @@ func (s *SaleOrderService) List(userID int64, req pagination.PaginationRequest) 
 	return
 }
 
-func (s *SaleOrderService) Info(orderID int64) (response.SaleOrderInfoDTO, error) {
-	orderInfo := response.SaleOrderInfoDTO{}
+func (s *SaleOrderService) Info(orderID int64) (*response.SaleOrderInfoDTO, error) {
 	saleOrder, err := s.dao.SelectByID(orderID)
-	if err != nil {
-		return orderInfo, err
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
 	}
-	if err != nil {
-		return orderInfo, nil
+	if saleOrder == nil {
+		return nil, nil
 	}
 	return s.installSaleInfoDTO(saleOrder), nil
 }
@@ -198,6 +200,13 @@ func (s *SaleOrderService) ListGoods(orderID int64) ([]response.SaleOrderGoodsDT
 	goodsList, err := s.saleDetailDao.SelectByOrderID(orderID)
 	if err != nil {
 		return nil, err
+	}
+	for _, v := range goodsList {
+		specDesc, err := s.goodsService.SpecificationDesc(v.GoodsID, v.SpecIDs(), "/")
+		if err != nil {
+			return nil, err
+		}
+		v.GoodsSpecDescription = specDesc
 	}
 	dtos := make([]response.SaleOrderGoodsDTO, len(goodsList))
 	for i, goods := range goodsList {
@@ -217,8 +226,8 @@ func generateOrderNumber(nodeNo int64) (string, error) {
 	return strconv.FormatInt(id.Int64(), 10), nil
 }
 
-func (s *SaleOrderService) installSaleInfoDTO(order model.SaleOrder) response.SaleOrderInfoDTO {
-	dto := response.SaleOrderInfoDTO{}
+func (s *SaleOrderService) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrderInfoDTO {
+	dto := &response.SaleOrderInfoDTO{}
 	dto.ID = order.ID
 	dto.OrderNo = order.OrderNo.String
 	dto.Status = order.Status
@@ -228,6 +237,13 @@ func (s *SaleOrderService) installSaleInfoDTO(order model.SaleOrder) response.Sa
 	dto.FullRegion = "TODO"
 	dto.Address = order.Address
 	dto.GoodsAmt = order.GoodsAmt
+
+	if order.ExpressMethod != nil {
+		dto.ExpressMethod = *order.ExpressMethod
+	}
+	if order.ExpressNo != nil {
+		dto.ExpressNo = *order.ExpressNo
+	}
 	dto.ExpressFee = order.ExpressFee
 	dto.OrderAmt = order.OrderAmt
 	return dto
@@ -253,12 +269,14 @@ func buildSaleOrderItemDTOs(models []model.SaleOrder) []response.SaleOrderItemDT
 	return dtos
 }
 
-func installSaleDetailDTO(model model.SaleDetail) response.SaleOrderGoodsDTO {
+func installSaleDetailDTO(model *model.SaleDetail) response.SaleOrderGoodsDTO {
 	dto := response.SaleOrderGoodsDTO{}
 	dto.ID = model.ID
 	dto.GoodsName = model.GoodsName
 	dto.Quantity = model.Quantity
+	dto.RetailPrice = model.SaleUnitPrice
 	dto.ListPicURL = model.ListPicURL.String
+	dto.GoodsSpecDescription = model.GoodsSpecDescription
 	return dto
 }
 
@@ -444,7 +462,7 @@ func (c *saleOrderCreator) rawSupplierOrders() []*supplierOrder {
 type SaleOrderSet struct {
 	orders    []model.SaleOrder
 	orderIDs  []int64
-	goodsList []model.SaleDetail
+	goodsList []*model.SaleDetail
 }
 
 func newSaleOrderSet(orders []model.SaleOrder) *SaleOrderSet {
@@ -458,7 +476,7 @@ func newSaleOrderSet(orders []model.SaleOrder) *SaleOrderSet {
 	return set
 }
 
-func (set *SaleOrderSet) setSaleDetails(details []model.SaleDetail) {
+func (set *SaleOrderSet) setSaleDetails(details []*model.SaleDetail) {
 	set.goodsList = details
 }
 

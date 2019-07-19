@@ -35,6 +35,8 @@ var columns_sale_order = []string{
 	"supplier_id",
 	"order_amt",
 	"goods_amt",
+	"express_method",
+	"express_order_no",
 	"express_fee",
 }
 
@@ -55,9 +57,9 @@ func (dao *SaleOrderDao) SelectByUserID(userID int64) ([]model.SaleOrder, error)
 	return orders, err
 }
 
-func (dao *SaleOrderDao) SelectByID(ID int64) (model.SaleOrder, error) {
-	order := model.SaleOrder{}
-	err := dao.db.SelectOneDSL(&order, columns_sale_order, model.Table_Sale_Order, sq.Eq{"id": ID})
+func (dao *SaleOrderDao) SelectByID(ID int64) (*model.SaleOrder, error) {
+	order := &model.SaleOrder{}
+	err := dao.db.SelectOneDSL(order, columns_sale_order, model.Table_Sale_Order, sq.Eq{"id": ID})
 	return order, err
 }
 

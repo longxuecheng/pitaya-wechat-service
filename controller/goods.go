@@ -21,7 +21,8 @@ func GetGoodsListByCategory(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	goods, err := service.GoodsServiceSingleton.GetGoodsByCategory(categoryID)
+	goods, err := service.GoodsServiceInstance().GetGoodsByCategory(categoryID)
+
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +37,7 @@ func GetGoodsInfo(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	goodsInfo, err := service.GoodsServiceSingleton.Info(goodsID)
+	goodsInfo, err := service.GoodsServiceInstance().Info(goodsID)
 	if err != nil {
 		panic(err)
 	}
@@ -44,11 +45,11 @@ func GetGoodsInfo(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	attributes, err := service.GoodsServiceSingleton.Attributes(goodsID)
+	attributes, err := service.GoodsServiceInstance().Attributes(goodsID)
 	if err != nil {
 		panic(err)
 	}
-	goodsSpecDTOs, err := service.GoodsServiceSingleton.Specifications(goodsID)
+	goodsSpecDTOs, err := service.GoodsServiceInstance().Specifications(goodsID)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +75,7 @@ func GetGoodsInfo(c *gin.Context) {
 
 // GetHotGoods 获取热门商品
 func GetHotGoods(c *gin.Context) {
-	hotGoods, err := service.GoodsServiceSingleton.HotGoods()
+	hotGoods, err := service.GoodsServiceInstance().HotGoods()
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, map[string]interface{}{
 		"hotGoods": hotGoods,

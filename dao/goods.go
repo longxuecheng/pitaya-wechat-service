@@ -12,9 +12,13 @@ import (
 // GoodsDaoSingleton is a singleton of goods dao
 var GoodsDaoSingleton *GoodsDao
 
-func init() {
+func GoodsDaoInstance() *GoodsDao {
+	if GoodsDaoSingleton != nil {
+		return GoodsDaoSingleton
+	}
 	GoodsDaoSingleton = new(GoodsDao)
 	GoodsDaoSingleton.db = sys.GetEasyDB()
+	return GoodsDaoSingleton
 }
 
 var columns_goods = []string{"id", "name", "category_id", "description", "brief_description", "status", "is_delete", "supplier_id", "create_time", "list_pic_url", "retail_price"}

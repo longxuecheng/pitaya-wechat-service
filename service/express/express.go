@@ -3,16 +3,27 @@ package express
 import (
 	"encoding/json"
 	"gotrue/facility/http_util"
+	"gotrue/facility/strings"
 	"io/ioutil"
 	"net/http"
 	"time"
 )
 
 const (
-	url      string = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury"
-	URLEMS   string = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury?cb=jQuery110204185518184869019_1563283854220&appid=4001&com=ems&nu=70796738286039"
-	URL_BSHT string = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury?cb=jQuery110204185518184869019_1563283854220&appid=4001&com=huitongkuaidi&nu=70796738286039"
+	url  string      = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury"
+	EMS  ExpressType = "ems"
+	BSHT ExpressType = "huitongkuaidi"
+	ST   ExpressType = "shentong"
+	YD   ExpressType = "yunda"
+	ZT   ExpressType = "zhongtong"
+	YT   ExpressType = "yuantong"
 )
+
+type ExpressType string
+
+func (et ExpressType) String() string {
+	return string(et)
+}
 
 type ExpressBaseResponse struct {
 	Msg       string          `json:"msg"`
@@ -26,6 +37,7 @@ type ExpressBody struct {
 }
 
 type ExpressSummary struct {
+	ExpressNo      string          `json:"express_no"`
 	Status         string          `json:"status"`
 	Company        string          `json:"com"`
 	State          string          `json:"state"`
@@ -43,13 +55,15 @@ type ExpressTrace struct {
 
 var ExpressService *expressService
 
-type expressService struct {
-}
+type expressService struct{}
 
 func init() {
 	ExpressService = &expressService{}
 }
-func (s *expressService) ExpressInfo(expressCom, expressNo string) (*ExpressSummary, error) {
+func (s *expressService) ExpressInfo(expressCom ExpressType, expressNo string) (*ExpressSummary, error) {
+	if strings.IsEmpty(expressNo) {
+		return nil, nil
+	}
 	resp, err := http_util.Send(http.MethodGet, url, nil, func(r *http.Request) error {
 		c := &http.Cookie{
 			Name:     "BAIDUID",
@@ -62,7 +76,7 @@ func (s *expressService) ExpressInfo(expressCom, expressNo string) (*ExpressSumm
 		}
 		r.AddCookie(c)
 		r.Form.Set("appid", "4001")
-		r.Form.Set("com", expressCom)
+		r.Form.Set("com", expressCom.String())
 		r.Form.Set("nu", expressNo)
 		r.URL.RawQuery = r.Form.Encode()
 		return nil
@@ -85,6 +99,7 @@ func (s *expressService) ExpressInfo(expressCom, expressNo string) (*ExpressSumm
 		if err != nil {
 			return nil, err
 		}
+		expressInfo.Info.ExpressNo = expressNo
 		return expressInfo.Info, nil
 	}
 	return nil, nil

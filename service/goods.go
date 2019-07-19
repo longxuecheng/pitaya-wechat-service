@@ -8,18 +8,18 @@ import (
 	"strings"
 )
 
-var GoodsServiceSingleton *GoodsService
+var singleton *GoodsService
 
 func GoodsServiceInstance() *GoodsService {
-	if GoodsServiceSingleton != nil {
-		return GoodsServiceSingleton
+	if singleton != nil {
+		return singleton
 	}
-	GoodsServiceSingleton = new(GoodsService)
-	GoodsServiceSingleton.goodsDao = dao.GoodsDaoSingleton
-	GoodsServiceSingleton.goodsAttributeDao = dao.GoodsAttributeDaoSingleton
-	GoodsServiceSingleton.goodsSpecDao = dao.GoodsSpecificationDaoSingleton
-	GoodsServiceSingleton.attributeService = AttributeServiceSingleton
-	return GoodsServiceSingleton
+	singleton = new(GoodsService)
+	singleton.goodsDao = dao.GoodsDaoInstance()
+	singleton.goodsAttributeDao = dao.GoodsAttributeDaoSingleton
+	singleton.goodsSpecDao = dao.GoodsSpecificationDaoSingleton
+	singleton.attributeService = AttributeServiceSingleton
+	return singleton
 }
 
 // GoodsService 作为类目服务，实现了api.GoodsService接口
@@ -87,6 +87,9 @@ func (s *GoodsService) Specifications(goodsID int64) ([]*dto.GoodsSpecificationD
 }
 
 func (s *GoodsService) SpecificationDesc(goodsID int64, specIDs []int64, sep string) (string, error) {
+	if len(specIDs) == 0 {
+		return "", nil
+	}
 	specs, err := s.Specifications(goodsID)
 	if err != nil {
 		return "", err

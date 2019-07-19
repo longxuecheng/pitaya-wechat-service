@@ -1,19 +1,15 @@
 package controller
 
 import (
-	"gotrue/api"
 	"gotrue/dto/pagination"
 	"gotrue/dto/request"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
 	"gotrue/service"
+	"gotrue/service/express"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-)
-
-var (
-	saleOrderServiceRf api.ISaleOrderService = service.SaleOrderServiceInstance()
 )
 
 // SubmitSaleOrder 提交销售订单
@@ -22,7 +18,7 @@ func SubmitSaleOrder(c *gin.Context) {
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	orderID, err := saleOrderServiceRf.Create(userID, req)
+	orderID, err := service.SaleOrderServiceInstance().Create(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, orderID)
 }
@@ -33,22 +29,36 @@ func ListSaleOrders(c *gin.Context) {
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	result, err := saleOrderServiceRf.List(userID, req)
+	result, err := service.SaleOrderServiceInstance().List(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, result)
 }
 
 // SaleOrderInfo 获取订单详情
 func SaleOrderInfo(c *gin.Context) {
-	orderIDStr := c.Query("orderId")
-	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
+	orderID := bindSaleOrderIDFromQuery(c)
+	info, err := service.SaleOrderServiceInstance().Info(orderID)
 	utils.CheckAndPanic(err)
-	info, err := saleOrderServiceRf.Info(orderID)
-	utils.CheckAndPanic(err)
-	goodsList, err := saleOrderServiceRf.ListGoods(orderID)
+	goodsList, err := service.SaleOrderServiceInstance().ListGoods(orderID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, map[string]interface{}{
 		"orderInfo":  info,
 		"orderGoods": goodsList,
 	})
+}
+
+func SaleOrderExpressInfo(c *gin.Context) {
+	orderID := bindSaleOrderIDFromQuery(c)
+	info, err := service.SaleOrderServiceInstance().Info(orderID)
+	utils.CheckAndPanic(err)
+	expressInfo, err := express.ExpressService.ExpressInfo(express.ExpressType(info.ExpressMethod), info.ExpressNo)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, expressInfo)
+}
+
+func bindSaleOrderIDFromQuery(c *gin.Context) int64 {
+	orderIDStr := c.Query("orderId")
+	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
+	utils.CheckAndPanic(err)
+	return orderID
 }
