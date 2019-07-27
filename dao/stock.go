@@ -10,9 +10,10 @@ import (
 // GoodsStockDaoSingleton is a singleton of goods dao
 var GoodsStockDaoSingleton *GoodsStockDao
 
-func init() {
-	GoodsStockDaoSingleton = new(GoodsStockDao)
-	GoodsStockDaoSingleton.db = sys.GetEasyDB()
+func initStockDao() {
+	GoodsStockDaoSingleton = &GoodsStockDao{
+		db: sys.GetEasyDB(),
+	}
 }
 
 var columns_goods_stock = []string{"id", "supplier_id", "goods_id", "sale_unit_price", "cost_unit_price", "available_quantity", "specification"}

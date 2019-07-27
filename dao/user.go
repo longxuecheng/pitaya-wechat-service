@@ -10,9 +10,10 @@ import (
 
 var UserDaoSingleton *UserDao
 
-func init() {
-	UserDaoSingleton = new(UserDao)
-	UserDaoSingleton.db = sys.GetEasyDB()
+func initUserDao() {
+	UserDaoSingleton = &UserDao{
+		db: sys.GetEasyDB(),
+	}
 }
 
 type UserDao struct {
