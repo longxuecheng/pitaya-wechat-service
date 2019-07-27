@@ -16,7 +16,7 @@ func UserServiceInstance() *UserService {
 	if UserServiceSingleton == nil {
 		UserServiceSingleton = &UserService{
 			userDao:    dao.UserDaoSingleton,
-			addressDao: dao.UserAddressDaoInstance(),
+			addressDao: dao.UserAddressDaoSingleton,
 			regionDao:  dao.RegionDaoInstance(),
 		}
 	}

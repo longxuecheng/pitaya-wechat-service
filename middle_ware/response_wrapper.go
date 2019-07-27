@@ -21,6 +21,7 @@ const (
 	STATUS_ERROR        ErrorCode = 999
 	STATUS_UNAUTHORIZED ErrorCode = 401
 	STATUS_TOKEN_EXP    ErrorCode = 401
+	FORM_INVALID        ErrorCode = 400
 )
 
 // WrapResponse 在请求controller的handler完成之后获取上下文数据进行统一的业务封装
@@ -53,4 +54,9 @@ func SetResponseData(c *gin.Context, data interface{}) {
 func SetResponseDataWithStatus(c *gin.Context, data interface{}, code int) {
 	c.Status(code)
 	c.Set(DATA_KEY, data)
+}
+
+func BadRequet(c *gin.Context, reason string) {
+	c.JSON(http.StatusBadRequest, newResponseDTO(nil, reason, FORM_INVALID))
+	c.Abort()
 }

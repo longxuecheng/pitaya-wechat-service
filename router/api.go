@@ -44,8 +44,10 @@ func apiRouter(r *gin.Engine) {
 
 	orderGroup := root.Group("/order", middle_ware.AuthCheck())
 	orderGroup.POST("submit", controller.SubmitSaleOrder)
+	orderGroup.POST("submit/quick", controller.QuickSubmitOrder)
 	orderGroup.POST("list", controller.ListSaleOrders)
 	orderGroup.GET("detail", controller.SaleOrderInfo)
 	orderGroup.GET("express", controller.SaleOrderExpressInfo)
-	orderGroup.GET("prepay", controller.Pay)
+	orderGroup.GET("prepay", controller.WechatPrePay)
+	orderGroup.GET("pay/result", controller.WechatPayResult)
 }

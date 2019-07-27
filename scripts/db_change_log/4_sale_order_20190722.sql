@@ -1,0 +1,1 @@
+alter table sale_order add parent_id bigint not null default 0;

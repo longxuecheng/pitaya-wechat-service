@@ -47,11 +47,11 @@ type UnifiedOrderRequest struct {
 	TradeType  TradeType `xml:"trade_type"`
 }
 
-func (u UnifiedOrderRequest) SignParams() string {
+func (u *UnifiedOrderRequest) SignParams() string {
 	return signStruct(u, "xml")
 }
 
-func (u UnifiedOrderRequest) ToXml() (string, error) {
+func (u *UnifiedOrderRequest) ToXml() (string, error) {
 	if u.Sign == "" {
 		return "", errors.NewWithCodef("PaySignError", "request param must be signed first")
 	}
@@ -62,6 +62,26 @@ func (u UnifiedOrderRequest) ToXml() (string, error) {
 	return string(b.Bytes()), nil
 }
 
+// OrderQueryRequest 订单查询请求
+type OrderQueryRequest struct {
+	AppBasic
+	SignBasic
+	OutTradeNo string `xml:"out_trade_no"`
+}
+
+func (oqr *OrderQueryRequest) ToXml() (string, error) {
+	oqr.Sign = signStruct(oqr, "xml")
+	if oqr.Sign == "" {
+		return "", errors.NewWithCodef("PaySignError", "request param must be signed first")
+	}
+	var b bytes.Buffer
+	if err := xml.NewEncoder(&b).EncodeElement(oqr, xml.StartElement{Name: xml.Name{Local: "xml"}}); err != nil {
+		return "", err
+	}
+	return string(b.Bytes()), nil
+}
+
+// signStruct 微信支付的签名算法
 func signStruct(input interface{}, tag string) string {
 	fieldMap := utils.StructToMap(input, tag, "exlude")
 	fs := []string{}

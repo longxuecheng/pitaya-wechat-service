@@ -3,7 +3,7 @@ package wechat
 import (
 	"fmt"
 	"gotrue/facility/http_util"
-	"gotrue/wechat/payment"
+	"gotrue/service/wechat/payment"
 	"log"
 	"os"
 	"strconv"
@@ -40,8 +40,9 @@ func (s *wechatService) AccessToken() string {
 	return s.accessToken()
 }
 
-func (s *wechatService) Pay(openID string) (*payment.PrepayReponse, error) {
-	req := payment.UnifiedOrderRequest{}
+// Pay 调用微信接口进行预支付
+func (s *wechatService) Pay(r *PrepayRequest) (*payment.PrepayReponse, error) {
+
 	app := payment.AppBasic{
 		AppID:      appID,
 		MerchantID: merchantID,
@@ -50,25 +51,32 @@ func (s *wechatService) Pay(openID string) (*payment.PrepayReponse, error) {
 		SignType: payment.SignTypeMD5,
 		NonceStr: strconv.FormatInt(time.Now().Unix(), 10),
 	}
-	req.AppBasic = app
-	req.SignBasic = sign
-	req.OutTradeNo = "orderNo" + req.NonceStr
-	req.NotifyURL = "https://www.geluxiya.com"
-	req.ServerIP = "192.168.1.123"
-	req.TradeType = payment.TradeTypeJSAPI
-	req.TotalFee = 10
-	req.Desc = "商品描述" + req.NonceStr
+	req := payment.UnifiedOrderRequest{
+		AppBasic:   app,
+		SignBasic:  sign,
+		OutTradeNo: r.OrderNo,
+		NotifyURL:  "https://www.geluxiya.com",
+		ServerIP:   "192.168.1.123",
+		TradeType:  payment.TradeTypeJSAPI,
+		TotalFee:   10,
+		Desc:       r.Desc,
+		OpenID:     r.OpenID,
+	}
+	fmt.Println(req.OutTradeNo)
 	// req.OpenID = "ovxEC5YTWQk6Vv5FJdN_30gkBr-g"
-	req.OpenID = openID
 	signedStr := req.SignParams()
 	req.Sign = signedStr
 	xmlText, err := req.ToXml()
 	if err != nil {
 		return nil, err
 	}
-	ur := &payment.UnifiedOrderResponse{}
-	err = http_util.PostXml(ur, unifiedorder_url, strings.NewReader(xmlText))
+	result := &payment.UnifiedOrderResponse{}
+	err = http_util.PostXml(result, unifiedorder_url, strings.NewReader(xmlText))
 	if err != nil {
+		return nil, err
+	}
+	ok, err := result.IsOK()
+	if !ok {
 		return nil, err
 	}
 	pr := &payment.PrepayReponse{}
@@ -76,9 +84,39 @@ func (s *wechatService) Pay(openID string) (*payment.PrepayReponse, error) {
 	pr.NonceStr = strconv.FormatInt(time.Now().Unix(), 10)
 	pr.SignType = payment.SignTypeMD5
 	pr.TimeStamp = strconv.FormatInt(time.Now().Unix(), 10)
-	pr.Package = "prepay_id=" + ur.PrepayID
+	pr.Package = "prepay_id=" + result.PrepayID
 	pr.SignParams()
 	return pr, nil
+}
+
+func (s *wechatService) QueryPayResult(orderNo string) (*payment.QueryOrderResponse, error) {
+	app := payment.AppBasic{
+		AppID:      appID,
+		MerchantID: merchantID,
+	}
+	sign := payment.SignBasic{
+		SignType: payment.SignTypeMD5,
+		NonceStr: strconv.FormatInt(time.Now().Unix(), 10),
+	}
+	req := payment.OrderQueryRequest{
+		AppBasic:   app,
+		SignBasic:  sign,
+		OutTradeNo: orderNo,
+	}
+	xml, err := req.ToXml()
+	if err != nil {
+		return nil, err
+	}
+	result := &payment.QueryOrderResponse{}
+	err = http_util.PostXml(result, payment.OrderQueryURL, strings.NewReader(xml))
+	if err != nil {
+		return nil, err
+	}
+	ok, err := result.IsOK()
+	if !ok {
+		return nil, err
+	}
+	return result, nil
 }
 
 type wechatTokenManager struct {

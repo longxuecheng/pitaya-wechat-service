@@ -6,7 +6,7 @@ import (
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
 	"gotrue/service"
-	"gotrue/wechat"
+	"gotrue/service/wechat"
 	"log"
 	"net/http"
 

@@ -11,15 +11,8 @@ import (
 var UserAddressDaoSingleton *UserAddressDao
 
 func initUserAddressDao() {
-	if UserAddressDaoSingleton == nil {
-		UserAddressDaoSingleton = new(UserAddressDao)
-		UserAddressDaoSingleton.db = sys.GetEasyDB()
-	}
-}
-
-func UserAddressDaoInstance() *UserAddressDao {
-	initUserAddressDao()
-	return UserAddressDaoSingleton
+	UserAddressDaoSingleton = new(UserAddressDao)
+	UserAddressDaoSingleton.db = sys.GetEasyDB()
 }
 
 var columns_user_address_all = []string{"id", "name", "user_id", "country_id", "province_id", "city_id", "district_id", "address", "mobile", "is_default"}

@@ -9,8 +9,11 @@ import (
 	"gotrue/dto/request"
 	"gotrue/dto/response"
 	"gotrue/model"
+	"gotrue/service/wechat"
+	"gotrue/service/wechat/payment"
 	"gotrue/sys"
 	"strconv"
+	"time"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/shopspring/decimal"
@@ -24,101 +27,111 @@ func SaleOrderServiceInstance() *SaleOrderService {
 		saleOrderService = new(SaleOrderService)
 		saleOrderService.dao = dao.SaleOrderDaoInstance()
 		saleOrderService.stockDao = dao.GoodsStockDaoSingleton
-		saleOrderService.goodsDao = dao.GoodsDaoSingleton
+		saleOrderService.goodsDao = dao.GoodsDaoInstance()
 		saleOrderService.saleDetailDao = dao.SaleDetailDaoInstance()
 		saleOrderService.cartService = CartServiceInstance()
 		saleOrderService.userService = UserServiceInstance()
 		saleOrderService.goodsService = GoodsServiceInstance()
+		saleOrderService.wechatPaymentDao = dao.WechatPaymentDao
 	}
 	return saleOrderService
 }
 
 // SaleOrderService 作为销售订单服务，实现了api.IOrderService
 type SaleOrderService struct {
-	dao           *dao.SaleOrderDao
-	saleDetailDao *dao.SaleDetailDao
-	stockDao      *dao.GoodsStockDao
-	goodsDao      *dao.GoodsDao
-	goodsService  *GoodsService
-	cartService   *CartService
-	userService   *UserService
+	dao              *dao.SaleOrderDao
+	saleDetailDao    *dao.SaleDetailDao
+	stockDao         *dao.GoodsStockDao
+	goodsDao         *dao.GoodsDao
+	wechatPaymentDao *dao.WechatPayment
+	goodsService     *GoodsService
+	cartService      *CartService
+	userService      *UserService
 }
 
-// QuickCreate 快速下单
-func (s *SaleOrderService) QuickCreate(req request.SaleOrderQuickAddRequest) (int64, error) {
-	stock, err := s.stockDao.SelectByID(req.StockID)
+// UpdateByWechatPayResult 通过微信支付查询结果更新订单状态和交易状态
+func (s *SaleOrderService) UpdateByWechatPayResult(orderID int64, req *payment.QueryOrderResponse) error {
+	order, err := s.dao.SelectByID(orderID)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	address, err := s.userService.GetAddressByID(req.AddressID)
+	// 查找支付交易
+	txns, err := s.wechatPaymentDao.SelectByOrderNo(order.OrderNo, model.TransactionTypePay)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	goods, err := s.goodsDao.SelectByID(stock.GoodsID)
-	if err != nil {
-		return 0, err
+	var orderStatus model.OrderStatus
+	if req.TradeState == payment.Success {
+		orderStatus = model.Paid
 	}
-	var orderID int64
-	// 由于目前水果的包装都是按照一个快递单来进行的，所以目前对每一个项目创建一个订单
-	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
-		ss := []supplierStock{
-			supplierStock{
-				SupplierID: goods.SupplierID,
-				Quantity:   req.Quantity,
-				Stock:      stock,
-				Goods:      goods,
-			},
-		}
-		so := &supplierOrder{
-			supplierID:     goods.SupplierID,
-			supplierStocks: ss,
-		}
-		so.bindBasically(req.UserID, address)
-
-		if so.splitable() {
-			splittedSupplierOrders := so.split()
-			for _, splittedSupplierOrder := range splittedSupplierOrders {
-				err := s.save(splittedSupplierOrder, tx)
+	if req.TradeState == payment.Paying || req.TradeState == payment.NotPay {
+		orderStatus = model.Paying
+	}
+	if req.TradeState == payment.CLOSED {
+		orderStatus = model.Closed
+	}
+	if req.TradeState == payment.PayError {
+		orderStatus = model.PayFailed
+	}
+	if orderStatus == "" {
+		return nil
+	}
+	updateMap := map[string]interface{}{
+		"status": orderStatus,
+	}
+	if !order.IsMaster() {
+		sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+			err := s.dao.UpdateByID(order.ID, updateMap, nil)
+			if err != nil {
+				return err
+			}
+			// 一个或者多个订单对应一笔支付
+			if len(txns) == 1 {
+				updateMap = map[string]interface{}{
+					"status": req.TradeState,
+				}
+				err = s.wechatPaymentDao.UpdateByID(txns[0].ID, updateMap, nil)
 				if err != nil {
 					return err
 				}
 			}
-		} else {
-			err := s.save(so, tx)
+			return nil
+		})
+		return nil
+	}
+	subOrders, err := s.dao.SelectByParentID(order.ID)
+	if err != nil {
+		return err
+	}
+
+	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+		err := s.dao.UpdateByID(order.ID, updateMap, tx)
+		if err != nil {
+			return err
+		}
+		for _, subOrder := range subOrders {
+			err = s.dao.UpdateByID(subOrder.ID, updateMap, tx)
 			if err != nil {
 				return err
 			}
 		}
+		// 一个或者多个订单对应一笔支付
+		if len(txns) == 1 {
+			updateMap = map[string]interface{}{
+				"status": req.TradeState,
+			}
+			return s.wechatPaymentDao.UpdateByID(txns[0].ID, updateMap, nil)
+		}
+
 		return nil
 	})
-
-	return orderID, nil
-}
-
-// save 将业务模型转换成数据库模型并持久化
-func (s *SaleOrderService) save(so *supplierOrder, tx *sql.Tx) error {
-	saleOrder, saleDetails, err := so.transfer()
-	if err != nil {
-		return err
-	}
-	orderID, err := s.dao.Create(saleOrder, tx)
-	if err != nil {
-		return err
-	}
-	for _, detail := range saleDetails {
-		detail.OrderID = orderID
-		_, err := s.saleDetailDao.Create(detail)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
 // Create 从购物车创建订单
 // 1. 创建订单
 // 2. 创建订单明细
-// 3. 删除购物车所选中的项目
+// 3. 删除购物车所选中的项目x
 func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest) (id int64, err error) {
 	checkedItems, err := s.cartService.checkedItems(userID)
 	if err != nil {
@@ -146,14 +159,12 @@ func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest)
 		for _, so := range supplierOrders {
 			if so.splitable() {
 				splittedSupplierOrders := so.split()
-				for _, splittedSupplierOrder := range splittedSupplierOrders {
-					err := s.save(splittedSupplierOrder, tx)
-					if err != nil {
-						return err
-					}
+				id, err = s.saveOrders(splittedSupplierOrders, tx)
+				if err != nil {
+					return err
 				}
 			} else {
-				err := s.save(so, tx)
+				id, err = s.save(so, tx)
 				if err != nil {
 					return err
 				}
@@ -165,6 +176,99 @@ func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest)
 	return
 }
 
+// QuickCreate 快速下单
+func (s *SaleOrderService) QuickCreate(userID int64, req request.SaleOrderQuickAddRequest) (id int64, err error) {
+	stock, err := s.stockDao.SelectByID(req.StockID)
+	if err != nil {
+		return 0, err
+	}
+	address, err := s.userService.GetAddressByID(req.AddressID)
+	if err != nil {
+		return 0, err
+	}
+	goods, err := s.goodsDao.SelectByID(stock.GoodsID)
+	if err != nil {
+		return 0, err
+	}
+	// 由于目前水果的包装都是按照一个快递单来进行的，所以目前对每一个项目创建一个订单
+	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+		ss := []supplierStock{
+			supplierStock{
+				SupplierID: goods.SupplierID,
+				Quantity:   req.Quantity,
+				Stock:      stock,
+				Goods:      goods,
+			},
+		}
+		so := &supplierOrder{
+			supplierID:     goods.SupplierID,
+			supplierStocks: ss,
+		}
+		so.bindBasically(userID, address)
+		if so.splitable() {
+			splittedSupplierOrders := so.split()
+			id, err = s.saveOrders(splittedSupplierOrders, tx)
+			if err != nil {
+				return err
+			}
+		} else {
+			id, err = s.save(so, tx)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	return
+}
+
+func (s *SaleOrderService) saveOrders(orderList []*supplierOrder, tx *sql.Tx) (int64, error) {
+	var masterID int64
+	if len(orderList) > 1 {
+		masterOrder := orderList[0]
+		masterID, err := s.save(masterOrder, tx)
+		if err != nil {
+			return 0, err
+		}
+		orderList = orderList[1:]
+		for _, order := range orderList {
+			order.parentID = masterID
+			_, err := s.save(order, tx)
+			if err != nil {
+				return 0, err
+			}
+		}
+		return masterID, nil
+	}
+	masterID, err := s.save(orderList[0], tx)
+	if err != nil {
+		return 0, err
+	}
+	return masterID, nil
+}
+
+// save 将业务模型转换成数据库模型并持久化
+func (s *SaleOrderService) save(so *supplierOrder, tx *sql.Tx) (int64, error) {
+	saleOrder, saleDetails, err := so.transfer()
+	if err != nil {
+		return 0, err
+	}
+	orderID, err := s.dao.Create(saleOrder, tx)
+	if err != nil {
+		return 0, err
+	}
+	for _, detail := range saleDetails {
+		detail.OrderID = orderID
+		_, err := s.saleDetailDao.Create(detail)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return orderID, nil
+}
+
+// List will list orders for a user
 func (s *SaleOrderService) List(userID int64, req pagination.PaginationRequest) (page pagination.PaginationResonse, err error) {
 	page = pagination.PaginationResonse{
 		PaginationRequest: req,
@@ -185,6 +289,54 @@ func (s *SaleOrderService) List(userID int64, req pagination.PaginationRequest) 
 	return
 }
 
+func (s *SaleOrderService) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse, error) {
+	order, err := s.dao.SelectByID(orderID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if order == nil {
+		return nil, nil
+	}
+	totalPrice := decimal.Zero
+	if order.IsMaster() {
+		subOrders, err := s.dao.SelectByParentID(order.ID)
+		if err != nil {
+			return nil, err
+		}
+		orderSet := newSaleOrderSet(subOrders)
+		totalPrice = orderSet.sumOrderPrice()
+	} else {
+		totalPrice = order.OrderAmt
+	}
+	user, err := s.userService.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	prepayReq := &wechat.PrepayRequest{
+		OpenID:   user.OpenID,
+		OrderNo:  order.OrderNo,
+		TotalFee: totalPrice.Mul(decimal.New(1, 2)).IntPart(),
+		Desc:     order.OrderNo,
+	}
+	result, err := wechat.WechatService().Pay(prepayReq)
+	if err != nil {
+		return nil, err
+	}
+	wp := &model.WechatPayment{
+		SaleOrderID: order.ID,
+		SaleOrderNo: order.OrderNo,
+		Amount:      totalPrice,
+		Status:      model.Paying.String(),
+		CreateTime:  time.Now(),
+	}
+	_, err = s.wechatPaymentDao.Create(wp)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// Info shows sale order info but sale details are not included
 func (s *SaleOrderService) Info(orderID int64) (*response.SaleOrderInfoDTO, error) {
 	saleOrder, err := s.dao.SelectByID(orderID)
 	if err != nil && err != sql.ErrNoRows {
@@ -196,6 +348,7 @@ func (s *SaleOrderService) Info(orderID int64) (*response.SaleOrderInfoDTO, erro
 	return s.installSaleInfoDTO(saleOrder), nil
 }
 
+// ListGoods list sale details for a sale order
 func (s *SaleOrderService) ListGoods(orderID int64) ([]response.SaleOrderGoodsDTO, error) {
 	goodsList, err := s.saleDetailDao.SelectByOrderID(orderID)
 	if err != nil {
@@ -229,8 +382,8 @@ func generateOrderNumber(nodeNo int64) (string, error) {
 func (s *SaleOrderService) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrderInfoDTO {
 	dto := &response.SaleOrderInfoDTO{}
 	dto.ID = order.ID
-	dto.OrderNo = order.OrderNo.String
-	dto.Status = order.Status
+	dto.OrderNo = order.OrderNo
+	dto.Status = order.Status.Name()
 	dto.CreatedAt = order.CreateTime.Format("2006-01-02 15:04:05")
 	dto.Consignee = order.Receiver
 	dto.Mobile = order.PhoneNo
@@ -252,9 +405,9 @@ func (s *SaleOrderService) installSaleInfoDTO(order *model.SaleOrder) *response.
 func installSaleOrderItemDTO(model model.SaleOrder) response.SaleOrderItemDTO {
 	dto := response.SaleOrderItemDTO{}
 	dto.ID = model.ID
-	dto.OrderNo = model.OrderNo.String
+	dto.OrderNo = model.OrderNo
 	dto.OrderAmt = model.OrderAmt
-	dto.Status = model.Status
+	dto.Status = model.Status.Name()
 	return dto
 }
 
@@ -320,6 +473,7 @@ func (ss supplierStock) saleDetail() model.SaleDetail {
 
 // supplierOrder 是供应商的订单信息
 type supplierOrder struct {
+	parentID       int64
 	supplierID     int64
 	userID         int64
 	address        *dto.UserAddress
@@ -340,7 +494,8 @@ func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error)
 		return model.SaleOrder{}, nil, err
 	}
 	saleOrder := model.SaleOrder{
-		OrderNo:    sql.NullString{Valid: true, String: orderNo},
+		ParentID:   so.parentID,
+		OrderNo:    orderNo,
 		UserID:     so.userID,
 		ProvinceID: so.address.ProvinceID,
 		CityID:     so.address.CityID,
@@ -474,6 +629,17 @@ func newSaleOrderSet(orders []model.SaleOrder) *SaleOrderSet {
 	}
 	set.orderIDs = orderIds
 	return set
+}
+
+func (set *SaleOrderSet) sumOrderPrice() decimal.Decimal {
+	sum := decimal.Zero
+	if len(set.orders) == 0 {
+		return sum
+	}
+	for _, order := range set.orders {
+		sum = sum.Add(order.OrderAmt)
+	}
+	return sum
 }
 
 func (set *SaleOrderSet) setSaleDetails(details []*model.SaleDetail) {

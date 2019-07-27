@@ -2,40 +2,70 @@ package utils
 
 import "reflect"
 
+func InsertMap(i interface{}, fieldTag string) map[string]interface{} {
+	return StructToMap(i, fieldTag, "omitinsert")
+}
+
 // StructToMap 将一个stuct转换成map
 func StructToMap(i interface{}, fieldTag string, excludeTag ...string) map[string]interface{} {
-	v_t := reflect.ValueOf(i)
-	u_t := reflect.TypeOf(i)
-	v_kind := v_t.Kind()
-	var field_numbers int
-	if v_kind == reflect.Struct {
-		field_numbers = u_t.NumField()
+	value := reflect.ValueOf(i)
+	t := reflect.TypeOf(i)
+	vkind := value.Kind()
+	var fn int
+	if vkind == reflect.Struct {
+		fn = t.NumField()
 	}
-	if v_kind == reflect.Ptr {
-		u_t = u_t.Elem()
-		field_numbers = u_t.NumField()
-		v_t = v_t.Elem()
+	if vkind == reflect.Ptr {
+		t = t.Elem()
+		fn = t.NumField()
+		value = value.Elem()
 	}
-	field_map := map[string]interface{}{}
-	for i := 0; i < field_numbers; i++ {
-		struct_field := u_t.Field(i)
-		if excludeTag != nil && struct_field.Tag.Get(excludeTag[0]) == "true" {
+	fm := map[string]interface{}{}
+	for i := 0; i < fn; i++ {
+		sf := t.Field(i)
+		if excludeTag != nil && sf.Tag.Get(excludeTag[0]) == "true" {
 			continue
 		}
-		if struct_field.Anonymous && v_t.Field(i).Kind() == reflect.Struct {
-			fv := v_t.Field(i)
+		if sf.Anonymous && value.Field(i).Kind() == reflect.Struct {
+			fv := value.Field(i)
 			fi := fv.Interface()
 			m1 := StructToMap(fi, fieldTag, excludeTag...)
 			for k, v := range m1 {
-				field_map[k] = v
+				fm[k] = v
 			}
 		} else {
-			field_tag := struct_field.Tag.Get(fieldTag)
-			field_val := v_t.Field(i)
-			filed_interface := field_val.Interface()
-			field_map[field_tag] = filed_interface
+			ft := sf.Tag.Get(fieldTag)
+			fv := value.Field(i)
+			fif := fv.Interface()
+			fm[ft] = fif
 		}
 
 	}
-	return field_map
+	return fm
+}
+
+func TagValues(i interface{}, tag string, excludeTags ...string) []string {
+	value := reflect.ValueOf(i)
+	t := reflect.TypeOf(i)
+	vkind := value.Kind()
+	var fn int
+	if vkind == reflect.Struct {
+		fn = t.NumField()
+	}
+	if vkind == reflect.Ptr {
+		t = t.Elem()
+		fn = t.NumField()
+		value = value.Elem()
+	}
+	tagVals := []string{}
+	for i := 0; i < fn; i++ {
+		sf := t.Field(i)
+		if excludeTags != nil && sf.Tag.Get(excludeTags[0]) == "true" {
+			continue
+		}
+		ft := sf.Tag.Get(tag)
+		tagVals = append(tagVals, ft)
+
+	}
+	return tagVals
 }

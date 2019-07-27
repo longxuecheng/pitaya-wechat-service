@@ -11,7 +11,6 @@ type SaleOrderAddRequest struct {
 
 type SaleOrderQuickAddRequest struct {
 	SaleOrderAddRequest
-	UserID   int64           `json:"-"`
 	StockID  int64           `json:"stockId"`
 	Quantity decimal.Decimal `json:"quantity"`
 }
