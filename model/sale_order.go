@@ -49,7 +49,7 @@ func (os OrderStatus) String() string {
 const (
 	Created          OrderStatus = "CREATED"
 	Canceled         OrderStatus = "CANCELED"
-	Paid             OrderStatus = "PAYED"
+	Paid             OrderStatus = "PAID"
 	Paying           OrderStatus = "PAYING"
 	PayFailed        OrderStatus = "PAY_FAILED"
 	Refunding        OrderStatus = "REFUNDING"

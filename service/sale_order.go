@@ -49,17 +49,7 @@ type SaleOrderService struct {
 	userService      *UserService
 }
 
-// UpdateByWechatPayResult 通过微信支付查询结果更新订单状态和交易状态
-func (s *SaleOrderService) UpdateByWechatPayResult(orderID int64, req *payment.QueryOrderResponse) error {
-	order, err := s.dao.SelectByID(orderID)
-	if err != nil {
-		return err
-	}
-	// 查找支付交易
-	txns, err := s.wechatPaymentDao.SelectByOrderNo(order.OrderNo, model.TransactionTypePay)
-	if err != nil {
-		return err
-	}
+func (s *SaleOrderService) payStatus(req *payment.QueryOrderResponse) model.OrderStatus {
 	var orderStatus model.OrderStatus
 	if req.TradeState == payment.Success {
 		orderStatus = model.Paid
@@ -73,6 +63,21 @@ func (s *SaleOrderService) UpdateByWechatPayResult(orderID int64, req *payment.Q
 	if req.TradeState == payment.PayError {
 		orderStatus = model.PayFailed
 	}
+	return orderStatus
+}
+
+// UpdateByWechatPayResult 通过微信支付查询结果更新订单状态和交易状态
+func (s *SaleOrderService) UpdateByWechatPayResult(orderID int64, req *payment.QueryOrderResponse) error {
+	order, err := s.dao.SelectByID(orderID)
+	if err != nil {
+		return err
+	}
+	// 查找支付交易
+	txns, err := s.wechatPaymentDao.SelectByOrderNo(order.OrderNo, model.TransactionTypePay)
+	if err != nil {
+		return err
+	}
+	orderStatus := s.payStatus(req)
 	if orderStatus == "" {
 		return nil
 	}
@@ -323,11 +328,12 @@ func (s *SaleOrderService) WechatPrepay(userID, orderID int64) (*payment.PrepayR
 		return nil, err
 	}
 	wp := &model.WechatPayment{
-		SaleOrderID: order.ID,
-		SaleOrderNo: order.OrderNo,
-		Amount:      totalPrice,
-		Status:      model.Paying.String(),
-		CreateTime:  time.Now(),
+		SaleOrderID:    order.ID,
+		SaleOrderNo:    order.OrderNo,
+		Amount:         totalPrice,
+		Status:         model.Paying.String(),
+		CreateTime:     time.Now(),
+		TransationType: model.TransactionTypePay,
 	}
 	_, err = s.wechatPaymentDao.Create(wp)
 	if err != nil {

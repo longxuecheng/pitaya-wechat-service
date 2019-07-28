@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"database/sql/driver"
 	"fmt"
 
 	"go.planetmeican.com/meican.x/manage/facility/errors"
@@ -89,6 +90,10 @@ type tradeState string
 
 func (ts tradeState) String() string {
 	return string(ts)
+}
+
+func (ts tradeState) Value() (driver.Value, error) {
+	return ts.String(), nil
 }
 
 const (

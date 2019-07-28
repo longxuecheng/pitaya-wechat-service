@@ -28,7 +28,7 @@ type WechatPayment struct {
 	Status         string          `db:"status"`
 	CreateTime     time.Time       `db:"create_time"`
 	Description    *string         `db:"description"`
-	UpdateTime     time.Time       `db:"update_time" omitinsert:"true"`
+	UpdateTime     *time.Time      `db:"update_time" omitinsert:"true"`
 }
 
 func (payment *WechatPayment) TableName() string {
