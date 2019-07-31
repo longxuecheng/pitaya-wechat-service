@@ -1,4 +1,4 @@
-package service
+package basic
 
 import (
 	"gotrue/dao"
@@ -6,20 +6,20 @@ import (
 	"gotrue/model"
 )
 
-var CategoryServiceSingleton *CategoryService
+var CategoryService *Category
 
 // init 在此实现spring中类似注入的功能
-func init() {
-	CategoryServiceSingleton = new(CategoryService)
-	CategoryServiceSingleton.categoryDao = dao.CategoryDaoSingleton
+func initCategoryService() {
+	CategoryService = new(Category)
+	CategoryService.categoryDao = dao.CategoryDao
 }
 
-// CategoryService 作为类目服务，实现了api.CategoryService接口
-type CategoryService struct {
-	categoryDao *dao.CategoryDao
+// Category 作为类目服务，实现了api.Category接口
+type Category struct {
+	categoryDao *dao.Category
 }
 
-func (cs *CategoryService) GetCategoryTree() ([]*dto.CategoryDTO, error) {
+func (cs *Category) GetCategoryTree() ([]*dto.CategoryDTO, error) {
 	categories, err := cs.categoryDao.SelectAll()
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (cs *CategoryService) GetCategoryTree() ([]*dto.CategoryDTO, error) {
 	return buildCategoryTreeDTOs(categories), nil
 }
 
-func (cs *CategoryService) GetTopList() ([]*dto.CategoryDTO, error) {
+func (cs *Category) GetTopList() ([]*dto.CategoryDTO, error) {
 	list, err := cs.categoryDao.SelectAllTopCategories()
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (cs *CategoryService) GetTopList() ([]*dto.CategoryDTO, error) {
 	return buildCategoryDTOs(list), nil
 }
 
-func (cs *CategoryService) GetCategoryByID(ID int) (*dto.CategoryDTO, error) {
+func (cs *Category) GetCategoryByID(ID int) (*dto.CategoryDTO, error) {
 	parent, err := cs.categoryDao.SelectByID(ID)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func (cs *CategoryService) GetCategoryByID(ID int) (*dto.CategoryDTO, error) {
 	return parentDTO, nil
 }
 
-func (cs *CategoryService) GetCategoriesByParentID(parentID int) ([]*dto.CategoryDTO, error) {
+func (cs *Category) GetCategoriesByParentID(parentID int) ([]*dto.CategoryDTO, error) {
 	children, err := cs.categoryDao.SelectByParentID(parentID)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (cs *CategoryService) GetCategoriesByParentID(parentID int) ([]*dto.Categor
 	return childrenDTOs, nil
 }
 
-func (cs *CategoryService) Channels() ([]dto.CategoryChannel, error) {
+func (cs *Category) Channels() ([]dto.CategoryChannel, error) {
 	list, err := cs.categoryDao.SelectChannels()
 	if err != nil {
 		return nil, err

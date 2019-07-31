@@ -7,6 +7,7 @@ import (
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
 	"gotrue/service"
+	"gotrue/service/user"
 	"gotrue/service/wechat"
 	"log"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 
 // GetUserListByConditions 获取用户列表
 func GetUserListByConditions(c *gin.Context) {
-	users, err := service.UserServiceInstance().GetList()
+	users, err := user.UserService.GetList()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, "")
 	}
@@ -28,7 +29,7 @@ func UserAddressDelete(c *gin.Context) {
 
 func UserAddressList(c *gin.Context) {
 	userID := middle_ware.MustGetCurrentUser(c)
-	addresses, err := service.UserServiceInstance().AddressList(userID)
+	addresses, err := user.UserService.AddressList(userID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, addresses)
 }
@@ -37,7 +38,7 @@ func UserAddressDetail(c *gin.Context) {
 	id := c.Query("id")
 	addressID, err := utils.ParseInt64(id)
 	utils.CheckAndPanic(err)
-	address, err := service.UserServiceInstance().GetAddressByID(addressID)
+	address, err := user.UserService.GetAddressByID(addressID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, address)
 }
@@ -47,7 +48,7 @@ func AddNewAddress(c *gin.Context) {
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	id, err := service.UserServiceInstance().CreateAddress(userID, req)
+	id, err := user.UserService.CreateAddress(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, id)
 }
@@ -58,7 +59,7 @@ func LoginByWechat(c *gin.Context) {
 	utils.CheckAndPanic(c.BindJSON(&req))
 	wechatResp, err := wechat.WechatService().UserInfo(req.Code)
 	utils.CheckAndPanic(err)
-	user, err := service.UserServiceInstance().Login(wechatResp.OpenID, req.NickName, req.AvatarURL)
+	user, err := user.UserService.Login(wechatResp.OpenID, req.NickName, req.AvatarURL)
 	utils.CheckAndPanic(err)
 	log.Println(fmt.Sprintf("LoginByWechat response code is %d jscode is %s nickname %s avatar url %s", wechatResp.ErrorCode, req.Code, req.NickName, req.AvatarURL))
 	utils.CheckAndPanic(err)

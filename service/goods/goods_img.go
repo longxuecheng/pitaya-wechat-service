@@ -1,4 +1,4 @@
-package service
+package goods
 
 import (
 	"gotrue/dao"
@@ -6,28 +6,23 @@ import (
 	"gotrue/model"
 )
 
-var GoodsImgServiceSingleton *GoodsImgService
+var GoodsImgService *GoodsImg
 
-// init 在此实现spring中类似注入的功能
-func init() {
-	GoodsImgServiceInstance()
-}
-
-func GoodsImgServiceInstance() *GoodsImgService {
-	if GoodsImgServiceSingleton != nil {
-		return GoodsImgServiceSingleton
+func initGoodsImgService() {
+	if GoodsImgService != nil {
+		return
 	}
-	GoodsImgServiceSingleton = new(GoodsImgService)
-	GoodsImgServiceSingleton.dao = dao.GoodsImgDaoSingleton
-	return GoodsImgServiceSingleton
+	GoodsImgService = &GoodsImg{
+		dao: dao.GoodsImgDao,
+	}
 }
 
-// GoodsImgService 作为类目服务，实现了api.GoodsImgService接口
-type GoodsImgService struct {
-	dao *dao.GoodsImgDao
+// GoodsImg 作为类目服务，实现了api.GoodsImg接口
+type GoodsImg struct {
+	dao *dao.GoodsImg
 }
 
-func (s *GoodsImgService) GetByGoodsID(goodsID int64) ([]*dto.GoodsGalleryDTO, error) {
+func (s *GoodsImg) GetByGoodsID(goodsID int64) ([]*dto.GoodsGalleryDTO, error) {
 	imgs, err := s.dao.SelectByGoodsID(goodsID)
 	if err != nil {
 		return nil, err

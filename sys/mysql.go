@@ -39,7 +39,7 @@ func GetEasyDB() *EasyDB {
 	return easyDB
 }
 
-func connectDataBase() {
+func connect() {
 	if dbConnection == nil {
 		var dbHost string
 		env := os.Getenv("ENV")
@@ -50,11 +50,12 @@ func connectDataBase() {
 		}
 		log.Println(fmt.Sprintf("connecting to database %s", dbHost))
 		connectURL := fmt.Sprintf("%s:%s@tcp(%s)/mymall?allowNativePasswords=true&parseTime=true", "root", "6263272lxc", dbHost)
+		// db, err := sqlx.Connect("mysql", connectURL)
 		db, err := sqlx.Connect("mysql", connectURL)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		db.SetMaxIdleConns(2)
+		db.SetMaxIdleConns(20)
 		db.SetMaxOpenConns(20)
 		err = db.Ping()
 		if err != nil {
@@ -65,8 +66,13 @@ func connectDataBase() {
 }
 
 func DBConnection() *sqlx.DB {
-	connectDataBase()
+	connect()
 	return dbConnection
+}
+
+func (db *EasyDB) Stats() string {
+	stats := db.connection.Stats()
+	return fmt.Sprintf("Idle %d InUse %d Open %d wait %d", stats.Idle, stats.InUse, stats.OpenConnections, stats.WaitCount)
 }
 
 func (db *EasyDB) ExecTx(execFunc func(tx *sql.Tx) error) {
@@ -141,6 +147,7 @@ func (db *EasyDB) SelectOne(target interface{}, query string, args ...interface{
 	} else {
 		return sql.ErrNoRows
 	}
+	defer rows.Close()
 	return nil
 }
 

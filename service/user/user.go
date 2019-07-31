@@ -1,4 +1,4 @@
-package service
+package user
 
 import (
 	"database/sql"
@@ -11,22 +11,27 @@ import (
 	"gotrue/sys"
 )
 
-var UserServiceSingleton *UserService
+var UserService *User
 
-func UserServiceInstance() *UserService {
-	if UserServiceSingleton == nil {
-		UserServiceSingleton = &UserService{
-			userDao:       dao.UserDaoSingleton,
-			addressDao:    dao.UserAddressDaoSingleton,
-			regionService: region.RegionService,
-		}
-	}
-	return UserServiceSingleton
+func beforeInit() {
+	region.Init()
 }
 
-type UserService struct {
+func initUserService() {
+	if UserService != nil {
+		return
+	}
+	beforeInit()
+	UserService = &User{
+		userDao:       dao.UserDaoSingleton,
+		addressDao:    dao.UserAddressDao,
+		regionService: region.RegionService,
+	}
+}
+
+type User struct {
 	userDao       *dao.UserDao
-	addressDao    *dao.UserAddressDao
+	addressDao    *dao.UserAddress
 	regionService api.IRegionService
 }
 
@@ -46,7 +51,7 @@ func (a *address) userAddressDTO(fullRegion string) *dto.UserAddress {
 	return dto
 }
 
-func (s *UserService) GetList() ([]*dto.UserDTO, error) {
+func (s *User) GetList() ([]*dto.UserDTO, error) {
 	users, err := s.userDao.SelectAll()
 	if err != nil {
 		return nil, err
@@ -54,7 +59,7 @@ func (s *UserService) GetList() ([]*dto.UserDTO, error) {
 	return buildUserDTOs(users), nil
 }
 
-func (s *UserService) DefaultAddress(userID int64) (*dto.UserAddress, error) {
+func (s *User) DefaultAddress(userID int64) (*dto.UserAddress, error) {
 	var address = &dto.UserAddress{}
 	ads, err := s.addressDao.SelectByUserID(userID)
 	if err != nil {
@@ -69,11 +74,11 @@ func (s *UserService) DefaultAddress(userID int64) (*dto.UserAddress, error) {
 	return address, nil
 }
 
-func (s *UserService) DeleteAddressByID(id int64) error {
+func (s *User) DeleteAddressByID(id int64) error {
 	return nil
 }
 
-func (s *UserService) AddressList(userID int64) ([]*dto.UserAddress, error) {
+func (s *User) AddressList(userID int64) ([]*dto.UserAddress, error) {
 	ads, err := s.addressDao.SelectByUserID(userID)
 	if err != nil {
 		return nil, err
@@ -85,7 +90,7 @@ func (s *UserService) AddressList(userID int64) ([]*dto.UserAddress, error) {
 	return dtos, nil
 }
 
-func (s *UserService) GetAddressByID(ID int64) (dto *dto.UserAddress, err error) {
+func (s *User) GetAddressByID(ID int64) (dto *dto.UserAddress, err error) {
 	a, err := s.addressDao.SelectByID(ID)
 	if err != nil {
 		return
@@ -98,7 +103,7 @@ func (s *UserService) GetAddressByID(ID int64) (dto *dto.UserAddress, err error)
 	return address.userAddressDTO(fullRegion), nil
 }
 
-func (s *UserService) GetUserByID(userID int64) (dto *dto.UserDTO, err error) {
+func (s *User) GetUserByID(userID int64) (dto *dto.UserDTO, err error) {
 	user, err := s.userDao.SelectByID(userID)
 	if err != nil {
 		return
@@ -107,7 +112,7 @@ func (s *UserService) GetUserByID(userID int64) (dto *dto.UserDTO, err error) {
 }
 
 // CreateAddress create or update an user address
-func (s *UserService) CreateAddress(userID int64, req request.UserAddressAddRequest) (id int64, err error) {
+func (s *User) CreateAddress(userID int64, req request.UserAddressAddRequest) (id int64, err error) {
 	a, err := s.addressDao.SelectByID(req.ID)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
@@ -152,7 +157,7 @@ func (s *UserService) CreateAddress(userID int64, req request.UserAddressAddRequ
 	return
 }
 
-func (s *UserService) Login(openID string, nickName string, avatarURL string) (*model.User, error) {
+func (s *User) Login(openID string, nickName string, avatarURL string) (*model.User, error) {
 	user, err := s.userDao.SelectByWechatID(openID)
 	if err != nil {
 		return nil, err

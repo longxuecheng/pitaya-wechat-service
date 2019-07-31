@@ -5,8 +5,8 @@ import (
 	"gotrue/dto/request"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
-	"gotrue/service"
 	"gotrue/service/express"
+	"gotrue/service/order"
 	"gotrue/service/wechat"
 	"strconv"
 
@@ -19,7 +19,7 @@ func SubmitSaleOrder(c *gin.Context) {
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	orderID, err := service.SaleOrderServiceInstance().Create(userID, req)
+	orderID, err := order.SaleOrderService.Create(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, orderID)
 }
@@ -29,7 +29,7 @@ func QuickSubmitOrder(c *gin.Context) {
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	orderID, err := service.SaleOrderServiceInstance().QuickCreate(userID, req)
+	orderID, err := order.SaleOrderService.QuickCreate(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, orderID)
 }
@@ -40,7 +40,7 @@ func ListSaleOrders(c *gin.Context) {
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	result, err := service.SaleOrderServiceInstance().List(userID, req)
+	result, err := order.SaleOrderService.List(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, result)
 }
@@ -48,9 +48,9 @@ func ListSaleOrders(c *gin.Context) {
 // SaleOrderInfo 获取订单详情
 func SaleOrderInfo(c *gin.Context) {
 	orderID := bindSaleOrderIDFromQuery(c)
-	info, err := service.SaleOrderServiceInstance().Info(orderID)
+	info, err := order.SaleOrderService.Info(orderID)
 	utils.CheckAndPanic(err)
-	goodsList, err := service.SaleOrderServiceInstance().ListGoods(orderID)
+	goodsList, err := order.SaleOrderService.ListGoods(orderID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, map[string]interface{}{
 		"orderInfo":  info,
@@ -60,7 +60,7 @@ func SaleOrderInfo(c *gin.Context) {
 
 func SaleOrderExpressInfo(c *gin.Context) {
 	orderID := bindSaleOrderIDFromQuery(c)
-	info, err := service.SaleOrderServiceInstance().Info(orderID)
+	info, err := order.SaleOrderService.Info(orderID)
 	utils.CheckAndPanic(err)
 	expressInfo, err := express.ExpressService.ExpressInfo(express.ExpressType(info.ExpressMethod), info.ExpressNo)
 	utils.CheckAndPanic(err)
@@ -70,18 +70,18 @@ func SaleOrderExpressInfo(c *gin.Context) {
 func WechatPrePay(c *gin.Context) {
 	orderID := bindSaleOrderIDFromQuery(c)
 	userID := middle_ware.MustGetCurrentUser(c)
-	result, err := service.SaleOrderServiceInstance().WechatPrepay(userID, orderID)
+	result, err := order.SaleOrderService.WechatPrepay(userID, orderID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, result)
 }
 
 func WechatPayResult(c *gin.Context) {
 	orderID := bindSaleOrderIDFromQuery(c)
-	order, err := service.SaleOrderServiceInstance().Info(orderID)
+	orderInfo, err := order.SaleOrderService.Info(orderID)
 	utils.CheckAndPanic(err)
-	payResult, err := wechat.WechatService().QueryPayResult(order.OrderNo)
+	payResult, err := wechat.WechatService().QueryPayResult(orderInfo.OrderNo)
 	utils.CheckAndPanic(err)
-	err = service.SaleOrderServiceInstance().UpdateByWechatPayResult(orderID, payResult)
+	err = order.SaleOrderService.UpdateByWechatPayResult(orderID, payResult)
 	utils.CheckAndPanic(err)
 }
 

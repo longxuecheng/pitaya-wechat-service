@@ -7,22 +7,23 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-// AttributeDaoSingleton is a singleton of goods dao
-var AttributeDaoSingleton *AttributeDao
+// AttributeDao is a singleton of goods dao
+var AttributeDao *Attribute
 
-func init() {
-	AttributeDaoSingleton = new(AttributeDao)
-	AttributeDaoSingleton.db = sys.GetEasyDB()
+func initAttributeDao() {
+	AttributeDao = &Attribute{
+		db: sys.GetEasyDB(),
+	}
 }
 
 var columns_attribute = []string{"id", "name", "value", "sort_order"}
 
 // AttributeDao is dao
-type AttributeDao struct {
+type Attribute struct {
 	db *sys.EasyDB
 }
 
-func (dao *AttributeDao) SelectByIDs(IDs []int64) ([]*model.Attribute, error) {
+func (dao *Attribute) SelectByIDs(IDs []int64) ([]*model.Attribute, error) {
 	abs := []*model.Attribute{}
 	sql, args, err := sq.Select(columns_attribute...).From("attribute").Where(sq.Eq{"id": IDs}).ToSql()
 	if err != nil {

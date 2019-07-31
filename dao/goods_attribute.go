@@ -7,22 +7,23 @@ import (
 	"strings"
 )
 
-// GoodsAttributeDaoSingleton is a singleton of goods dao
-var GoodsAttributeDaoSingleton *GoodsAttributeDao
+// GoodsAttributeDao is a singleton of goods dao
+var GoodsAttributeDao *GoodsAttribute
 
-func init() {
-	GoodsAttributeDaoSingleton = new(GoodsAttributeDao)
-	GoodsAttributeDaoSingleton.db = sys.GetEasyDB()
+func initGoodsAttributeDao() {
+	GoodsAttributeDao = &GoodsAttribute{
+		db: sys.GetEasyDB(),
+	}
 }
 
 var columns_goods_attribute = []string{"id", "goods_id", "attribute_id", "value"}
 
-// GoodsAttributeDao is dao
-type GoodsAttributeDao struct {
+// GoodsAttribute is dao
+type GoodsAttribute struct {
 	db *sys.EasyDB
 }
 
-func (dao *GoodsAttributeDao) SelectByGoodsID(goodsID int64) ([]*model.GoodsAttribute, error) {
+func (dao *GoodsAttribute) SelectByGoodsID(goodsID int64) ([]*model.GoodsAttribute, error) {
 	attributes := []*model.GoodsAttribute{}
 	err := dao.db.Select(&attributes, fmt.Sprintf("SELECT %s FROM goods_attribute WHERE goods_id = ?", strings.Join(columns_goods_attribute, ",")), goodsID)
 	if err != nil {

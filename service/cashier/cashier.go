@@ -1,4 +1,4 @@
-package service
+package cashier
 
 import (
 	"gotrue/dao"
@@ -6,37 +6,45 @@ import (
 	"gotrue/dto/response"
 	"gotrue/facility/utils"
 	"gotrue/model"
+	"gotrue/service/cart"
+	"gotrue/service/goods"
+	"gotrue/service/user"
 
 	"github.com/shopspring/decimal"
 )
 
-var cashierServiceSingleton *CashierService
+var CashierService *Cashier
 
-// CashierServiceServiceInstance get a service instance of singleton
-func CashierServiceServiceInstance() *CashierService {
-	if cashierServiceSingleton == nil {
-		cashierServiceSingleton = &CashierService{
-			stockDao:     dao.GoodsStockDaoSingleton,
-			goodsDao:     dao.GoodsDaoSingleton,
-			goodsService: GoodsServiceInstance(),
-			cartService:  CartServiceInstance(),
-			userService:  UserServiceInstance(),
-		}
-	}
-	return cashierServiceSingleton
+func beforeInit() {
+	goods.Init()
+	cart.Init()
 }
 
-// CashierService is checkout service
-type CashierService struct {
-	stockDao     *dao.GoodsStockDao
-	goodsDao     *dao.GoodsDao
-	goodsService *GoodsService
-	cartService  *CartService
-	userService  *UserService
+func initCashierService() {
+	if CashierService != nil {
+		return
+	}
+	beforeInit()
+	CashierService = &Cashier{
+		stockDao:     dao.StockDao,
+		goodsDao:     dao.GoodsDao,
+		goodsService: goods.GoodsService,
+		cartService:  cart.CartService,
+		userService:  user.UserService,
+	}
+}
+
+// Cashier is checkout service
+type Cashier struct {
+	stockDao     *dao.Stock
+	goodsDao     *dao.Goods
+	goodsService *goods.Goods
+	cartService  *cart.Cart
+	userService  *user.User
 }
 
 // CartCheckout is 从购物车结算
-func (s *CashierService) CartCheckout(userID int64) (*response.Cashier, error) {
+func (s *Cashier) CartCheckout(userID int64) (*response.Cashier, error) {
 	items, err := s.cartService.List(userID)
 	if err != nil {
 		return nil, err
@@ -46,7 +54,7 @@ func (s *CashierService) CartCheckout(userID int64) (*response.Cashier, error) {
 }
 
 // QuickCheckout is 从单品进行快速结算
-func (s *CashierService) QuickCheckout(req request.CashierPreview) (*response.Cashier, error) {
+func (s *Cashier) QuickCheckout(req request.CashierPreview) (*response.Cashier, error) {
 	stock, err := s.stockDao.SelectByID(req.StockID)
 	if err != nil {
 		return nil, err

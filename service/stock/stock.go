@@ -1,4 +1,4 @@
-package service
+package stock
 
 import (
 	"gotrue/dao"
@@ -6,34 +6,33 @@ import (
 	"gotrue/model"
 )
 
-var stockServiceSingleton *GoodsStockService
+var StockService *Stock
 
-func StockServiceInstance() *GoodsStockService {
-	if stockServiceSingleton != nil {
-		return stockServiceSingleton
+func initStockService() {
+	if StockService != nil {
+		return
 	}
-	stockServiceSingleton = &GoodsStockService{
-		stockDao: dao.GoodsStockDaoSingleton,
+	StockService = &Stock{
+		dao: dao.StockDao,
 	}
-	return stockServiceSingleton
 }
 
-// GoodsStockService 作为类目服务，实现了api.GoodsStockService接口
+// Stock 作为类目服务，实现了api.Stock接口
 // 服务依赖 (1. attributeService)
-type GoodsStockService struct {
-	stockDao *dao.GoodsStockDao
+type Stock struct {
+	dao *dao.Stock
 }
 
-func (s *GoodsStockService) GetByID(ID int64) (*dto.GoodsStockDTO, error) {
-	stock, err := s.stockDao.SelectByID(ID)
+func (s *Stock) GetByID(ID int64) (*dto.GoodsStockDTO, error) {
+	stock, err := s.dao.SelectByID(ID)
 	if err != nil {
 		return nil, err
 	}
 	return installGoodsStockDTO(stock), nil
 }
 
-func (s *GoodsStockService) GetStocksByGoodsID(goodsID int64) ([]*dto.GoodsStockDTO, error) {
-	stocks, err := s.stockDao.SelectByGoodsID(goodsID)
+func (s *Stock) GetStocksByGoodsID(goodsID int64) ([]*dto.GoodsStockDTO, error) {
+	stocks, err := s.dao.SelectByGoodsID(goodsID)
 	if err != nil {
 		return nil, err
 	}

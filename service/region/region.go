@@ -10,13 +10,16 @@ import (
 var RegionService *regionService
 
 func Init() {
+	if RegionService != nil {
+		return
+	}
 	RegionService = &regionService{
-		dao.RegionDaoInstance(),
+		dao.RegionDao,
 	}
 }
 
 type regionService struct {
-	dao *dao.RegionDao
+	dao *dao.Region
 }
 
 func (rs *regionService) FullName(regionIDs []int) (string, error) {

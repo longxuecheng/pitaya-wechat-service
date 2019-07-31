@@ -5,7 +5,8 @@ import (
 	"gotrue/dto/request"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
-	"gotrue/service"
+	"gotrue/service/cashier"
+	"gotrue/service/user"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,8 @@ func PreviewCashierFromCart(c *gin.Context) {
 	}
 	addressID, err := utils.ParseInt64(addressIDString)
 	utils.CheckAndPanic(err)
-	cashier, err := service.CashierServiceServiceInstance().CartCheckout(userID)
+
+	cashier, err := cashier.CashierService.CartCheckout(userID)
 	utils.CheckAndPanic(err)
 	address, err := getUserAddress(addressID, userID)
 	utils.CheckAndPanic(err)
@@ -37,7 +39,7 @@ func PreviewCashierFromStock(c *gin.Context) {
 	req := &request.CashierPreview{}
 	err := c.BindJSON(req)
 	utils.CheckAndPanic(err)
-	cashier, err := service.CashierServiceServiceInstance().QuickCheckout(*req)
+	cashier, err := cashier.CashierService.QuickCheckout(*req)
 	utils.CheckAndPanic(err)
 	address, err := getUserAddress(req.AddressID, userID)
 	utils.CheckAndPanic(err)
@@ -49,7 +51,7 @@ func PreviewCashierFromStock(c *gin.Context) {
 
 func getUserAddress(addressID, userID int64) (*dto.UserAddress, error) {
 	if addressID == 0 {
-		return service.UserServiceInstance().DefaultAddress(userID)
+		return user.UserService.DefaultAddress(userID)
 	}
-	return service.UserServiceInstance().GetAddressByID(addressID)
+	return user.UserService.GetAddressByID(addressID)
 }

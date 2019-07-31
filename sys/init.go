@@ -1,0 +1,5 @@
+package sys
+
+func Init() {
+	
+}

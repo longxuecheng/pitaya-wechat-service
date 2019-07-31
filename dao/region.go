@@ -7,32 +7,29 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-// RegionDaoSingleton is a singleton of goods dao
-var RegionDaoSingleton *RegionDao
+// RegionDao is a singleton of goods dao
+var RegionDao *Region
 
-func RegionDaoInstance() *RegionDao {
-	if RegionDaoSingleton != nil {
-		return RegionDaoSingleton
+func initRegionDao() {
+	RegionDao = &Region{
+		db: sys.GetEasyDB(),
 	}
-	RegionDaoSingleton = new(RegionDao)
-	RegionDaoSingleton.db = sys.GetEasyDB()
-	return RegionDaoSingleton
 }
 
 var columns_region_all = []string{"id", "parent_id", "name", "type", "agency_id"}
 
-// RegionDao is dao
-type RegionDao struct {
+// Region is dao
+type Region struct {
 	db *sys.EasyDB
 }
 
-func (dao *RegionDao) SelectByParentID(parentID int) ([]model.Region, error) {
+func (dao *Region) SelectByParentID(parentID int) ([]model.Region, error) {
 	regions := []model.Region{}
 	err := dao.db.SelectDSL(&regions, columns_region_all, model.Table_Region, sq.Eq{"parent_id": parentID})
 	return regions, err
 }
 
-func (dao *RegionDao) SelectByIDs(ids []int) ([]*model.Region, error) {
+func (dao *Region) SelectByIDs(ids []int) ([]*model.Region, error) {
 	regions := []*model.Region{}
 	return regions, dao.db.SelectDSL(&regions, columns_region_all, model.Table_Region, sq.Eq{"id": ids}, "type asc")
 }

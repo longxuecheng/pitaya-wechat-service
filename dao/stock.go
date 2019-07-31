@@ -7,23 +7,23 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-// GoodsStockDaoSingleton is a singleton of goods dao
-var GoodsStockDaoSingleton *GoodsStockDao
+// StockDao is a singleton of goods dao
+var StockDao *Stock
 
 func initStockDao() {
-	GoodsStockDaoSingleton = &GoodsStockDao{
+	StockDao = &Stock{
 		db: sys.GetEasyDB(),
 	}
 }
 
 var columns_goods_stock = []string{"id", "supplier_id", "goods_id", "sale_unit_price", "cost_unit_price", "available_quantity", "specification"}
 
-// GoodsStockDao is dao
-type GoodsStockDao struct {
+// Stock is dao
+type Stock struct {
 	db *sys.EasyDB
 }
 
-func (dao *GoodsStockDao) SelectByID(ID int64) (*model.GoodsStock, error) {
+func (dao *Stock) SelectByID(ID int64) (*model.GoodsStock, error) {
 	stock := new(model.GoodsStock)
 	err := dao.db.SelectOneDSL(stock, columns_goods_stock, model.Table_Stock, sq.Eq{"id": ID})
 	if err != nil {
@@ -32,7 +32,7 @@ func (dao *GoodsStockDao) SelectByID(ID int64) (*model.GoodsStock, error) {
 	return stock, nil
 }
 
-func (dao *GoodsStockDao) SelectByGoodsID(goodsID int64) ([]*model.GoodsStock, error) {
+func (dao *Stock) SelectByGoodsID(goodsID int64) ([]*model.GoodsStock, error) {
 	stocks := []*model.GoodsStock{}
 	err := dao.db.SelectDSL(&stocks, columns_goods_stock, model.Table_Stock, sq.Eq{"goods_id": goodsID})
 	if err != nil {
@@ -41,7 +41,7 @@ func (dao *GoodsStockDao) SelectByGoodsID(goodsID int64) ([]*model.GoodsStock, e
 	return stocks, nil
 }
 
-func (dao *GoodsStockDao) SelectByIDs(ids []int64) ([]*model.GoodsStock, error) {
+func (dao *Stock) SelectByIDs(ids []int64) ([]*model.GoodsStock, error) {
 	stocks := []*model.GoodsStock{}
 	err := dao.db.SelectDSL(&stocks, columns_goods_stock, model.Table_Stock, sq.Eq{"id": ids})
 	if err != nil {

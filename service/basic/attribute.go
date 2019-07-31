@@ -1,4 +1,4 @@
-package service
+package basic
 
 import (
 	"gotrue/dao"
@@ -6,20 +6,19 @@ import (
 	"gotrue/model"
 )
 
-var AttributeServiceSingleton *AttributeService
+var AttributeService *Attribute
 
-// init 在此实现spring中类似注入的功能
-func init() {
-	AttributeServiceSingleton = new(AttributeService)
-	AttributeServiceSingleton.dao = dao.AttributeDaoSingleton
+func initAttributeService() {
+	AttributeService = new(Attribute)
+	AttributeService.dao = dao.AttributeDao
 }
 
-// AttributeService 作为类目服务，实现了api.IAttributeService
-type AttributeService struct {
-	dao *dao.AttributeDao
+// Attribute 作为类目服务，实现了api.IAttribute
+type Attribute struct {
+	dao *dao.Attribute
 }
 
-func (cs *AttributeService) GetByIDs(IDs []int64) ([]*dto.AttributeDTO, error) {
+func (cs *Attribute) GetByIDs(IDs []int64) ([]*dto.AttributeDTO, error) {
 	attributes, err := cs.dao.SelectByIDs(IDs)
 	if err != nil {
 		return nil, err

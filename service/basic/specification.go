@@ -1,4 +1,4 @@
-package service
+package basic
 
 import (
 	"gotrue/dao"
@@ -6,20 +6,20 @@ import (
 	"gotrue/model"
 )
 
-var SpecificationServiceSingleton *SpecificationService
+var SpecificationService *Specification
 
-// init 在此实现spring中类似注入的功能
-func init() {
-	SpecificationServiceSingleton = new(SpecificationService)
-	SpecificationServiceSingleton.dao = dao.SpecificationDaoSingleton
+func initSpecificationService() {
+	SpecificationService = &Specification{
+		dao: dao.SpecificationDao,
+	}
 }
 
-// SpecificationService 作为规格服务，实现了api.ISpecificationService
-type SpecificationService struct {
-	dao *dao.SpecificationDao
+// Specification 作为规格服务，实现了api.ISpecification
+type Specification struct {
+	dao *dao.Specification
 }
 
-func (cs *SpecificationService) GetByIDs(IDs []int64) ([]*dto.SpecificationDTO, error) {
+func (cs *Specification) GetByIDs(IDs []int64) ([]*dto.SpecificationDTO, error) {
 	Specifications, err := cs.dao.SelectByIDs(IDs)
 	if err != nil {
 		return nil, err

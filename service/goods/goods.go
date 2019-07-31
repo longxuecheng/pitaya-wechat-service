@@ -1,37 +1,36 @@
-package service
+package goods
 
 import (
 	"gotrue/api"
 	"gotrue/dao"
 	"gotrue/dto"
 	"gotrue/model"
+	"gotrue/service/basic"
 	"strings"
 )
 
-var singleton *GoodsService
+var GoodsService *Goods
 
-func GoodsServiceInstance() *GoodsService {
-	if singleton != nil {
-		return singleton
+func initGoodsService() {
+	if GoodsService != nil {
+		return
 	}
-	singleton = new(GoodsService)
-	singleton.goodsDao = dao.GoodsDaoInstance()
-	singleton.goodsAttributeDao = dao.GoodsAttributeDaoSingleton
-	singleton.goodsSpecDao = dao.GoodsSpecificationDaoSingleton
-	singleton.attributeService = AttributeServiceSingleton
-	return singleton
+	GoodsService = &Goods{
+		goodsDao:          dao.GoodsDao,
+		goodsAttributeDao: dao.GoodsAttributeDao,
+		goodsSpecDao:      dao.GoodsSpecDao,
+		attributeService:  basic.AttributeService,
+	}
 }
 
-// GoodsService 作为类目服务，实现了api.GoodsService接口
-// 服务依赖 (1. attributeService)
-type GoodsService struct {
-	goodsDao          *dao.GoodsDao
-	goodsAttributeDao *dao.GoodsAttributeDao
-	goodsSpecDao      *dao.GoodsSpecificationDao
+type Goods struct {
+	goodsDao          *dao.Goods
+	goodsAttributeDao *dao.GoodsAttribute
+	goodsSpecDao      *dao.GoodsSpec
 	attributeService  api.IAttributeService
 }
 
-func (s *GoodsService) GetGoodsByCategory(categoryID int64) ([]*dto.GoodsItemDTO, error) {
+func (s *Goods) GetGoodsByCategory(categoryID int64) ([]*dto.GoodsItemDTO, error) {
 	goods, err := s.goodsDao.SelectByCategory(categoryID)
 	if err != nil {
 		return nil, err
@@ -39,11 +38,11 @@ func (s *GoodsService) GetGoodsByCategory(categoryID int64) ([]*dto.GoodsItemDTO
 	return buildGoodsDTOs(goods), nil
 }
 
-func (s *GoodsService) Gallery(goodsID int64) ([]dto.GoodsGalleryDTO, error) {
+func (s *Goods) Gallery(goodsID int64) ([]dto.GoodsGalleryDTO, error) {
 	return nil, nil
 }
 
-func (s *GoodsService) Info(goodsID int64) (*dto.GoodsInfoDTO, error) {
+func (s *Goods) Info(goodsID int64) (*dto.GoodsInfoDTO, error) {
 	goods, err := s.goodsDao.SelectByID(goodsID)
 	if err != nil {
 		return nil, err
@@ -52,7 +51,7 @@ func (s *GoodsService) Info(goodsID int64) (*dto.GoodsInfoDTO, error) {
 	return dto, nil
 }
 
-func (s *GoodsService) Attributes(goodsID int64) ([]*dto.AttributeDTO, error) {
+func (s *Goods) Attributes(goodsID int64) ([]*dto.AttributeDTO, error) {
 	// 获取商品属性
 	goodsAttributes, err := s.goodsAttributeDao.SelectByGoodsID(goodsID)
 	if err != nil {
@@ -78,7 +77,7 @@ func (s *GoodsService) Attributes(goodsID int64) ([]*dto.AttributeDTO, error) {
 	return attributes, nil
 }
 
-func (s *GoodsService) Specifications(goodsID int64) ([]*dto.GoodsSpecificationDTO, error) {
+func (s *Goods) Specifications(goodsID int64) ([]*dto.GoodsSpecificationDTO, error) {
 	goodsSpecs, err := s.goodsSpecDao.SelectByGoodsID(goodsID)
 	if err != nil {
 		return nil, err
@@ -86,7 +85,7 @@ func (s *GoodsService) Specifications(goodsID int64) ([]*dto.GoodsSpecificationD
 	return buildGoodsSpecificationDTOs(goodsSpecs), nil
 }
 
-func (s *GoodsService) SpecificationDesc(goodsID int64, specIDs []int64, sep string) (string, error) {
+func (s *Goods) SpecificationDesc(goodsID int64, specIDs []int64, sep string) (string, error) {
 	if len(specIDs) == 0 {
 		return "", nil
 	}
@@ -106,7 +105,7 @@ func (s *GoodsService) SpecificationDesc(goodsID int64, specIDs []int64, sep str
 	return strings.Join(specNames, sep), nil // 商品规格组合描述
 }
 
-func (s *GoodsService) HotGoods() ([]*dto.GoodsItemDTO, error) {
+func (s *Goods) HotGoods() ([]*dto.GoodsItemDTO, error) {
 	goodsList, err := s.goodsDao.SelectAllByStatus(model.GoodsStatusOnSale)
 	if err != nil {
 		return nil, err

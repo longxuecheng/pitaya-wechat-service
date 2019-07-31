@@ -1,4 +1,4 @@
-package service
+package order
 
 import (
 	"database/sql"
@@ -10,7 +10,10 @@ import (
 	"gotrue/dto/request"
 	"gotrue/dto/response"
 	"gotrue/model"
+	"gotrue/service/cart"
+	"gotrue/service/goods"
 	"gotrue/service/region"
+	"gotrue/service/user"
 	"gotrue/service/wechat"
 	"gotrue/service/wechat/payment"
 	"gotrue/sys"
@@ -21,39 +24,46 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var saleOrderService *SaleOrderService
+var SaleOrderService *SaleOrder
 
-// SaleOrderServiceInstance get a service instance of saleOrderService
-func SaleOrderServiceInstance() *SaleOrderService {
-	if saleOrderService == nil {
-		saleOrderService = new(SaleOrderService)
-		saleOrderService.dao = dao.SaleOrderDaoInstance()
-		saleOrderService.stockDao = dao.GoodsStockDaoSingleton
-		saleOrderService.goodsDao = dao.GoodsDaoInstance()
-		saleOrderService.saleDetailDao = dao.SaleDetailDaoInstance()
-		saleOrderService.cartService = CartServiceInstance()
-		saleOrderService.userService = UserServiceInstance()
-		saleOrderService.goodsService = GoodsServiceInstance()
-		saleOrderService.wechatPaymentDao = dao.WechatPaymentDao
-		saleOrderService.regionService = region.RegionService
-	}
-	return saleOrderService
+func beforeInit() {
+	cart.Init()
+	goods.Init()
 }
 
-// SaleOrderService 作为销售订单服务，实现了api.IOrderService
-type SaleOrderService struct {
-	dao              *dao.SaleOrderDao
-	saleDetailDao    *dao.SaleDetailDao
-	stockDao         *dao.GoodsStockDao
-	goodsDao         *dao.GoodsDao
+func initSaleOrderService() {
+	if SaleOrderService != nil {
+		return
+	}
+	beforeInit()
+	SaleOrderService = &SaleOrder{
+		dao:              dao.SaleOrderDao,
+		stockDao:         dao.StockDao,
+		goodsDao:         dao.GoodsDao,
+		saleDetailDao:    dao.SaleDetailDao,
+		wechatPaymentDao: dao.WechatPaymentDao,
+		regionService:    region.RegionService,
+		cartService:      cart.CartService,
+		userService:      user.UserService,
+		goodsService:     goods.GoodsService,
+	}
+
+}
+
+// SaleOrder 作为销售订单服务，实现了api.IOrderService
+type SaleOrder struct {
+	dao              *dao.SaleOrder
+	saleDetailDao    *dao.SaleDetail
+	stockDao         *dao.Stock
+	goodsDao         *dao.Goods
 	wechatPaymentDao *dao.WechatPayment
-	goodsService     *GoodsService
-	cartService      *CartService
-	userService      *UserService
+	goodsService     *goods.Goods
+	cartService      *cart.Cart
+	userService      *user.User
 	regionService    api.IRegionService
 }
 
-func (s *SaleOrderService) payStatus(req *payment.QueryOrderResponse) model.OrderStatus {
+func (s *SaleOrder) payStatus(req *payment.QueryOrderResponse) model.OrderStatus {
 	var orderStatus model.OrderStatus
 	if req.TradeState == payment.Success {
 		orderStatus = model.Paid
@@ -71,7 +81,7 @@ func (s *SaleOrderService) payStatus(req *payment.QueryOrderResponse) model.Orde
 }
 
 // UpdateByWechatPayResult 通过微信支付查询结果更新订单状态和交易状态
-func (s *SaleOrderService) UpdateByWechatPayResult(orderID int64, req *payment.QueryOrderResponse) error {
+func (s *SaleOrder) UpdateByWechatPayResult(orderID int64, req *payment.QueryOrderResponse) error {
 	order, err := s.dao.SelectByID(orderID)
 	if err != nil {
 		return err
@@ -141,8 +151,8 @@ func (s *SaleOrderService) UpdateByWechatPayResult(orderID int64, req *payment.Q
 // 1. 创建订单
 // 2. 创建订单明细
 // 3. 删除购物车所选中的项目x
-func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest) (id int64, err error) {
-	checkedItems, err := s.cartService.checkedItems(userID)
+func (s *SaleOrder) Create(userID int64, req request.SaleOrderAddRequest) (id int64, err error) {
+	checkedItems, err := s.cartService.CheckedItems(userID)
 	if err != nil {
 		return
 	}
@@ -186,7 +196,7 @@ func (s *SaleOrderService) Create(userID int64, req request.SaleOrderAddRequest)
 }
 
 // QuickCreate 快速下单
-func (s *SaleOrderService) QuickCreate(userID int64, req request.SaleOrderQuickAddRequest) (id int64, err error) {
+func (s *SaleOrder) QuickCreate(userID int64, req request.SaleOrderQuickAddRequest) (id int64, err error) {
 	stock, err := s.stockDao.SelectByID(req.StockID)
 	if err != nil {
 		return 0, err
@@ -232,7 +242,7 @@ func (s *SaleOrderService) QuickCreate(userID int64, req request.SaleOrderQuickA
 	return
 }
 
-func (s *SaleOrderService) saveOrders(orderList []*supplierOrder, tx *sql.Tx) (int64, error) {
+func (s *SaleOrder) saveOrders(orderList []*supplierOrder, tx *sql.Tx) (int64, error) {
 	var masterID int64
 	if len(orderList) > 1 {
 		masterOrder := orderList[0]
@@ -258,7 +268,7 @@ func (s *SaleOrderService) saveOrders(orderList []*supplierOrder, tx *sql.Tx) (i
 }
 
 // save 将业务模型转换成数据库模型并持久化
-func (s *SaleOrderService) save(so *supplierOrder, tx *sql.Tx) (int64, error) {
+func (s *SaleOrder) save(so *supplierOrder, tx *sql.Tx) (int64, error) {
 	saleOrder, saleDetails, err := so.transfer()
 	if err != nil {
 		return 0, err
@@ -278,7 +288,7 @@ func (s *SaleOrderService) save(so *supplierOrder, tx *sql.Tx) (int64, error) {
 }
 
 // List will list orders for a user
-func (s *SaleOrderService) List(userID int64, req pagination.PaginationRequest) (page pagination.PaginationResonse, err error) {
+func (s *SaleOrder) List(userID int64, req pagination.PaginationRequest) (page pagination.PaginationResonse, err error) {
 	page = pagination.PaginationResonse{
 		PaginationRequest: req,
 	}
@@ -298,7 +308,7 @@ func (s *SaleOrderService) List(userID int64, req pagination.PaginationRequest) 
 	return
 }
 
-func (s *SaleOrderService) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse, error) {
+func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse, error) {
 	order, err := s.dao.SelectByID(orderID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -347,7 +357,7 @@ func (s *SaleOrderService) WechatPrepay(userID, orderID int64) (*payment.PrepayR
 }
 
 // Info shows sale order info but sale details are not included
-func (s *SaleOrderService) Info(orderID int64) (*response.SaleOrderInfoDTO, error) {
+func (s *SaleOrder) Info(orderID int64) (*response.SaleOrderInfoDTO, error) {
 	saleOrder, err := s.dao.SelectByID(orderID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -365,7 +375,7 @@ func (s *SaleOrderService) Info(orderID int64) (*response.SaleOrderInfoDTO, erro
 }
 
 // ListGoods list sale details for a sale order
-func (s *SaleOrderService) ListGoods(orderID int64) ([]response.SaleOrderGoodsDTO, error) {
+func (s *SaleOrder) ListGoods(orderID int64) ([]response.SaleOrderGoodsDTO, error) {
 	goodsList, err := s.saleDetailDao.SelectByOrderID(orderID)
 	if err != nil {
 		return nil, err
@@ -395,7 +405,7 @@ func generateOrderNumber(nodeNo int64) (string, error) {
 	return strconv.FormatInt(id.Int64(), 10), nil
 }
 
-func (s *SaleOrderService) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrderInfoDTO {
+func (s *SaleOrder) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrderInfoDTO {
 	dto := &response.SaleOrderInfoDTO{}
 	dto.ID = order.ID
 	dto.OrderNo = order.OrderNo

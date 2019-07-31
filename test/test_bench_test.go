@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 	"text/template"
@@ -124,10 +123,10 @@ func ExamplePerm() {
 var name *string
 
 // TestMain是主测试方法会在所有的测试方法之前运行
-func TestMain(m *testing.M) {
-	name = flag.String("name", "default name ", "[usage] -name to pass the params")
-	// call flag.Parse() here if TestMain uses flags
-	flag.Parse()
-	println("Flag got by TestMain is ", *name)
-	os.Exit(m.Run())
-}
+// func TestMain(m *testing.M) {
+// 	name = flag.String("name", "default name ", "[usage] -name to pass the params")
+// 	// call flag.Parse() here if TestMain uses flags
+// 	flag.Parse()
+// 	println("Flag got by TestMain is ", *name)
+// 	os.Exit(m.Run())
+// }

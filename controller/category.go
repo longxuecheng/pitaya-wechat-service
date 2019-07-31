@@ -1,20 +1,17 @@
 package controller
 
 import (
-	"gotrue/api"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
-	"gotrue/service"
+	"gotrue/service/basic"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-var categoryServiceReference api.ICategoryService = service.CategoryServiceSingleton
-
 // GetCatogoriesTree 获取顶级类目树列表
 func GetCatogoriesTree(c *gin.Context) {
-	categories, err := categoryServiceReference.GetCategoryTree()
+	categories, err := basic.CategoryService.GetCategoryTree()
 	if err != nil {
 		panic(err)
 	}
@@ -27,11 +24,11 @@ func GetCategoryInfo(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	category, err := categoryServiceReference.GetCategoryByID(int(IDInt64))
+	category, err := basic.CategoryService.GetCategoryByID(int(IDInt64))
 	if err != nil {
 		panic(err)
 	}
-	brothers, err := categoryServiceReference.GetCategoriesByParentID(category.ParentID)
+	brothers, err := basic.CategoryService.GetCategoriesByParentID(category.ParentID)
 	if err != nil {
 		panic(err)
 	}
@@ -39,13 +36,13 @@ func GetCategoryInfo(c *gin.Context) {
 }
 
 func GetCategoryChannels(c *gin.Context) {
-	channels, err := categoryServiceReference.Channels()
+	channels, err := basic.CategoryService.Channels()
 	defer middle_ware.SetResponseData(c, channels)
 	utils.CheckAndPanic(err)
 }
 
 func GetTopCategories(c *gin.Context) {
-	categories, err := categoryServiceReference.GetTopList()
+	categories, err := basic.CategoryService.GetTopList()
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, map[string]interface{}{
 		"categories": categories,

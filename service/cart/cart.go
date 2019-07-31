@@ -1,4 +1,4 @@
-package service
+package cart
 
 import (
 	"gotrue/dao"
@@ -7,40 +7,48 @@ import (
 	"gotrue/dto/response"
 	"gotrue/facility/utils"
 	"gotrue/model"
+	"gotrue/service/goods"
+	"gotrue/service/stock"
 
 	"github.com/shopspring/decimal"
 )
 
-// cartServiceSingleton 是CartService的一个单例
-var cartServiceSingleton *CartService
+// CartService 是Cart的一个单例
+var CartService *Cart
 
-func CartServiceInstance() *CartService {
-	if cartServiceSingleton == nil {
-		cartServiceSingleton = new(CartService)
-		cartServiceSingleton.dao = dao.CartDaoSingleton
-		cartServiceSingleton.stockDao = dao.GoodsStockDaoSingleton
-		cartServiceSingleton.goodsService = GoodsServiceInstance()
-		cartServiceSingleton.stockService = StockServiceInstance()
-		cartServiceSingleton.goodsImgService = GoodsImgServiceInstance()
+func beforeInit() {
+	goods.Init()
+	stock.Init()
+}
+
+func initCartService() {
+	if CartService != nil {
+		return
 	}
-	return cartServiceSingleton
+	beforeInit()
+	CartService = &Cart{
+		dao:             dao.CartDao,
+		stockDao:        dao.StockDao,
+		goodsService:    goods.GoodsService,
+		goodsImgService: goods.GoodsImgService,
+		stockService:    stock.StockService,
+	}
 }
 
-// CartService 作为规格服务，实现了api.ICartService
-type CartService struct {
-	dao             *dao.CartDao
-	stockDao        *dao.GoodsStockDao
-	goodsService    *GoodsService
-	goodsImgService *GoodsImgService
-	stockService    *GoodsStockService
+// Cart 作为规格服务，实现了api.ICart
+type Cart struct {
+	dao             *dao.Cart
+	stockDao        *dao.Stock
+	goodsService    *goods.Goods
+	goodsImgService *goods.GoodsImg
+	stockService    *stock.Stock
 }
 
-func (s *CartService) AddGoods(request request.CartAddRequest) (id int64, err error) {
+func (s *Cart) AddGoods(request request.CartAddRequest) (id int64, err error) {
 	goods, err := s.goodsService.Info(request.GoodsID) // 商品信息
 	if err != nil {
 		return
 	}
-
 	stock, err := s.stockService.GetByID(request.StockID)
 	if err != nil {
 		return
@@ -62,7 +70,7 @@ func (s *CartService) AddGoods(request request.CartAddRequest) (id int64, err er
 	return
 }
 
-func (s *CartService) List(userID int64) ([]response.CartItem, error) {
+func (s *Cart) List(userID int64) ([]response.CartItem, error) {
 	cartItems, err := s.dao.SelectByUserID(userID)
 	if err != nil {
 		return nil, err
@@ -78,18 +86,18 @@ func (s *CartService) List(userID int64) ([]response.CartItem, error) {
 	return wrapper.DTOItems(), nil
 }
 
-func (s *CartService) GoodsCount(userID int64) (count int64, err error) {
+func (s *Cart) GoodsCount(userID int64) (count int64, err error) {
 	return s.dao.SelectCountByUserID(userID)
 }
 
-func (s *CartService) CheckItem(req request.CartCheckRequest) error {
+func (s *Cart) CheckItem(req request.CartCheckRequest) error {
 	setMap := map[string]interface{}{
 		"checked": req.IsChecked,
 	}
 	return s.dao.UpdateByID(req.ID, setMap)
 }
 
-func (s *CartService) checkedItems(userID int64) ([]model.Cart, error) {
+func (s *Cart) CheckedItems(userID int64) ([]model.Cart, error) {
 	checkedItems, err := s.dao.SelectChecked(userID)
 	if err != nil {
 		return nil, err

@@ -4,7 +4,9 @@ import (
 	"gotrue/dto"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
-	"gotrue/service"
+	"gotrue/service/basic"
+	"gotrue/service/goods"
+	"gotrue/service/stock"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +23,7 @@ func GetGoodsListByCategory(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	goods, err := service.GoodsServiceInstance().GetGoodsByCategory(categoryID)
+	goods, err := goods.GoodsService.GetGoodsByCategory(categoryID)
 
 	if err != nil {
 		panic(err)
@@ -37,28 +39,28 @@ func GetGoodsInfo(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	goodsInfo, err := service.GoodsServiceInstance().Info(goodsID)
+	goodsInfo, err := goods.GoodsService.Info(goodsID)
 	if err != nil {
 		panic(err)
 	}
-	gallery, err := service.GoodsImgServiceSingleton.GetByGoodsID(goodsID)
+	gallery, err := goods.GoodsImgService.GetByGoodsID(goodsID)
 	if err != nil {
 		panic(err)
 	}
-	attributes, err := service.GoodsServiceInstance().Attributes(goodsID)
+	attributes, err := goods.GoodsService.Attributes(goodsID)
 	if err != nil {
 		panic(err)
 	}
-	goodsSpecDTOs, err := service.GoodsServiceInstance().Specifications(goodsID)
+	goodsSpecDTOs, err := goods.GoodsService.Specifications(goodsID)
 	if err != nil {
 		panic(err)
 	}
 	goodsSpecSet := dto.NewGoodsSpecSet(goodsSpecDTOs)
-	stockDTOs, err := service.StockServiceInstance().GetStocksByGoodsID(goodsID)
+	stockDTOs, err := stock.StockService.GetStocksByGoodsID(goodsID)
 	if err != nil {
 		panic(err)
 	}
-	specDTOs, err := service.SpecificationServiceSingleton.GetByIDs(goodsSpecSet.DistinctSpecIDs())
+	specDTOs, err := basic.SpecificationService.GetByIDs(goodsSpecSet.DistinctSpecIDs())
 	if err != nil {
 		panic(err)
 	}
@@ -75,7 +77,7 @@ func GetGoodsInfo(c *gin.Context) {
 
 // GetHotGoods 获取热门商品
 func GetHotGoods(c *gin.Context) {
-	hotGoods, err := service.GoodsServiceInstance().HotGoods()
+	hotGoods, err := goods.GoodsService.HotGoods()
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, map[string]interface{}{
 		"hotGoods": hotGoods,

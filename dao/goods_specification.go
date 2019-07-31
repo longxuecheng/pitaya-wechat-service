@@ -7,22 +7,23 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-// GoodsSpecificationDaoSingleton is a singleton of goods dao
-var GoodsSpecificationDaoSingleton *GoodsSpecificationDao
+// GoodsSpecDao is a singleton of goods dao
+var GoodsSpecDao *GoodsSpec
 
-func init() {
-	GoodsSpecificationDaoSingleton = new(GoodsSpecificationDao)
-	GoodsSpecificationDaoSingleton.db = sys.GetEasyDB()
+func initGoodsSpecDao() {
+	GoodsSpecDao = &GoodsSpec{
+		db: sys.GetEasyDB(),
+	}
 }
 
 var columns_goods_specs = []string{"id", "goods_id", "specification_id", "value", "pic_url"}
 
-// GoodsSpecificationDao is dao
-type GoodsSpecificationDao struct {
+// GoodsSpec is dao
+type GoodsSpec struct {
 	db *sys.EasyDB
 }
 
-func (dao *GoodsSpecificationDao) SelectByGoodsID(goodsID int64) ([]*model.GoodsSpecification, error) {
+func (dao *GoodsSpec) SelectByGoodsID(goodsID int64) ([]*model.GoodsSpecification, error) {
 	goodsSpecs := []*model.GoodsSpecification{}
 	err := dao.db.SelectDSL(&goodsSpecs, columns_goods_specs, model.Table_Goods_Specification, sq.Eq{"goods_id": goodsID})
 	if err != nil {
