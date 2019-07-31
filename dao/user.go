@@ -20,7 +20,7 @@ type UserDao struct {
 	db *sys.EasyDB
 }
 
-var columns_user = []string{"id", "name", "phone_no", "email", "wechat_id", "avatar_url", "nick_name"}
+var columns_user = []string{"id", "name", "phone_no", "email", "wechat_id", "avatar_url", "nick_name", "user_type"}
 
 func (dao *UserDao) SelectAll() ([]*model.User, error) {
 	users := []*model.User{}

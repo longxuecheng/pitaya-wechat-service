@@ -41,19 +41,21 @@ func GetEasyDB() *EasyDB {
 
 func connectDataBase() {
 	if dbConnection == nil {
-		var db_host string
+		var dbHost string
 		env := os.Getenv("ENV")
 		if env == settings.EnvProd {
-			db_host = settings.ProdDBHost
+			dbHost = settings.ProdDBHost
 		} else {
-			db_host = settings.DevDBHost
+			dbHost = settings.DevDBHost
 		}
-		log.Println(fmt.Sprintf("connecting to database %s", db_host))
-		connect_url := fmt.Sprintf("%s:%s@tcp(%s)/mymall?allowNativePasswords=true&parseTime=true", "root", "6263272lxc", db_host)
-		db, err := sqlx.Connect("mysql", connect_url)
+		log.Println(fmt.Sprintf("connecting to database %s", dbHost))
+		connectURL := fmt.Sprintf("%s:%s@tcp(%s)/mymall?allowNativePasswords=true&parseTime=true", "root", "6263272lxc", dbHost)
+		db, err := sqlx.Connect("mysql", connectURL)
 		if err != nil {
 			log.Fatalln(err)
 		}
+		db.SetMaxIdleConns(2)
+		db.SetMaxOpenConns(20)
 		err = db.Ping()
 		if err != nil {
 			log.Panic("ping to database maybe some problems")

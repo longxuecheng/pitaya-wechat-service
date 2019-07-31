@@ -31,6 +31,10 @@ type SaleOrder struct {
 	Count         int64           `db:"count" exclude:"true"`
 }
 
+func (so *SaleOrder) RegionIDs() []int {
+	return []int{so.ProvinceID, so.CityID, so.DistrictID}
+}
+
 // IsMaster tells wether a sale order is master
 func (so *SaleOrder) IsMaster() bool {
 	return so.ParentID == 0

@@ -3,12 +3,14 @@ package service
 import (
 	"database/sql"
 	"errors"
+	"gotrue/api"
 	"gotrue/dao"
 	"gotrue/dto"
 	"gotrue/dto/pagination"
 	"gotrue/dto/request"
 	"gotrue/dto/response"
 	"gotrue/model"
+	"gotrue/service/region"
 	"gotrue/service/wechat"
 	"gotrue/service/wechat/payment"
 	"gotrue/sys"
@@ -33,6 +35,7 @@ func SaleOrderServiceInstance() *SaleOrderService {
 		saleOrderService.userService = UserServiceInstance()
 		saleOrderService.goodsService = GoodsServiceInstance()
 		saleOrderService.wechatPaymentDao = dao.WechatPaymentDao
+		saleOrderService.regionService = region.RegionService
 	}
 	return saleOrderService
 }
@@ -47,6 +50,7 @@ type SaleOrderService struct {
 	goodsService     *GoodsService
 	cartService      *CartService
 	userService      *UserService
+	regionService    api.IRegionService
 }
 
 func (s *SaleOrderService) payStatus(req *payment.QueryOrderResponse) model.OrderStatus {
@@ -351,7 +355,13 @@ func (s *SaleOrderService) Info(orderID int64) (*response.SaleOrderInfoDTO, erro
 	if saleOrder == nil {
 		return nil, nil
 	}
-	return s.installSaleInfoDTO(saleOrder), nil
+	fullName, err := s.regionService.FullName(saleOrder.RegionIDs())
+	if err != nil {
+		return nil, err
+	}
+	dto := s.installSaleInfoDTO(saleOrder)
+	dto.FullRegion = fullName
+	return dto, nil
 }
 
 // ListGoods list sale details for a sale order

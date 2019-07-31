@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"gotrue/dto/request"
+	"gotrue/dto/response"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
 	"gotrue/service"
@@ -63,10 +64,12 @@ func LoginByWechat(c *gin.Context) {
 	utils.CheckAndPanic(err)
 	accessToken, err := service.BuildToken(user.ID, 3600)
 	utils.CheckAndPanic(err)
-	wechatUser := request.WechatUser{
+	wechatUser := response.User{
 		NickName:  user.NickName,
 		AvatarURL: user.AvatarURL,
+		UserType:  user.UserType.Int(),
 	}
+
 	middle_ware.SetResponseData(c, gin.H{
 		"token":    accessToken,
 		"userInfo": wechatUser,

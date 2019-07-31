@@ -1,6 +1,6 @@
 package response
 
-type RegionDTO struct {
+type Region struct {
 	ID       int    `json:"id"`
 	ParentID int    `json:"parent_id"`
 	Name     string `json:"name"`

@@ -27,7 +27,7 @@ type SaleOrderInfoDTO struct {
 	OrderNo       string          `json:"order_sn"`
 	OrderAmt      decimal.Decimal `json:"actual_price"`
 	Status        string          `json:"order_status_text"`
-	FullRegion    string          `json:"rull_region"`
+	FullRegion    string          `json:"full_region"`
 	Address       string          `json:"address"`
 	Consignee     string          `json:"consignee"`
 	Mobile        string          `json:"mobile"`

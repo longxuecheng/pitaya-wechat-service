@@ -14,3 +14,7 @@ type UserAddress struct {
 	Mobile     string `db:"mobile"`
 	IsDefault  bool   `db:"is_default"`
 }
+
+func (ua *UserAddress) RegionIDs() []int {
+	return []int{ua.ProvinceID, ua.CityID, ua.DistricID}
+}

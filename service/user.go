@@ -2,12 +2,13 @@ package service
 
 import (
 	"database/sql"
+	"gotrue/api"
 	"gotrue/dao"
 	"gotrue/dto"
 	"gotrue/dto/request"
 	"gotrue/model"
+	"gotrue/service/region"
 	"gotrue/sys"
-	"strings"
 )
 
 var UserServiceSingleton *UserService
@@ -15,18 +16,18 @@ var UserServiceSingleton *UserService
 func UserServiceInstance() *UserService {
 	if UserServiceSingleton == nil {
 		UserServiceSingleton = &UserService{
-			userDao:    dao.UserDaoSingleton,
-			addressDao: dao.UserAddressDaoSingleton,
-			regionDao:  dao.RegionDaoInstance(),
+			userDao:       dao.UserDaoSingleton,
+			addressDao:    dao.UserAddressDaoSingleton,
+			regionService: region.RegionService,
 		}
 	}
 	return UserServiceSingleton
 }
 
 type UserService struct {
-	userDao    *dao.UserDao
-	addressDao *dao.UserAddressDao
-	regionDao  *dao.RegionDao
+	userDao       *dao.UserDao
+	addressDao    *dao.UserAddressDao
+	regionService api.IRegionService
 }
 
 type address struct {
@@ -39,21 +40,9 @@ func newAddress(data *model.UserAddress) *address {
 	}
 }
 
-func (a *address) regionIDs() []int {
-	ids := []int{}
-	ids = append(ids, a.data.ProvinceID)
-	ids = append(ids, a.data.CityID)
-	ids = append(ids, a.data.DistricID)
-	return ids
-}
-
-func (a *address) userAddressDTO(regions []*model.Region) *dto.UserAddress {
-	regionNames := []string{}
-	for _, r := range regions {
-		regionNames = append(regionNames, r.Name)
-	}
+func (a *address) userAddressDTO(fullRegion string) *dto.UserAddress {
 	dto := installUserAddress(a.data)
-	dto.FullRegion = strings.Join(regionNames, "-")
+	dto.FullRegion = fullRegion
 	return dto
 }
 
@@ -102,11 +91,11 @@ func (s *UserService) GetAddressByID(ID int64) (dto *dto.UserAddress, err error)
 		return
 	}
 	address := newAddress(a)
-	regions, err := s.regionDao.SelectByIDs(address.regionIDs())
+	fullRegion, err := s.regionService.FullName(a.RegionIDs())
 	if err != nil {
-		return
+		return nil, err
 	}
-	return address.userAddressDTO(regions), nil
+	return address.userAddressDTO(fullRegion), nil
 }
 
 func (s *UserService) GetUserByID(userID int64) (dto *dto.UserDTO, err error) {
