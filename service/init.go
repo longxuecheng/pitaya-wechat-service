@@ -8,6 +8,7 @@ import (
 	"gotrue/service/order"
 	"gotrue/service/region"
 	"gotrue/service/stock"
+	"gotrue/service/supplier"
 	"gotrue/service/user"
 )
 
@@ -20,4 +21,5 @@ func Init() {
 	cart.Init()
 	cashier.Init()
 	order.Init()
+	supplier.Init()
 }

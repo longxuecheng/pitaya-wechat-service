@@ -83,3 +83,9 @@ func (dao *SaleOrder) UpdateByID(orderID int64, updateMap map[string]interface{}
 	_, err := dao.db.UpdateTx(tx, model.Table_Sale_Order, updateMap, sq.Eq{"id": orderID})
 	return err
 }
+
+func (dao *SaleOrder) SelectBySupplier(supplierID int64) ([]model.SaleOrder, error) {
+	orders := []model.SaleOrder{}
+	err := dao.db.SelectDSL(&orders, columns_sale_order, model.Table_Sale_Order, sq.Eq{"supplier_id": supplierID})
+	return orders, err
+}

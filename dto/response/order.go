@@ -36,3 +36,8 @@ type SaleOrderInfoDTO struct {
 	ExpressNo     string          `json:"express_no"`
 	ExpressFee    decimal.Decimal `json:"express_fee"`
 }
+
+type Express struct {
+	Method string `json:"method"`
+	Name   string `json:"name"`
+}

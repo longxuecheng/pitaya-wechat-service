@@ -7,6 +7,7 @@ import (
 	"gotrue/middle_ware"
 	"gotrue/service/express"
 	"gotrue/service/order"
+	"gotrue/service/supplier"
 	"gotrue/service/wechat"
 	"strconv"
 
@@ -45,6 +46,16 @@ func ListSaleOrders(c *gin.Context) {
 	middle_ware.SetResponseData(c, result)
 }
 
+// ListSupplierOrders 给发货商列出订单
+func ListSupplierOrders(c *gin.Context) {
+	userID := middle_ware.MustGetCurrentUser(c)
+	supplier, err := supplier.SupplierService.QueryByAdmin(userID)
+	utils.CheckAndPanic(err)
+	orderList, err := order.SaleOrderService.ListSupplierOrders(supplier.ID)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, orderList)
+}
+
 // SaleOrderInfo 获取订单详情
 func SaleOrderInfo(c *gin.Context) {
 	orderID := bindSaleOrderIDFromQuery(c)
@@ -62,7 +73,7 @@ func SaleOrderExpressInfo(c *gin.Context) {
 	orderID := bindSaleOrderIDFromQuery(c)
 	info, err := order.SaleOrderService.Info(orderID)
 	utils.CheckAndPanic(err)
-	expressInfo, err := express.ExpressService.ExpressInfo(express.ExpressType(info.ExpressMethod), info.ExpressNo)
+	expressInfo, err := express.ExpressService.ExpressInfo(express.ExpressMethod(info.ExpressMethod), info.ExpressNo)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, expressInfo)
 }
@@ -82,6 +93,22 @@ func WechatPayResult(c *gin.Context) {
 	payResult, err := wechat.WechatService().QueryPayResult(orderInfo.OrderNo)
 	utils.CheckAndPanic(err)
 	err = order.SaleOrderService.UpdateByWechatPayResult(orderID, payResult)
+	utils.CheckAndPanic(err)
+}
+
+func UpdateExpressInfo(c *gin.Context) {
+	userID := middle_ware.MustGetCurrentUser(c)
+	req := &request.OrderExpressUpdate{}
+	err := c.BindJSON(req)
+	if err != nil {
+		middle_ware.BadRequet(c, "请求参数不合法")
+		return
+	}
+	supplier, err := supplier.SupplierService.QueryByAdmin(userID)
+	utils.CheckAndPanic(err)
+	req.SupplierID = supplier.ID
+	utils.CheckAndPanic(err)
+	err = order.SaleOrderService.UpdateExpressInfo(req)
 	utils.CheckAndPanic(err)
 }
 

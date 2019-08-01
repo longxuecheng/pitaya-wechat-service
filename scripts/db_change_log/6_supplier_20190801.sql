@@ -1,0 +1,1 @@
+alter table supplier add admin_id int not null default 0;

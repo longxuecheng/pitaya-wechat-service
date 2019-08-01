@@ -2,6 +2,8 @@ package express
 
 import (
 	"encoding/json"
+	"gotrue/dto/response"
+	"gotrue/facility/errors"
 	"gotrue/facility/http_util"
 	"gotrue/facility/strings"
 	"io/ioutil"
@@ -10,18 +12,28 @@ import (
 )
 
 const (
-	url  string      = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury"
-	EMS  ExpressType = "ems"
-	BSHT ExpressType = "huitongkuaidi"
-	ST   ExpressType = "shentong"
-	YD   ExpressType = "yunda"
-	ZT   ExpressType = "zhongtong"
-	YT   ExpressType = "yuantong"
+	baiduPartnerID string      = "4001"
+	url            string      = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury"
+	ems            expressType = "ems"
+	bsht           expressType = "huitongkuaidi"
+	sto            expressType = "shentong"
+	yunda          expressType = "yunda"
+	zto            expressType = "zhongtong"
+	yto            expressType = "yuantong"
 )
 
-type ExpressType string
+var baiduExpressMap = map[ExpressMethod]expressType{
+	ExpressMethodZTO:  zto,
+	ExpressMethodSTO:  sto,
+	ExpressMethodYTO:  yto,
+	ExpressMethodEMS:  ems,
+	ExpressMethodYDA:  yunda,
+	ExpressMethodBSHT: bsht,
+}
 
-func (et ExpressType) String() string {
+type expressType string
+
+func (et expressType) String() string {
 	return string(et)
 }
 
@@ -60,7 +72,24 @@ type expressService struct{}
 func init() {
 	ExpressService = &expressService{}
 }
-func (s *expressService) ExpressInfo(expressCom ExpressType, expressNo string) (*ExpressSummary, error) {
+
+func (s *expressService) ExpressList() []*response.Express {
+	expressList := []*response.Express{}
+	for k := range expressMethodMap {
+		exp := &response.Express{
+			Method: k.String(),
+			Name:   k.Name(),
+		}
+		expressList = append(expressList, exp)
+	}
+	return expressList
+}
+
+func (s *expressService) ExpressInfo(expressCom ExpressMethod, expressNo string) (*ExpressSummary, error) {
+	expressType, ok := baiduExpressMap[expressCom]
+	if !ok {
+		return nil, errors.NewWithCodef("ExpressNotSupport", "当前不支持%s", expressCom.Name())
+	}
 	if strings.IsEmpty(expressNo) {
 		return nil, nil
 	}
@@ -75,8 +104,8 @@ func (s *expressService) ExpressInfo(expressCom ExpressType, expressNo string) (
 			Secure:   false,
 		}
 		r.AddCookie(c)
-		r.Form.Set("appid", "4001")
-		r.Form.Set("com", expressCom.String())
+		r.Form.Set("appid", baiduPartnerID)
+		r.Form.Set("com", expressType.String())
 		r.Form.Set("nu", expressNo)
 		r.URL.RawQuery = r.Form.Encode()
 		return nil

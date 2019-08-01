@@ -31,7 +31,7 @@ func Recovery() gin.HandlerFunc {
 				logger = log.New(os.Stderr, "\n\n\x1b[31m", log.LstdFlags)
 				httprequest, _ := httputil.DumpRequest(c.Request, false)
 				logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s", timeFormat(time.Now()), string(httprequest), err, stack)
-				responseDTO := newResponseDTO(nil, fmt.Sprintf("[Recovery] panic recovered:\n%s\n%s", string(httprequest), err), STATUS_ERROR)
+				responseDTO := newResponseDTO(nil, err.(error).Error(), STATUS_ERROR)
 				c.AbortWithStatusJSON(http.StatusInternalServerError, responseDTO)
 			}
 		}()

@@ -17,4 +17,5 @@ func Init() {
 	initSaleOrderDao()
 	initSpecificationDao()
 	initUserAddressDao()
+	initSupplierDao()
 }

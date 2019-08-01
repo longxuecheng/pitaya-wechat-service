@@ -51,11 +51,13 @@ func (os OrderStatus) String() string {
 }
 
 const (
-	Created          OrderStatus = "CREATED"
-	Canceled         OrderStatus = "CANCELED"
-	Paid             OrderStatus = "PAID"
-	Paying           OrderStatus = "PAYING"
-	PayFailed        OrderStatus = "PAY_FAILED"
+	Created   OrderStatus = "CREATED"
+	Canceled  OrderStatus = "CANCELED"
+	Paid      OrderStatus = "PAID"
+	Paying    OrderStatus = "PAYING"
+	PayFailed OrderStatus = "PAY_FAILED"
+	//Sent 商家已发货
+	Sent             OrderStatus = "Sent"
 	Refunding        OrderStatus = "REFUNDING"
 	RefundRefused    OrderStatus = "REFUND_REFUSED"
 	Refound          OrderStatus = "REFOUND"
@@ -71,6 +73,7 @@ var orderStatuMap = map[OrderStatus]string{
 	Paying:           "待付款",
 	Paid:             "已付款",
 	PayFailed:        "付款失败",
+	Sent:             "已发货",
 	Refunding:        "退款中",
 	RefundRefused:    "拒绝退款",
 	Refound:          "退款成功",

@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	accessTokenKey = "X-Pitaya-Token"
+	accessTokenKey = "Authorization"
 	currentUserKey = "current-user"
 )
 

@@ -2,15 +2,16 @@ package order
 
 import (
 	"database/sql"
-	"errors"
 	"gotrue/api"
 	"gotrue/dao"
 	"gotrue/dto"
 	"gotrue/dto/pagination"
 	"gotrue/dto/request"
 	"gotrue/dto/response"
+	"gotrue/facility/errors"
 	"gotrue/model"
 	"gotrue/service/cart"
+	"gotrue/service/express"
 	"gotrue/service/goods"
 	"gotrue/service/region"
 	"gotrue/service/user"
@@ -61,6 +62,33 @@ type SaleOrder struct {
 	cartService      *cart.Cart
 	userService      *user.User
 	regionService    api.IRegionService
+}
+
+// ListSupplierOrders list orders for a supplier's admin
+func (s *SaleOrder) ListSupplierOrders(supplierID int64) ([]response.SaleOrderItemDTO, error) {
+	orderList, err := s.dao.SelectBySupplier(supplierID)
+	if err != nil {
+		return nil, err
+	}
+	return buildSaleOrderItemDTOs(orderList), nil
+}
+
+func (s *SaleOrder) UpdateExpressInfo(req *request.OrderExpressUpdate) error {
+	if err := express.IsSupport(req.ExpressMethod); err != nil {
+		return err
+	}
+	// TODO 检查订单状态
+	// 修改订单状态为已经发货
+	updateMap := map[string]interface{}{
+		"express_method":   req.ExpressMethod,
+		"express_order_no": req.ExpressNo,
+		"status":           model.Sent,
+	}
+
+	if err := s.dao.UpdateByID(req.OrderID, updateMap, nil); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *SaleOrder) payStatus(req *payment.QueryOrderResponse) model.OrderStatus {
@@ -513,7 +541,7 @@ func (so *supplierOrder) bindBasically(userID int64, address *dto.UserAddress) {
 
 func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error) {
 	if so.userID == 0 || so.address.ID == 0 {
-		return model.SaleOrder{}, nil, errors.New("user id and address must be bound first")
+		return model.SaleOrder{}, nil, errors.NewWithCodef("AddressBoundError", "user id and address must be bound first")
 	}
 	orderNo, err := generateOrderNumber(1)
 	if err != nil {
