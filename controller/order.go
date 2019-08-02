@@ -48,10 +48,13 @@ func ListSaleOrders(c *gin.Context) {
 
 // ListSupplierOrders 给发货商列出订单
 func ListSupplierOrders(c *gin.Context) {
+	req := pagination.PaginationRequest{}
+	err := c.BindJSON(&req)
+	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
 	supplier, err := supplier.SupplierService.QueryByAdmin(userID)
 	utils.CheckAndPanic(err)
-	orderList, err := order.SaleOrderService.ListSupplierOrders(supplier.ID)
+	orderList, err := order.SaleOrderService.ListSupplierOrders(supplier.ID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, orderList)
 }

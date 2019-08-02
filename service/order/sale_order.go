@@ -64,15 +64,6 @@ type SaleOrder struct {
 	regionService    api.IRegionService
 }
 
-// ListSupplierOrders list orders for a supplier's admin
-func (s *SaleOrder) ListSupplierOrders(supplierID int64) ([]response.SaleOrderItemDTO, error) {
-	orderList, err := s.dao.SelectBySupplier(supplierID)
-	if err != nil {
-		return nil, err
-	}
-	return buildSaleOrderItemDTOs(orderList), nil
-}
-
 func (s *SaleOrder) UpdateExpressInfo(req *request.OrderExpressUpdate) error {
 	if err := express.IsSupport(req.ExpressMethod); err != nil {
 		return err
@@ -313,6 +304,24 @@ func (s *SaleOrder) save(so *supplierOrder, tx *sql.Tx) (int64, error) {
 		}
 	}
 	return orderID, nil
+}
+
+// ListSupplierOrders list orders for a supplier's admin
+func (s *SaleOrder) ListSupplierOrders(supplierID int64, req pagination.PaginationRequest) (page pagination.PaginationResonse, err error) {
+	orderList, count, err := s.dao.SelectBySupplierWitPagination(supplierID, req.Offet(), req.Limit())
+	if err != nil {
+		return page, err
+	}
+	orderSet := newSaleOrderSet(orderList)
+	details, err := s.saleDetailDao.SelectByOrderIDs(orderSet.orderIDList()...)
+	if err != nil {
+		return page, err
+	}
+	orderSet.setSaleDetails(details)
+	page.PaginationRequest = req
+	page.SetCount(count)
+	page.Data = orderSet.orderDTOs()
+	return
 }
 
 // List will list orders for a user

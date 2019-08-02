@@ -7,8 +7,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var Table_Sale_Order string = "sale_order"
-
 type SaleOrder struct {
 	ID            int64           `db:"id" exclude:"true"`
 	ParentID      int64           `db:"parent_id"`
@@ -29,6 +27,32 @@ type SaleOrder struct {
 	ExpressNo     *string         `db:"express_order_no"`
 	ExpressFee    decimal.Decimal `db:"express_fee"`
 	Count         int64           `db:"count" exclude:"true"`
+}
+
+func (so *SaleOrder) TableName() string {
+	return "sale_order"
+}
+
+func (so *SaleOrder) Columns() []string {
+	return []string{
+		"id",
+		"order_no",
+		"create_time",
+		"user_id",
+		"status",
+		"receiver",
+		"province_id",
+		"city_id",
+		"district_id",
+		"address",
+		"phone_no",
+		"supplier_id",
+		"order_amt",
+		"goods_amt",
+		"express_method",
+		"express_order_no",
+		"express_fee",
+	}
 }
 
 func (so *SaleOrder) RegionIDs() []int {
