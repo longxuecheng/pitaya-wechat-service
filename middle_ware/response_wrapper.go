@@ -34,11 +34,11 @@ func WrapResponse(c *gin.Context) {
 		return
 	}
 	data, _ := c.Get(DATA_KEY)
-	responseDTO := newResponseDTO(data, "Ok", STATUS_SUCCESS)
+	responseDTO := newResponse(data, "Ok", STATUS_SUCCESS)
 	c.JSON(http.StatusOK, responseDTO)
 }
 
-func newResponseDTO(data interface{}, errorMsg string, errorCode ErrorCode) Response {
+func newResponse(data interface{}, errorMsg string, errorCode ErrorCode) Response {
 	responseDTO := Response{
 		Data:     data,
 		ErrorMsg: errorMsg,
@@ -57,6 +57,6 @@ func SetResponseDataWithStatus(c *gin.Context, data interface{}, code int) {
 }
 
 func BadRequet(c *gin.Context, reason string) {
-	c.JSON(http.StatusBadRequest, newResponseDTO(nil, reason, FORM_INVALID))
+	c.JSON(http.StatusBadRequest, newResponse(nil, reason, FORM_INVALID))
 	c.Abort()
 }

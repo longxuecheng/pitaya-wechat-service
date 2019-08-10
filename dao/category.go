@@ -12,7 +12,7 @@ import (
 // CategoryDao is a singleton of category dao
 var CategoryDao *Category
 
-func initCategory() {
+func initCategoryDao() {
 	CategoryDao = &Category{db: sys.GetEasyDB()}
 }
 

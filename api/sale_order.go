@@ -13,6 +13,8 @@ type ISaleOrderService interface {
 	// QuickCreate create order from selected goods
 	QuickCreate(req request.SaleOrderQuickAddRequest) (int64, error)
 	List(userID int64, req pagination.PaginationRequest) (page pagination.PaginationResonse, err error)
-	Info(orderID int64) (response.SaleOrderInfoDTO, error)
+	Info(orderID int64) (*response.SaleOrderInfo, error)
+
 	ListGoods(orderID int64) ([]response.SaleOrderGoodsDTO, error)
+	Cancel(orderID int64) (*response.SaleOrderInfo, error)
 }

@@ -21,7 +21,7 @@ type SaleOrderGoodsDTO struct {
 	GoodsSpecDescription string          `json:"goods_specifition_name_value"`
 }
 
-type SaleOrderInfoDTO struct {
+type SaleOrderInfo struct {
 	ID            int64           `json:"id"`
 	CreatedAt     string          `json:"add_time"`
 	OrderNo       string          `json:"order_sn"`

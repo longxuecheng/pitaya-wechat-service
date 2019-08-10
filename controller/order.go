@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"gotrue/dto/pagination"
 	"gotrue/dto/request"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
@@ -37,7 +36,7 @@ func QuickSubmitOrder(c *gin.Context) {
 
 // ListSaleOrders 获取用户的所有订单
 func ListSaleOrders(c *gin.Context) {
-	req := pagination.PaginationRequest{}
+	req := request.OrderListRequest{}
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
@@ -48,7 +47,7 @@ func ListSaleOrders(c *gin.Context) {
 
 // ListSupplierOrders 给发货商列出订单
 func ListSupplierOrders(c *gin.Context) {
-	req := pagination.PaginationRequest{}
+	req := request.OrderListRequest{}
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
@@ -89,16 +88,21 @@ func WechatPrePay(c *gin.Context) {
 	middle_ware.SetResponseData(c, result)
 }
 
+// WechatPayResult is used for query wechat pay result from mini-program
 func WechatPayResult(c *gin.Context) {
-	orderID := bindSaleOrderIDFromQuery(c)
-	orderInfo, err := order.SaleOrderService.Info(orderID)
+	// orderID := bindSaleOrderIDFromQuery(c)
+	req := &request.QueryWechatPayResult{}
+	err := c.BindQuery(req)
+	utils.CheckAndPanic(err)
+	orderInfo, err := order.SaleOrderService.Info(req.OrderID)
 	utils.CheckAndPanic(err)
 	payResult, err := wechat.WechatService().QueryPayResult(orderInfo.OrderNo)
 	utils.CheckAndPanic(err)
-	err = order.SaleOrderService.UpdateByWechatPayResult(orderID, payResult)
+	err = order.SaleOrderService.UpdateByWechatPayResult(req, payResult)
 	utils.CheckAndPanic(err)
 }
 
+// UpdateExpressInfo is used to update express information by tenant
 func UpdateExpressInfo(c *gin.Context) {
 	userID := middle_ware.MustGetCurrentUser(c)
 	req := &request.OrderExpressUpdate{}

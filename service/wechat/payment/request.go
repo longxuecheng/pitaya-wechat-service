@@ -35,6 +35,7 @@ type SignBasic struct {
 	SignType string `xml:"sign_type"`
 }
 
+// UnifiedOrderRequest 统一下单请求
 type UnifiedOrderRequest struct {
 	AppBasic
 	SignBasic

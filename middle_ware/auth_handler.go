@@ -16,12 +16,12 @@ func AuthCheck() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		accessToken := c.GetHeader(accessTokenKey)
 		if accessToken == "" {
-			c.AbortWithStatusJSON(http.StatusOK, newResponseDTO(nil, "user unauthorized", STATUS_UNAUTHORIZED))
+			c.AbortWithStatusJSON(http.StatusOK, newResponse(nil, "user unauthorized", STATUS_UNAUTHORIZED))
 			return
 		}
 		userClaims, err := service.ParseToken(accessToken)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusOK, newResponseDTO(nil, "invalid token or expired", STATUS_TOKEN_EXP))
+			c.AbortWithStatusJSON(http.StatusOK, newResponse(nil, "invalid token or expired", STATUS_TOKEN_EXP))
 			return
 		}
 		c.Set(currentUserKey, userClaims.UserID)

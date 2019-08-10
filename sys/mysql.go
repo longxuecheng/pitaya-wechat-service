@@ -118,19 +118,27 @@ func (db *EasyDB) SelectDSL(destptr interface{}, columns []string, tableName str
 	return db.Select(destptr, sql, args...)
 }
 
-func (db *EasyDB) SelectPagination(destptr interface{}, columns []string, tableName string, offset uint64, limit uint64, pred interface{}) (int64, error) {
+type PaginationCondition struct {
+	Columns   []string
+	TableName string
+	Offset    uint64
+	Limit     uint64
+	WherePred interface{}
+}
+
+func (db *EasyDB) SelectPagination(destptr interface{}, condition PaginationCondition) (int64, error) {
 	// columns = append(columns, "count(1) over() as count")
-	query_sql, query_args, err := sq.Select(columns...).From(tableName).Where(pred).Offset(offset).Limit(limit).ToSql()
+	qSQL, queryArgs, err := sq.Select(condition.Columns...).From(condition.TableName).Where(condition.WherePred).Offset(condition.Offset).Limit(condition.Limit).ToSql()
 	if err != nil {
 		return 0, err
 	}
-	count_sql, count_args, err := sq.Select("count(1) as count").From(tableName).Where(pred).ToSql()
+	countSQL, countArgs, err := sq.Select("count(1) as count").From(condition.TableName).Where(condition.WherePred).ToSql()
 	count := new(count)
-	err = db.SelectOne(count, count_sql, count_args...)
+	err = db.SelectOne(count, countSQL, countArgs...)
 	if err != nil {
 		return 0, err
 	}
-	return count.Count, db.Select(destptr, query_sql, query_args...)
+	return count.Count, db.Select(destptr, qSQL, queryArgs...)
 }
 
 // SelectOne 是对sqlx包中的查询单个的简化

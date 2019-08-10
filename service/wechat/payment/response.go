@@ -47,6 +47,7 @@ type PrepayReponse struct {
 	Package   string `json:"package"`
 	SignType  string `json:"signType"`
 	PaySign   string `json:"paySign" exclude:"true"`
+	PrepayID  string `json:"prepayId" exclude:"true"`
 }
 
 func (pr *PrepayReponse) SignParams() string {

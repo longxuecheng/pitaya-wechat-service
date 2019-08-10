@@ -1,10 +1,13 @@
 package wechat
 
 import (
+	"encoding/json"
 	"fmt"
 	"gotrue/facility/http_util"
 	"gotrue/service/wechat/payment"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -40,8 +43,34 @@ func (s *wechatService) AccessToken() string {
 	return s.accessToken()
 }
 
+func (s *wechatService) SendNotification(req *NotifyRequest) error {
+	bytes, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+	response, err := http_util.Send(http.MethodPost, sendmessage_url, strings.NewReader(string(bytes)), func(r *http.Request) error {
+		r.Header.Set("Content-Type", "application/json")
+		r.Form.Add("access_token", s.accessToken())
+		r.URL.RawQuery = r.Form.Encode()
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	result := &NotifyResponse{}
+	err = json.Unmarshal(body, result)
+	if err != nil {
+		return err
+	}
+	if ok, err := result.IsOK(); !ok {
+		return err
+	}
+	return nil
+}
+
 // Pay 调用微信接口进行预支付
-func (s *wechatService) Pay(r *PrepayRequest) (*payment.PrepayReponse, error) {
+func (s *wechatService) PrePay(r *PrepayRequest) (*payment.PrepayReponse, error) {
 
 	app := payment.AppBasic{
 		AppID:      appID,
@@ -86,6 +115,7 @@ func (s *wechatService) Pay(r *PrepayRequest) (*payment.PrepayReponse, error) {
 	pr.TimeStamp = strconv.FormatInt(time.Now().Unix(), 10)
 	pr.Package = "prepay_id=" + result.PrepayID
 	pr.SignParams()
+	pr.PrepayID = result.PrepayID
 	return pr, nil
 }
 

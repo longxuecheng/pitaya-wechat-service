@@ -21,11 +21,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/looplab/fsm"
+
 	"github.com/bwmarrin/snowflake"
 	"github.com/shopspring/decimal"
 )
 
 var SaleOrderService *SaleOrder
+
+var (
+	OrderInvalidError = errors.NewWithCodef("OrderInvalid", "当前订单不支持该操作")
+)
 
 func beforeInit() {
 	cart.Init()
@@ -51,6 +57,37 @@ func initSaleOrderService() {
 
 }
 
+type saleOrderFSM struct {
+	fsm *fsm.FSM
+}
+
+func newOrderFSM(order *model.SaleOrder) *saleOrderFSM {
+	return &saleOrderFSM{
+		fsm: fsm.NewFSM(
+			order.Status.String(),
+			fsm.Events{
+				{Name: "pay", Src: []string{model.Created.String(), model.PayFailed.String(), model.Paying.String()}, Dst: model.Paid.String()},
+				{Name: "cancel", Src: []string{model.Created.String()}, Dst: model.Canceled.String()},
+				{Name: "send", Src: []string{model.Paid.String(), model.Sent.String()}, Dst: model.Sent.String()},
+				{Name: "post_sale", Src: []string{model.Received.String()}, Dst: model.PostSaleFinished.String()},
+				{Name: "refund", Src: []string{model.Paid.String()}, Dst: model.Refound.String()},
+			},
+			fsm.Callbacks{},
+		),
+	}
+}
+
+func (sof *saleOrderFSM) can(event string) error {
+	if !sof.fsm.Can(event) {
+		return OrderInvalidError
+	}
+	return nil
+}
+
+func (sof *saleOrderFSM) statusUpdateMap() map[string]interface{} {
+	return map[string]interface{}{"status": sof.fsm.Current()}
+}
+
 // SaleOrder 作为销售订单服务，实现了api.IOrderService
 type SaleOrder struct {
 	dao              *dao.SaleOrder
@@ -64,16 +101,27 @@ type SaleOrder struct {
 	regionService    api.IRegionService
 }
 
+// UpdateExpressInfo will send express
 func (s *SaleOrder) UpdateExpressInfo(req *request.OrderExpressUpdate) error {
 	if err := express.IsSupport(req.ExpressMethod); err != nil {
 		return err
 	}
+	saleOrder, err := s.dao.SelectByID(req.OrderID)
+	if err != nil {
+		return err
+	}
 	// TODO 检查订单状态
+	sof := newOrderFSM(saleOrder)
+	err = sof.can("send")
+	if err != nil {
+		return err
+	}
+	sof.fsm.Event("send")
 	// 修改订单状态为已经发货
 	updateMap := map[string]interface{}{
 		"express_method":   req.ExpressMethod,
 		"express_order_no": req.ExpressNo,
-		"status":           model.Sent,
+		"status":           sof.fsm.Current(),
 	}
 
 	if err := s.dao.UpdateByID(req.OrderID, updateMap, nil); err != nil {
@@ -99,9 +147,16 @@ func (s *SaleOrder) payStatus(req *payment.QueryOrderResponse) model.OrderStatus
 	return orderStatus
 }
 
+func (s *SaleOrder) notifyFarmer(prepayID string, status model.OrderStatus) {
+	// if paid success then notify tenant to send goods
+	if model.Paid == status {
+
+	}
+}
+
 // UpdateByWechatPayResult 通过微信支付查询结果更新订单状态和交易状态
-func (s *SaleOrder) UpdateByWechatPayResult(orderID int64, req *payment.QueryOrderResponse) error {
-	order, err := s.dao.SelectByID(orderID)
+func (s *SaleOrder) UpdateByWechatPayResult(r *request.QueryWechatPayResult, req *payment.QueryOrderResponse) error {
+	order, err := s.dao.SelectByID(r.OrderID)
 	if err != nil {
 		return err
 	}
@@ -117,6 +172,7 @@ func (s *SaleOrder) UpdateByWechatPayResult(orderID int64, req *payment.QueryOrd
 	updateMap := map[string]interface{}{
 		"status": orderStatus,
 	}
+	// 如果当前订单不是主单
 	if !order.IsMaster() {
 		sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 			err := s.dao.UpdateByID(order.ID, updateMap, nil)
@@ -163,7 +219,33 @@ func (s *SaleOrder) UpdateByWechatPayResult(orderID int64, req *payment.QueryOrd
 
 		return nil
 	})
-	return nil
+	openIDLXC := "ovxEC5YTWQk6Vv5FJdN_30gkBr-g"
+	notificationReq := &wechat.NotifyRequest{
+		ToUser:     openIDLXC,
+		TemplateID: "F56_89H1A2SiyEmnwUSGNw_kyTIcdFLBELFaU2sFUhU",
+		FormID:     r.PrepayID,
+		Data: map[string]interface{}{
+			"keyword1": map[string]string{
+				"value": order.OrderNo,
+			},
+			"keyword2": map[string]string{
+				"value": "",
+			},
+			"keyword3": map[string]interface{}{
+				"value": order.OrderAmt,
+			},
+			"keyword4": map[string]interface{}{
+				"value": "商品名称",
+			},
+			"keyword5": map[string]interface{}{
+				"value": order.Status.Name(),
+			},
+			"keyword6": map[string]interface{}{
+				"value": "2019-08-20",
+			},
+		},
+	}
+	return wechat.WechatService().SendNotification(notificationReq)
 }
 
 // Create 从购物车创建订单
@@ -212,6 +294,29 @@ func (s *SaleOrder) Create(userID int64, req request.SaleOrderAddRequest) (id in
 		return nil
 	})
 	return
+}
+
+// Cancel will cancel order
+func (s *SaleOrder) Cancel(orderID int64) (*response.SaleOrderInfo, error) {
+	saleOrder, err := s.dao.SelectByID(orderID)
+	if err != nil {
+		return nil, err
+	}
+	sof := newOrderFSM(saleOrder)
+	err = sof.can("cancel")
+	if err != nil {
+		return nil, err
+	}
+	err = sof.fsm.Event("cancel")
+	if err != nil {
+		return nil, err
+	}
+	updateMap := sof.statusUpdateMap()
+	err = s.dao.UpdateByID(orderID, updateMap, nil)
+	if err != nil {
+		return nil, err
+	}
+	return s.Info(orderID)
 }
 
 // QuickCreate 快速下单
@@ -307,7 +412,7 @@ func (s *SaleOrder) save(so *supplierOrder, tx *sql.Tx) (int64, error) {
 }
 
 // ListSupplierOrders list orders for a supplier's admin
-func (s *SaleOrder) ListSupplierOrders(supplierID int64, req pagination.PaginationRequest) (page pagination.PaginationResonse, err error) {
+func (s *SaleOrder) ListSupplierOrders(supplierID int64, req request.OrderListRequest) (page pagination.PaginationResonse, err error) {
 	orderList, count, err := s.dao.SelectBySupplierWitPagination(supplierID, req.Offet(), req.Limit())
 	if err != nil {
 		return page, err
@@ -318,40 +423,65 @@ func (s *SaleOrder) ListSupplierOrders(supplierID int64, req pagination.Paginati
 		return page, err
 	}
 	orderSet.setSaleDetails(details)
-	page.PaginationRequest = req
+	page.PaginationRequest = req.PaginationRequest
 	page.SetCount(count)
 	page.Data = orderSet.orderDTOs()
 	return
 }
 
-// List will list orders for a user
-func (s *SaleOrder) List(userID int64, req pagination.PaginationRequest) (page pagination.PaginationResonse, err error) {
-	page = pagination.PaginationResonse{
-		PaginationRequest: req,
+func (s *SaleOrder) resolveOrderStatus(req request.OrderListRequest) []model.OrderStatus {
+	orderStatusList := []model.OrderStatus{}
+	if req.Type == request.Created {
+		orderStatusList = append(orderStatusList, model.Created)
 	}
-	orders, total, err := s.dao.SelectByUserIDWitPagination(userID, req.Offet(), req.Limit())
-	if err != nil {
-		return
+	if req.Type == request.Finished {
+		orderStatusList = append(orderStatusList, model.Finish)
 	}
+	if req.Type == request.Sent {
+		orderStatusList = append(orderStatusList, model.Sent)
+	}
+	return orderStatusList
+}
 
+// List will list orders for a user
+func (s *SaleOrder) List(userID int64, req request.OrderListRequest) (*pagination.PaginationResonse, error) {
+	var orders []model.SaleOrder
+	var total int64
+	var err error
+	if req.Type == request.All {
+		orders, total, err = s.dao.SelectAllByUserWithPagination(userID, req.Offet(), req.Limit())
+	} else {
+		orderStatusList := s.resolveOrderStatus(req)
+		orders, total, err = s.dao.SelectByUserAndStatusWithPagination(userID, orderStatusList, req.Offet(), req.Limit())
+		if err != nil {
+			return nil, err
+		}
+	}
 	orderSet := newSaleOrderSet(orders)
 	details, err := s.saleDetailDao.SelectByOrderIDs(orderSet.orderIDList()...)
 	if err != nil {
-		return
+		return nil, err
+	}
+
+	page := &pagination.PaginationResonse{
+		PaginationRequest: req.PaginationRequest,
 	}
 	orderSet.setSaleDetails(details)
 	page.SetCount(total)
 	page.Data = orderSet.orderDTOs()
-	return
+	return page, nil
 }
 
+// WechatPrepay will prepay an order
 func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse, error) {
 	order, err := s.dao.SelectByID(orderID)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil {
 		return nil, err
 	}
-	if order == nil {
-		return nil, nil
+	sof := newOrderFSM(order)
+	err = sof.can("pay")
+	if err != nil {
+		return nil, err
 	}
 	totalPrice := decimal.Zero
 	if order.IsMaster() {
@@ -374,7 +504,8 @@ func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse,
 		TotalFee: totalPrice.Mul(decimal.New(1, 2)).IntPart(),
 		Desc:     order.OrderNo,
 	}
-	result, err := wechat.WechatService().Pay(prepayReq)
+	result, err := wechat.WechatService().PrePay(prepayReq)
+
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +525,7 @@ func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse,
 }
 
 // Info shows sale order info but sale details are not included
-func (s *SaleOrder) Info(orderID int64) (*response.SaleOrderInfoDTO, error) {
+func (s *SaleOrder) Info(orderID int64) (*response.SaleOrderInfo, error) {
 	saleOrder, err := s.dao.SelectByID(orderID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -442,8 +573,8 @@ func generateOrderNumber(nodeNo int64) (string, error) {
 	return strconv.FormatInt(id.Int64(), 10), nil
 }
 
-func (s *SaleOrder) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrderInfoDTO {
-	dto := &response.SaleOrderInfoDTO{}
+func (s *SaleOrder) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrderInfo {
+	dto := &response.SaleOrderInfo{}
 	dto.ID = order.ID
 	dto.OrderNo = order.OrderNo
 	dto.Status = order.Status.Name()
@@ -566,6 +697,7 @@ func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error)
 		Address:    so.address.Address,
 		Receiver:   so.address.Name,
 		PhoneNo:    so.address.Mobile,
+		SupplierID: so.supplierID,
 	}
 	saleOrder.OrderAmt = decimal.Zero
 	saleOrder.GoodsAmt = decimal.Zero
