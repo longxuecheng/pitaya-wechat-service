@@ -71,7 +71,7 @@ func (dao *SaleOrder) SelectAllByUserWithPagination(userID int64, offset uint64,
 	return orderList, totalRecords, err
 }
 
-func (dao *SaleOrder) SelectByUserAndStatusWithPagination(userID int64, statusList []model.OrderStatus, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
+func (dao *SaleOrder) SelectByUserAndStatus(userID int64, statusList []model.OrderStatus, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
 	c := sys.PaginationCondition{
 		Columns:   dao.columns,
@@ -84,7 +84,7 @@ func (dao *SaleOrder) SelectByUserAndStatusWithPagination(userID int64, statusLi
 	return orderList, totalRecords, err
 }
 
-func (dao *SaleOrder) SelectBySupplierWitPagination(supplierID int64, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
+func (dao *SaleOrder) SelectAllBySupplierWithPagination(supplierID int64, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
 	c := sys.PaginationCondition{
 		Columns:   dao.columns,
@@ -92,6 +92,19 @@ func (dao *SaleOrder) SelectBySupplierWitPagination(supplierID int64, offset uin
 		Offset:    offset,
 		Limit:     limit,
 		WherePred: sq.Eq{"supplier_id": supplierID},
+	}
+	totalRecords, err := dao.db.SelectPagination(&orderList, c)
+	return orderList, totalRecords, err
+}
+
+func (dao *SaleOrder) SelectBySupplierAndStatus(supplierID int64, stats []model.OrderStatus, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
+	orderList := []model.SaleOrder{}
+	c := sys.PaginationCondition{
+		Columns:   dao.columns,
+		TableName: dao.table,
+		Offset:    offset,
+		Limit:     limit,
+		WherePred: sq.Eq{"supplier_id": supplierID, "status": stats},
 	}
 	totalRecords, err := dao.db.SelectPagination(&orderList, c)
 	return orderList, totalRecords, err

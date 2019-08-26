@@ -166,7 +166,7 @@ func newTokenManager(startSchedule bool) *wechatTokenManager {
 
 // crontab syntax https://github.com/mileusna/crontab
 func (m *wechatTokenManager) scheduleTasks() {
-	m.crontab.MustAddJob("* * * * *", m.refreshAccessToken)
+	m.crontab.MustAddJob("*/5 * * * *", m.refreshAccessToken)
 	// run imediately when start
 	m.crontab.RunAll()
 }
@@ -186,5 +186,5 @@ func (m *wechatTokenManager) refreshAccessToken() {
 		m.at = act.AccessToken
 		m.atExpIn = act.ExpiresIn
 	}
-	logger.Printf("access token refresh result is %+v\n", act)
+	logger.Printf("Access token : %s\n", act.AccessToken)
 }

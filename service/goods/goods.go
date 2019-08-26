@@ -1,7 +1,7 @@
 package goods
 
 import (
-	"gotrue/api"
+	"gotrue/service/api"
 	"gotrue/dao"
 	"gotrue/dto"
 	"gotrue/model"

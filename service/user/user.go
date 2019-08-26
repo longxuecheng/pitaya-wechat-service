@@ -2,7 +2,7 @@ package user
 
 import (
 	"database/sql"
-	"gotrue/api"
+	"gotrue/service/api"
 	"gotrue/dao"
 	"gotrue/dto"
 	"gotrue/dto/request"

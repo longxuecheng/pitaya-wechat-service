@@ -29,7 +29,7 @@ var orderStatuMap = map[OrderStatus]string{
 	Created:          "已创建",
 	Canceled:         "已取消",
 	Paying:           "待付款",
-	Paid:             "已付款",
+	Paid:             "已付款", // 待收货
 	PayFailed:        "付款失败",
 	Sent:             "已发货",
 	Received:         "已收货",

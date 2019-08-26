@@ -2,7 +2,6 @@ package order
 
 import (
 	"database/sql"
-	"gotrue/api"
 	"gotrue/dao"
 	"gotrue/dto"
 	"gotrue/dto/pagination"
@@ -10,6 +9,7 @@ import (
 	"gotrue/dto/response"
 	"gotrue/facility/errors"
 	"gotrue/model"
+	"gotrue/service/api"
 	"gotrue/service/cart"
 	"gotrue/service/express"
 	"gotrue/service/goods"
@@ -412,47 +412,58 @@ func (s *SaleOrder) save(so *supplierOrder, tx *sql.Tx) (int64, error) {
 }
 
 // ListSupplierOrders list orders for a supplier's admin
-func (s *SaleOrder) ListSupplierOrders(supplierID int64, req request.OrderListRequest) (page pagination.PaginationResonse, err error) {
-	orderList, count, err := s.dao.SelectBySupplierWitPagination(supplierID, req.Offet(), req.Limit())
-	if err != nil {
-		return page, err
+func (s *SaleOrder) ListSupplierOrders(supplierID int64, req request.OrderListRequest) (page *pagination.Page, err error) {
+	var orders []model.SaleOrder
+	var total int64
+	if req.Type == request.All {
+		orders, total, err = s.dao.SelectAllBySupplierWithPagination(supplierID, req.Offet(), req.Limit())
+	} else {
+		stats := s.mappingRequestStatus(req)
+		orders, total, err = s.dao.SelectBySupplierAndStatus(supplierID, stats, req.Offet(), req.Limit())
 	}
-	orderSet := newSaleOrderSet(orderList)
+	if err != nil {
+		return nil, err
+	}
+	orderSet := newSaleOrderSet(orders)
 	details, err := s.saleDetailDao.SelectByOrderIDs(orderSet.orderIDList()...)
 	if err != nil {
 		return page, err
 	}
 	orderSet.setSaleDetails(details)
-	page.PaginationRequest = req.PaginationRequest
-	page.SetCount(count)
+	page = req.Page
+	page.SetCount(total)
 	page.Data = orderSet.orderDTOs()
 	return
 }
 
-func (s *SaleOrder) resolveOrderStatus(req request.OrderListRequest) []model.OrderStatus {
-	orderStatusList := []model.OrderStatus{}
+// mappingRequestStatus map status from request to db
+func (s *SaleOrder) mappingRequestStatus(req request.OrderListRequest) []model.OrderStatus {
+	stats := []model.OrderStatus{}
 	if req.Type == request.Created {
-		orderStatusList = append(orderStatusList, model.Created)
+		stats = append(stats, model.Created)
 	}
 	if req.Type == request.Finished {
-		orderStatusList = append(orderStatusList, model.Finish)
+		stats = append(stats, model.Finish)
 	}
 	if req.Type == request.Sent {
-		orderStatusList = append(orderStatusList, model.Sent)
+		stats = append(stats, model.Sent)
 	}
-	return orderStatusList
+	if req.Type == request.Paid {
+		stats = append(stats, model.Paid)
+	}
+	return stats
 }
 
 // List will list orders for a user
-func (s *SaleOrder) List(userID int64, req request.OrderListRequest) (*pagination.PaginationResonse, error) {
+func (s *SaleOrder) List(userID int64, req request.OrderListRequest) (*pagination.Page, error) {
 	var orders []model.SaleOrder
 	var total int64
 	var err error
 	if req.Type == request.All {
 		orders, total, err = s.dao.SelectAllByUserWithPagination(userID, req.Offet(), req.Limit())
 	} else {
-		orderStatusList := s.resolveOrderStatus(req)
-		orders, total, err = s.dao.SelectByUserAndStatusWithPagination(userID, orderStatusList, req.Offet(), req.Limit())
+		orderStatusList := s.mappingRequestStatus(req)
+		orders, total, err = s.dao.SelectByUserAndStatus(userID, orderStatusList, req.Offet(), req.Limit())
 		if err != nil {
 			return nil, err
 		}
@@ -462,10 +473,7 @@ func (s *SaleOrder) List(userID int64, req request.OrderListRequest) (*paginatio
 	if err != nil {
 		return nil, err
 	}
-
-	page := &pagination.PaginationResonse{
-		PaginationRequest: req.PaginationRequest,
-	}
+	page := req.Page
 	orderSet.setSaleDetails(details)
 	page.SetCount(total)
 	page.Data = orderSet.orderDTOs()

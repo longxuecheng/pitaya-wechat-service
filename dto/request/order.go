@@ -24,10 +24,11 @@ const (
 	Finished orderType = "finished"
 	Created  orderType = "created"
 	Sent     orderType = "sent"
+	Paid     orderType = "paid"
 )
 
 type OrderListRequest struct {
-	pagination.PaginationRequest
+	*pagination.Page
 	Type orderType `json:"type"`
 }
 
