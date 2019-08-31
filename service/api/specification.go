@@ -1,8 +1,8 @@
 package api
 
-import "gotrue/dto"
+import "gotrue/dto/response"
 
 // ISpecificationService 规格属性服务
 type ISpecificationService interface {
-	GetByIDs(IDs []int64) ([]*dto.SpecificationDTO, error)
+	GetByIDs(IDs []int64) ([]*response.SpecificationDTO, error)
 }

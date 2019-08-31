@@ -7,7 +7,7 @@ func InsertMap(i interface{}, fieldTag string) map[string]interface{} {
 }
 
 // StructToMap 将一个stuct转换成map
-func StructToMap(i interface{}, fieldTag string, excludeTag ...string) map[string]interface{} {
+func StructToMap(i interface{}, fieldTag string, omitTags ...string) map[string]interface{} {
 	value := reflect.ValueOf(i)
 	t := reflect.TypeOf(i)
 	vkind := value.Kind()
@@ -23,13 +23,22 @@ func StructToMap(i interface{}, fieldTag string, excludeTag ...string) map[strin
 	fm := map[string]interface{}{}
 	for i := 0; i < fn; i++ {
 		sf := t.Field(i)
-		if excludeTag != nil && sf.Tag.Get(excludeTag[0]) == "true" {
-			continue
+		if omitTags != nil {
+			ok := false
+			for _, omit := range omitTags {
+				if _, found := sf.Tag.Lookup(omit); found {
+					ok = true
+					break
+				}
+			}
+			if ok {
+				continue
+			}
 		}
 		if sf.Anonymous && value.Field(i).Kind() == reflect.Struct {
 			fv := value.Field(i)
 			fi := fv.Interface()
-			m1 := StructToMap(fi, fieldTag, excludeTag...)
+			m1 := StructToMap(fi, fieldTag, omitTags...)
 			for k, v := range m1 {
 				fm[k] = v
 			}

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"gotrue/dto/request"
 	"gotrue/dto/response"
 	"gotrue/facility/utils"
@@ -61,7 +60,7 @@ func LoginByWechat(c *gin.Context) {
 	utils.CheckAndPanic(err)
 	user, err := user.UserService.Login(wechatResp.OpenID, req.NickName, req.AvatarURL)
 	utils.CheckAndPanic(err)
-	log.Println(fmt.Sprintf("LoginByWechat response code is %d jscode is %s nickname %s avatar url %s", wechatResp.ErrorCode, req.Code, req.NickName, req.AvatarURL))
+	log.Printf("LoginByWechat response code is %d jscode is %s nickname %s avatar url %s\n", wechatResp.ErrorCode, req.Code, req.NickName, req.AvatarURL)
 	utils.CheckAndPanic(err)
 	accessToken, err := service.BuildToken(user.ID, 3600)
 	utils.CheckAndPanic(err)

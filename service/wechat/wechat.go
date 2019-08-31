@@ -87,7 +87,7 @@ func (s *wechatService) PrePay(r *PrepayRequest) (*payment.PrepayReponse, error)
 		NotifyURL:  "https://www.geluxiya.com",
 		ServerIP:   "192.168.1.123",
 		TradeType:  payment.TradeTypeJSAPI,
-		TotalFee:   10,
+		TotalFee:   r.TotalFee,
 		Desc:       r.Desc,
 		OpenID:     r.OpenID,
 	}
@@ -108,15 +108,16 @@ func (s *wechatService) PrePay(r *PrepayRequest) (*payment.PrepayReponse, error)
 	if !ok {
 		return nil, err
 	}
-	pr := &payment.PrepayReponse{}
-	pr.AppID = appID
-	pr.NonceStr = strconv.FormatInt(time.Now().Unix(), 10)
-	pr.SignType = payment.SignTypeMD5
-	pr.TimeStamp = strconv.FormatInt(time.Now().Unix(), 10)
-	pr.Package = "prepay_id=" + result.PrepayID
-	pr.SignParams()
-	pr.PrepayID = result.PrepayID
-	return pr, nil
+	preypayResponse := &payment.PrepayReponse{
+		AppID:     appID,
+		NonceStr:  strconv.FormatInt(time.Now().Unix(), 10),
+		SignType:  payment.SignTypeMD5,
+		TimeStamp: strconv.FormatInt(time.Now().Unix(), 10),
+		Package:   "prepay_id=" + result.PrepayID,
+	}
+	preypayResponse.SignParams()
+	preypayResponse.PrepayID = result.PrepayID
+	return preypayResponse, nil
 }
 
 func (s *wechatService) QueryPayResult(orderNo string) (*payment.QueryOrderResponse, error) {
@@ -166,7 +167,7 @@ func newTokenManager(startSchedule bool) *wechatTokenManager {
 
 // crontab syntax https://github.com/mileusna/crontab
 func (m *wechatTokenManager) scheduleTasks() {
-	m.crontab.MustAddJob("*/5 * * * *", m.refreshAccessToken)
+	m.crontab.MustAddJob("*/10 * * * *", m.refreshAccessToken)
 	// run imediately when start
 	m.crontab.RunAll()
 }

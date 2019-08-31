@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"gotrue/dto"
+	"gotrue/dto/response"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
 	"gotrue/service/basic"
@@ -12,6 +12,23 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 )
+
+func GoodsExpressConstraint(c *gin.Context) {
+	stockID := c.Query("stockId")
+	addressId := c.Query("addressId")
+	if stockID == "" || addressId == "" {
+		middle_ware.BadRequest(c, "请求参数有误")
+		return
+	}
+
+	stockIDInt64, err := utils.ParseInt64(stockID)
+	utils.CheckAndPanic(err)
+	addressIDInt64, err := utils.ParseInt64(addressId)
+	utils.CheckAndPanic(err)
+	constraint, err := goods.GoodsService.ExpressConstraint(stockIDInt64, addressIDInt64)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, constraint)
+}
 
 // GetGoodsListByCategory 按照商品分类获取商品列表
 func GetGoodsListByCategory(c *gin.Context) {
@@ -55,7 +72,7 @@ func GetGoodsInfo(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	goodsSpecSet := dto.NewGoodsSpecSet(goodsSpecDTOs)
+	goodsSpecSet := response.NewGoodsSpecSet(goodsSpecDTOs)
 	stockDTOs, err := stock.StockService.GetStocksByGoodsID(goodsID)
 	if err != nil {
 		panic(err)

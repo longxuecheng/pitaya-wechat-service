@@ -4,6 +4,8 @@ import (
 	"database/sql/driver"
 	"time"
 
+	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -59,12 +61,12 @@ func (so OrderStatus) Name() string {
 }
 
 type SaleOrder struct {
-	ID            int64           `db:"id" exclude:"true"`
+	ID            int64           `db:"id" insert:"true" pk:"true"`
 	ParentID      int64           `db:"parent_id"`
 	OrderNo       string          `db:"order_no"`
-	CreateTime    time.Time       `db:"create_time" exclude:"true"`
+	CreateTime    time.Time       `db:"create_time" insert:"true"`
 	UserID        int64           `db:"user_id"`
-	Status        OrderStatus     `db:"status" exclude:"true"`
+	Status        OrderStatus     `db:"status" insert:"true"`
 	Receiver      string          `db:"receiver"`
 	ProvinceID    int             `db:"province_id"`
 	CityID        int             `db:"city_id"`
@@ -77,7 +79,7 @@ type SaleOrder struct {
 	ExpressMethod *string         `db:"express_method"`
 	ExpressNo     *string         `db:"express_order_no"`
 	ExpressFee    decimal.Decimal `db:"express_fee"`
-	Count         int64           `db:"count" exclude:"true"`
+	Count         int64           `db:"count" count:"true"`
 }
 
 func (so *SaleOrder) TableName() string {
@@ -85,25 +87,7 @@ func (so *SaleOrder) TableName() string {
 }
 
 func (so *SaleOrder) Columns() []string {
-	return []string{
-		"id",
-		"order_no",
-		"create_time",
-		"user_id",
-		"status",
-		"receiver",
-		"province_id",
-		"city_id",
-		"district_id",
-		"address",
-		"phone_no",
-		"supplier_id",
-		"order_amt",
-		"goods_amt",
-		"express_method",
-		"express_order_no",
-		"express_fee",
-	}
+	return reflect_util.TagValues(so, "db", "count")
 }
 
 func (so *SaleOrder) RegionIDs() []int {

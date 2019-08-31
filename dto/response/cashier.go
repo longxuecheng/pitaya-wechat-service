@@ -1,13 +1,17 @@
 package response
 
-import "github.com/shopspring/decimal"
+import (
+	"github.com/shopspring/decimal"
+)
 
 // Cashier is a statistic information of goods amount and price
 type Cashier struct {
-	ExpressFee      string        `json:"expressFee"`
-	GoodsTotalPrice string        `json:"goodsTotalPrice"`
-	OrderTotalPrice string        `json:"orderTotalPrice"`
-	Items           []CashierItem `json:"items"`
+	GoodsTotalPrice string `json:"goodsTotalPrice"`
+	OrderTotalPrice string `json:"orderTotalPrice"`
+	*GoodsExpressConstraint
+	Message string        `json:"messsage"`
+	Items   []CashierItem `json:"items"`
+	Count   int64         `json:"count"`
 }
 
 // CashierItem is the checkout unit of cashier

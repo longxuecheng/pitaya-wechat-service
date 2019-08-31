@@ -1,7 +1,7 @@
 package api
 
-import "gotrue/dto"
+import "gotrue/dto/response"
 
 type IGoodsImgService interface {
-	GetByGoodsID(goodsID int64) ([]*dto.GoodsGalleryDTO, error)
+	GetByGoodsID(goodsID int64) ([]*response.GoodsGalleryDTO, error)
 }

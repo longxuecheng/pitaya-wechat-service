@@ -2,7 +2,7 @@ package stock
 
 import (
 	"gotrue/dao"
-	"gotrue/dto"
+	"gotrue/dto/response"
 	"gotrue/model"
 )
 
@@ -23,7 +23,7 @@ type Stock struct {
 	dao *dao.Stock
 }
 
-func (s *Stock) GetByID(ID int64) (*dto.GoodsStockDTO, error) {
+func (s *Stock) GetByID(ID int64) (*response.GoodsStockDTO, error) {
 	stock, err := s.dao.SelectByID(ID)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (s *Stock) GetByID(ID int64) (*dto.GoodsStockDTO, error) {
 	return installGoodsStockDTO(stock), nil
 }
 
-func (s *Stock) GetStocksByGoodsID(goodsID int64) ([]*dto.GoodsStockDTO, error) {
+func (s *Stock) GetStocksByGoodsID(goodsID int64) ([]*response.GoodsStockDTO, error) {
 	stocks, err := s.dao.SelectByGoodsID(goodsID)
 	if err != nil {
 		return nil, err
@@ -39,8 +39,8 @@ func (s *Stock) GetStocksByGoodsID(goodsID int64) ([]*dto.GoodsStockDTO, error) 
 	return buildGoodsStockDTOs(stocks), nil
 }
 
-func installGoodsStockDTO(model *model.GoodsStock) *dto.GoodsStockDTO {
-	dto := new(dto.GoodsStockDTO)
+func installGoodsStockDTO(model *model.GoodsStock) *response.GoodsStockDTO {
+	dto := new(response.GoodsStockDTO)
 	dto.ID = model.ID
 	dto.GoodsID = model.GoodsID
 	dto.GoodsSpecificationIDs = model.Specification.String
@@ -49,11 +49,11 @@ func installGoodsStockDTO(model *model.GoodsStock) *dto.GoodsStockDTO {
 	return dto
 }
 
-func buildGoodsStockDTOs(models []*model.GoodsStock) []*dto.GoodsStockDTO {
+func buildGoodsStockDTOs(models []*model.GoodsStock) []*response.GoodsStockDTO {
 	if models == nil || len(models) == 0 {
 		return nil
 	}
-	dtos := make([]*dto.GoodsStockDTO, len(models))
+	dtos := make([]*response.GoodsStockDTO, len(models))
 	for i, model := range models {
 		dtos[i] = installGoodsStockDTO(model)
 	}

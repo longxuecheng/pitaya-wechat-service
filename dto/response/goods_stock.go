@@ -1,4 +1,4 @@
-package dto
+package response
 
 import (
 	"github.com/shopspring/decimal"

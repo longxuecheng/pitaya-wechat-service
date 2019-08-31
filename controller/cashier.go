@@ -39,7 +39,7 @@ func PreviewCashierFromStock(c *gin.Context) {
 	req := &request.CashierPreview{}
 	err := c.BindJSON(req)
 	utils.CheckAndPanic(err)
-	cashier, err := cashier.CashierService.QuickCheckout(*req)
+	cashier, err := cashier.CashierService.StockCheckout(*req)
 	utils.CheckAndPanic(err)
 	address, err := getUserAddress(req.AddressID, userID)
 	utils.CheckAndPanic(err)

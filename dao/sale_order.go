@@ -6,6 +6,8 @@ import (
 	"gotrue/model"
 	"gotrue/sys"
 
+	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
+
 	sq "github.com/Masterminds/squirrel"
 )
 
@@ -29,7 +31,7 @@ type SaleOrder struct {
 }
 
 func (dao *SaleOrder) Create(order model.SaleOrder, tx ...*sql.Tx) (id int64, err error) {
-	setMap := utils.StructToMap(order, "db", "exclude")
+	setMap := utils.StructToMap(order, "db", "insert", "count")
 	_, id, err = dao.db.Insert(dao.table, setMap, tx...)
 	return
 }
@@ -110,8 +112,9 @@ func (dao *SaleOrder) SelectBySupplierAndStatus(supplierID int64, stats []model.
 	return orderList, totalRecords, err
 }
 
-func (dao *SaleOrder) UpdateByID(orderID int64, updateMap map[string]interface{}, tx *sql.Tx) error {
-	_, err := dao.db.UpdateTx(tx, dao.table, updateMap, sq.Eq{"id": orderID})
+func (dao *SaleOrder) UpdateByID(order *model.SaleOrder, tx *sql.Tx) error {
+	updateMap := reflect_util.StructToMap(order, "db", "pk", "count")
+	_, err := dao.db.UpdateTx(tx, dao.table, updateMap, sq.Eq{"id": order.ID})
 	return err
 }
 

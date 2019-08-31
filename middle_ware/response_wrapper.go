@@ -56,7 +56,7 @@ func SetResponseDataWithStatus(c *gin.Context, data interface{}, code int) {
 	c.Set(DATA_KEY, data)
 }
 
-func BadRequet(c *gin.Context, reason string) {
+func BadRequest(c *gin.Context, reason string) {
 	c.JSON(http.StatusBadRequest, newResponse(nil, reason, FORM_INVALID))
 	c.Abort()
 }

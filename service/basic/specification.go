@@ -2,7 +2,7 @@ package basic
 
 import (
 	"gotrue/dao"
-	"gotrue/dto"
+	"gotrue/dto/response"
 	"gotrue/model"
 )
 
@@ -19,7 +19,7 @@ type Specification struct {
 	dao *dao.Specification
 }
 
-func (cs *Specification) GetByIDs(IDs []int64) ([]*dto.SpecificationDTO, error) {
+func (cs *Specification) GetByIDs(IDs []int64) ([]*response.SpecificationDTO, error) {
 	Specifications, err := cs.dao.SelectByIDs(IDs)
 	if err != nil {
 		return nil, err
@@ -27,18 +27,18 @@ func (cs *Specification) GetByIDs(IDs []int64) ([]*dto.SpecificationDTO, error) 
 	return buildSpecificationDTOs(Specifications), nil
 }
 
-func installSpecificationDTO(model *model.Specification) *dto.SpecificationDTO {
-	dto := new(dto.SpecificationDTO)
+func installSpecificationDTO(model *model.Specification) *response.SpecificationDTO {
+	dto := new(response.SpecificationDTO)
 	dto.ID = model.ID
 	dto.Name = model.Name
 	return dto
 }
 
-func buildSpecificationDTOs(models []*model.Specification) []*dto.SpecificationDTO {
+func buildSpecificationDTOs(models []*model.Specification) []*response.SpecificationDTO {
 	if models == nil || len(models) == 0 {
 		return nil
 	}
-	dtos := make([]*dto.SpecificationDTO, len(models))
+	dtos := make([]*response.SpecificationDTO, len(models))
 	for i, model := range models {
 		dtos[i] = installSpecificationDTO(model)
 	}

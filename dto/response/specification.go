@@ -1,4 +1,4 @@
-package dto
+package response
 
 type SpecificationDTO struct {
 	ID        int64                    `json:"specification_id"`
@@ -50,7 +50,7 @@ func (s *GoodsSpecificationSet) DistinctSpecIDs() []int64 {
 func (s *GoodsSpecificationSet) SpecTree() []*SpecificationDTO {
 	for _, spec := range s.specs {
 		values := []*GoodsSpecificationDTO{}
-		for _,item := range s.itemMap {
+		for _, item := range s.itemMap {
 			if item.SpecID == spec.ID {
 				values = append(values, item)
 			}

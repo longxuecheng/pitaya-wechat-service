@@ -18,6 +18,7 @@ import (
 	"gotrue/service/wechat"
 	"gotrue/service/wechat/payment"
 	"gotrue/sys"
+	"log"
 	"strconv"
 	"time"
 
@@ -84,8 +85,8 @@ func (sof *saleOrderFSM) can(event string) error {
 	return nil
 }
 
-func (sof *saleOrderFSM) statusUpdateMap() map[string]interface{} {
-	return map[string]interface{}{"status": sof.fsm.Current()}
+func (sof *saleOrderFSM) orderStatus() model.OrderStatus {
+	return model.OrderStatus(sof.fsm.Current())
 }
 
 // SaleOrder 作为销售订单服务，实现了api.IOrderService
@@ -106,25 +107,23 @@ func (s *SaleOrder) UpdateExpressInfo(req *request.OrderExpressUpdate) error {
 	if err := express.IsSupport(req.ExpressMethod); err != nil {
 		return err
 	}
-	saleOrder, err := s.dao.SelectByID(req.OrderID)
+	order, err := s.dao.SelectByID(req.OrderID)
 	if err != nil {
 		return err
 	}
 	// TODO 检查订单状态
-	sof := newOrderFSM(saleOrder)
+	sof := newOrderFSM(order)
 	err = sof.can("send")
 	if err != nil {
 		return err
 	}
 	sof.fsm.Event("send")
 	// 修改订单状态为已经发货
-	updateMap := map[string]interface{}{
-		"express_method":   req.ExpressMethod,
-		"express_order_no": req.ExpressNo,
-		"status":           sof.fsm.Current(),
-	}
+	order.ExpressMethod = &req.ExpressMethod
+	order.ExpressNo = &req.ExpressNo
+	order.Status = model.OrderStatus(sof.fsm.Current())
 
-	if err := s.dao.UpdateByID(req.OrderID, updateMap, nil); err != nil {
+	if err := s.dao.UpdateByID(order, nil); err != nil {
 		return err
 	}
 	return nil
@@ -147,83 +146,16 @@ func (s *SaleOrder) payStatus(req *payment.QueryOrderResponse) model.OrderStatus
 	return orderStatus
 }
 
-func (s *SaleOrder) notifyFarmer(prepayID string, status model.OrderStatus) {
+func (s *SaleOrder) notifyFarmer(prepayID string, order *model.SaleOrder) {
 	// if paid success then notify tenant to send goods
-	if model.Paid == status {
-
+	if model.Paid != order.Status {
+		return
 	}
-}
-
-// UpdateByWechatPayResult 通过微信支付查询结果更新订单状态和交易状态
-func (s *SaleOrder) UpdateByWechatPayResult(r *request.QueryWechatPayResult, req *payment.QueryOrderResponse) error {
-	order, err := s.dao.SelectByID(r.OrderID)
-	if err != nil {
-		return err
-	}
-	// 查找支付交易
-	txns, err := s.wechatPaymentDao.SelectByOrderNo(order.OrderNo, model.TransactionTypePay)
-	if err != nil {
-		return err
-	}
-	orderStatus := s.payStatus(req)
-	if orderStatus == "" {
-		return nil
-	}
-	updateMap := map[string]interface{}{
-		"status": orderStatus,
-	}
-	// 如果当前订单不是主单
-	if !order.IsMaster() {
-		sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
-			err := s.dao.UpdateByID(order.ID, updateMap, nil)
-			if err != nil {
-				return err
-			}
-			// 一个或者多个订单对应一笔支付
-			if len(txns) == 1 {
-				updateMap = map[string]interface{}{
-					"status": req.TradeState,
-				}
-				err = s.wechatPaymentDao.UpdateByID(txns[0].ID, updateMap, nil)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-		return nil
-	}
-	subOrders, err := s.dao.SelectByParentID(order.ID)
-	if err != nil {
-		return err
-	}
-
-	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
-		err := s.dao.UpdateByID(order.ID, updateMap, tx)
-		if err != nil {
-			return err
-		}
-		for _, subOrder := range subOrders {
-			err = s.dao.UpdateByID(subOrder.ID, updateMap, tx)
-			if err != nil {
-				return err
-			}
-		}
-		// 一个或者多个订单对应一笔支付
-		if len(txns) == 1 {
-			updateMap = map[string]interface{}{
-				"status": req.TradeState,
-			}
-			return s.wechatPaymentDao.UpdateByID(txns[0].ID, updateMap, nil)
-		}
-
-		return nil
-	})
 	openIDLXC := "ovxEC5YTWQk6Vv5FJdN_30gkBr-g"
 	notificationReq := &wechat.NotifyRequest{
 		ToUser:     openIDLXC,
 		TemplateID: "F56_89H1A2SiyEmnwUSGNw_kyTIcdFLBELFaU2sFUhU",
-		FormID:     r.PrepayID,
+		FormID:     prepayID,
 		Data: map[string]interface{}{
 			"keyword1": map[string]string{
 				"value": order.OrderNo,
@@ -245,13 +177,82 @@ func (s *SaleOrder) UpdateByWechatPayResult(r *request.QueryWechatPayResult, req
 			},
 		},
 	}
-	return wechat.WechatService().SendNotification(notificationReq)
+	wechat.WechatService().SendNotification(notificationReq)
+}
+
+// UpdateByWechatPayResult 通过微信支付查询结果更新订单状态和交易状态
+func (s *SaleOrder) UpdateByWechatPayResult(r *request.QueryWechatPayResult, req *payment.QueryOrderResponse) error {
+	order, err := s.dao.SelectByID(r.OrderID)
+	if err != nil {
+		return err
+	}
+	// 查找支付交易
+	txns, err := s.wechatPaymentDao.SelectByOrderNo(order.OrderNo, model.TransactionTypePay)
+	if err != nil {
+		return err
+	}
+	orderStatus := s.payStatus(req)
+	if orderStatus == "" {
+		return nil
+	}
+	order.Status = orderStatus
+	// 如果当前订单不是主单
+	if !order.IsMaster() {
+		sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+			err := s.dao.UpdateByID(order, nil)
+			if err != nil {
+				return err
+			}
+			// 一个或者多个订单对应一笔支付
+			if len(txns) == 1 {
+				updateMap := map[string]interface{}{
+					"status": req.TradeState,
+				}
+				err = s.wechatPaymentDao.UpdateByID(txns[0].ID, updateMap, nil)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		return nil
+	}
+	subOrders, err := s.dao.SelectByParentID(order.ID)
+	if err != nil {
+		return err
+	}
+
+	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+		err := s.dao.UpdateByID(order, tx)
+		if err != nil {
+			return err
+		}
+		for _, subOrder := range subOrders {
+			subOrder.Status = orderStatus
+			err = s.dao.UpdateByID(&subOrder, tx)
+			if err != nil {
+				return err
+			}
+		}
+		// 一个或者多个订单对应一笔支付
+		if len(txns) == 1 {
+			updateMap := map[string]interface{}{
+				"status": req.TradeState,
+			}
+			return s.wechatPaymentDao.UpdateByID(txns[0].ID, updateMap, nil)
+		}
+
+		return nil
+	})
+	go s.notifyFarmer(r.PrepayID, order)
+	return nil
 }
 
 // Create 从购物车创建订单
 // 1. 创建订单
 // 2. 创建订单明细
 // 3. 删除购物车所选中的项目x
+// 4. 获取邮费及配送范围
 func (s *SaleOrder) Create(userID int64, req request.SaleOrderAddRequest) (id int64, err error) {
 	checkedItems, err := s.cartService.CheckedItems(userID)
 	if err != nil {
@@ -311,8 +312,8 @@ func (s *SaleOrder) Cancel(orderID int64) (*response.SaleOrderInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	updateMap := sof.statusUpdateMap()
-	err = s.dao.UpdateByID(orderID, updateMap, nil)
+	saleOrder.Status = sof.orderStatus()
+	err = s.dao.UpdateByID(saleOrder, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -333,14 +334,20 @@ func (s *SaleOrder) QuickCreate(userID int64, req request.SaleOrderQuickAddReque
 	if err != nil {
 		return 0, err
 	}
+	expressConstraint, err := s.goodsService.ExpressConstraint(stock.ID, int64(address.ID))
+	if !expressConstraint.IsOK() {
+		return 0, expressConstraint.Error()
+	}
+	expressFee := expressConstraint.UnitExpressFee
 	// 由于目前水果的包装都是按照一个快递单来进行的，所以目前对每一个项目创建一个订单
 	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 		ss := []supplierStock{
 			supplierStock{
-				SupplierID: goods.SupplierID,
-				Quantity:   req.Quantity,
-				Stock:      stock,
-				Goods:      goods,
+				SupplierID:     goods.SupplierID,
+				Quantity:       req.Quantity,
+				Stock:          stock,
+				Goods:          goods,
+				UnitExpressFee: expressFee,
 			},
 		}
 		so := &supplierOrder{
@@ -369,11 +376,13 @@ func (s *SaleOrder) QuickCreate(userID int64, req request.SaleOrderQuickAddReque
 func (s *SaleOrder) saveOrders(orderList []*supplierOrder, tx *sql.Tx) (int64, error) {
 	var masterID int64
 	if len(orderList) > 1 {
+		// save master order
 		masterOrder := orderList[0]
 		masterID, err := s.save(masterOrder, tx)
 		if err != nil {
 			return 0, err
 		}
+		// children order
 		orderList = orderList[1:]
 		for _, order := range orderList {
 			order.parentID = masterID
@@ -499,9 +508,11 @@ func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse,
 		}
 		orderSet := newSaleOrderSet(subOrders)
 		totalPrice = orderSet.sumOrderPrice()
+		totalPrice = totalPrice.Add(order.OrderAmt)
 	} else {
 		totalPrice = order.OrderAmt
 	}
+	log.Printf("total price is %s\n", totalPrice.String())
 	user, err := s.userService.GetUserByID(userID)
 	if err != nil {
 		return nil, err
@@ -582,26 +593,26 @@ func generateOrderNumber(nodeNo int64) (string, error) {
 }
 
 func (s *SaleOrder) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrderInfo {
-	dto := &response.SaleOrderInfo{}
-	dto.ID = order.ID
-	dto.OrderNo = order.OrderNo
-	dto.Status = order.Status.Name()
-	dto.CreatedAt = order.CreateTime.Format("2006-01-02 15:04:05")
-	dto.Consignee = order.Receiver
-	dto.Mobile = order.PhoneNo
-	dto.FullRegion = "TODO"
-	dto.Address = order.Address
-	dto.GoodsAmt = order.GoodsAmt
+	data := &response.SaleOrderInfo{}
+	data.ID = order.ID
+	data.OrderNo = order.OrderNo
+	data.Status = order.Status.Name()
+	data.CreatedAt = order.CreateTime.Format("2006-01-02 15:04:05")
+	data.Consignee = order.Receiver
+	data.Mobile = order.PhoneNo
+	data.FullRegion = "TODO"
+	data.Address = order.Address
+	data.GoodsAmt = order.GoodsAmt
 
 	if order.ExpressMethod != nil {
-		dto.ExpressMethod = *order.ExpressMethod
+		data.ExpressMethod = *order.ExpressMethod
 	}
 	if order.ExpressNo != nil {
-		dto.ExpressNo = *order.ExpressNo
+		data.ExpressNo = *order.ExpressNo
 	}
-	dto.ExpressFee = order.ExpressFee
-	dto.OrderAmt = order.OrderAmt
-	return dto
+	data.ExpressFee = order.ExpressFee
+	data.OrderAmt = order.OrderAmt
+	return data
 }
 
 func installSaleOrderItemDTO(model model.SaleOrder) response.SaleOrderItemDTO {
@@ -655,8 +666,10 @@ func installSaleDetailFromStock(orderID int64, stock *model.GoodsStock, goods *m
 type supplierStock struct {
 	SupplierID int64
 	Quantity   decimal.Decimal
-	Stock      *model.GoodsStock
-	Goods      *model.Goods
+	// 单件商品库存的运费
+	UnitExpressFee decimal.Decimal
+	Stock          *model.GoodsStock
+	Goods          *model.Goods
 }
 
 func (ss supplierStock) saleDetail() model.SaleDetail {
@@ -674,6 +687,8 @@ func (ss supplierStock) saleDetail() model.SaleDetail {
 }
 
 // supplierOrder 是供应商的订单信息
+// 一个供应商有多个库存，每个库存可能数量大于1
+// 数量大于1的库存可以拆分为1的单位库存
 type supplierOrder struct {
 	parentID       int64
 	supplierID     int64
@@ -687,14 +702,24 @@ func (so *supplierOrder) bindBasically(userID int64, address *dto.UserAddress) {
 	so.address = address
 }
 
-func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error) {
+func (so *supplierOrder) validate() error {
 	if so.userID == 0 || so.address.ID == 0 {
-		return model.SaleOrder{}, nil, errors.NewWithCodef("AddressBoundError", "user id and address must be bound first")
+		return errors.NewWithCodef("AddressBoundError", "user id and address must be bound first")
+	}
+	return nil
+}
+
+// transfer a supplier order to a sale order db model
+func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error) {
+	err := so.validate()
+	if err != nil {
+		return model.SaleOrder{}, nil, err
 	}
 	orderNo, err := generateOrderNumber(1)
 	if err != nil {
 		return model.SaleOrder{}, nil, err
 	}
+	// assemble data
 	saleOrder := model.SaleOrder{
 		ParentID:   so.parentID,
 		OrderNo:    orderNo,
@@ -709,14 +734,20 @@ func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error)
 	}
 	saleOrder.OrderAmt = decimal.Zero
 	saleOrder.GoodsAmt = decimal.Zero
+	// 总邮费
+	orderExpressFee := decimal.Zero
+	// 每一个库存都会有运费，整个订单可能有多个库存，需要累加所有库存运费
+	// 目前每个订单只有一个库存
 	saleDetails := []model.SaleDetail{}
 	for _, ss := range so.supplierStocks {
 		sum := ss.Stock.SaleUnitPrice.Mul(ss.Quantity)
+		orderExpressFee = orderExpressFee.Add(ss.UnitExpressFee)
 		saleOrder.GoodsAmt = saleOrder.GoodsAmt.Add(sum)
 		saleDetail := ss.saleDetail()
 		saleDetails = append(saleDetails, saleDetail)
 	}
-	saleOrder.OrderAmt = saleOrder.GoodsAmt
+	saleOrder.OrderAmt = saleOrder.GoodsAmt.Add(orderExpressFee)
+	saleOrder.ExpressFee = orderExpressFee
 	return saleOrder, saleDetails, nil
 }
 
@@ -727,10 +758,11 @@ func (so *supplierOrder) split() []*supplierOrder {
 		for i := 0; i < int(ss.Quantity.IntPart()); i++ {
 			ssList := []supplierStock{
 				supplierStock{
-					SupplierID: so.supplierID,
-					Quantity:   decimal.NewFromFloat32(1.0),
-					Stock:      ss.Stock,
-					Goods:      ss.Goods,
+					SupplierID:     so.supplierID,
+					Quantity:       decimal.NewFromFloat32(1.0),
+					Stock:          ss.Stock,
+					Goods:          ss.Goods,
+					UnitExpressFee: ss.UnitExpressFee,
 				},
 			}
 			sorder := &supplierOrder{

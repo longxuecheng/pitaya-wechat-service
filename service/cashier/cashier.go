@@ -53,8 +53,8 @@ func (s *Cashier) CartCheckout(userID int64) (*response.Cashier, error) {
 	return cc.summary(), nil
 }
 
-// QuickCheckout is 从单品进行快速结算
-func (s *Cashier) QuickCheckout(req request.CashierPreview) (*response.Cashier, error) {
+// StockCheckout is 从库存进行快速结算
+func (s *Cashier) StockCheckout(req request.CashierPreview) (*response.Cashier, error) {
 	stock, err := s.stockDao.SelectByID(req.StockID)
 	if err != nil {
 		return nil, err
@@ -71,8 +71,17 @@ func (s *Cashier) QuickCheckout(req request.CashierPreview) (*response.Cashier, 
 	if err != nil {
 		return nil, err
 	}
+	express, err := s.goodsService.ExpressConstraint(req.StockID, req.AddressID)
+	if err != nil {
+		return nil, err
+	}
 	gc := newGoodsCashier(stock, goods, specDesc, req.Quantity)
-	return gc.summary(), nil
+	if express.IsOK() {
+		gc.express = express
+	}
+	cs := gc.summary()
+	cs.GoodsExpressConstraint = express
+	return cs, nil
 }
 
 var defaultExpressFee = decimal.NewFromFloat32(3.00)
@@ -86,6 +95,7 @@ type goodsCashier struct {
 	quantity decimal.Decimal
 	stock    *model.GoodsStock
 	goods    *model.Goods
+	express  *response.GoodsExpressConstraint
 	specText string
 }
 
@@ -100,10 +110,12 @@ func newGoodsCashier(stock *model.GoodsStock, goods *model.Goods, specDesc strin
 
 func (gc *goodsCashier) summary() *response.Cashier {
 	goodsTotalPrice := gc.stock.SaleUnitPrice.Mul(gc.quantity)
+	// total express fee = (unit expresss fee) * quantity
+	gc.express.CalculateTotalExpressFee(gc.quantity)
 	cc := &response.Cashier{
-		ExpressFee:      defaultExpressFee.StringFixed(2),
-		GoodsTotalPrice: goodsTotalPrice.StringFixed(2),
-		OrderTotalPrice: goodsTotalPrice.Add(defaultExpressFee).StringFixed(2),
+		GoodsTotalPrice:        goodsTotalPrice.StringFixed(2),
+		OrderTotalPrice:        goodsTotalPrice.Add(gc.express.TotalExpressFee).StringFixed(2),
+		GoodsExpressConstraint: gc.express,
 	}
 
 	ci := response.CashierItem{
@@ -164,7 +176,6 @@ func (cc *cartCashier) summary() *response.Cashier {
 		cashierItems[i] = ci
 	}
 	cashier := &response.Cashier{
-		ExpressFee:      defaultExpressFee.StringFixed(2),
 		GoodsTotalPrice: checkedGoodsPrice.StringFixed(2),
 		OrderTotalPrice: checkedGoodsPrice.Add(defaultExpressFee).StringFixed(2),
 		Items:           cashierItems,

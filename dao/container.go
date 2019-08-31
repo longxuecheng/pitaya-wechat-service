@@ -17,4 +17,5 @@ func Init() {
 	initUserAddressDao()
 	initUserDao()
 	initWechatPaymentDao()
+	InitGoodsExpressConstraintDao()
 }

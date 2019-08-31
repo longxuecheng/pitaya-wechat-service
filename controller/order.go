@@ -108,7 +108,7 @@ func UpdateExpressInfo(c *gin.Context) {
 	req := &request.OrderExpressUpdate{}
 	err := c.BindJSON(req)
 	if err != nil {
-		middle_ware.BadRequet(c, "请求参数不合法")
+		middle_ware.BadRequest(c, "请求参数不合法")
 		return
 	}
 	supplier, err := supplier.SupplierService.QueryByAdmin(userID)

@@ -21,6 +21,7 @@ func apiRouter(r *gin.Engine) {
 
 	goodsGroup := root.Group("/goods")
 	goodsGroup.GET("/list", controller.GetGoodsListByCategory)
+	goodsGroup.GET("/constraint/express", controller.GoodsExpressConstraint)
 	goodsGroup.GET("/detail", controller.GetGoodsInfo)
 	goodsGroup.GET("/hot", controller.GetHotGoods)
 

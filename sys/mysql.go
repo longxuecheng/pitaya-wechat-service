@@ -34,8 +34,10 @@ func GetEasyDB() *EasyDB {
 		return easyDB
 	}
 	easyDB = new(EasyDB)
-	easyDB.ctx = context.Background()
-	easyDB.connection = DBConnection()
+	easyDB = &EasyDB{
+		ctx:        context.Background(),
+		connection: DBConnection(),
+	}
 	return easyDB
 }
 

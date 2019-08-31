@@ -2,7 +2,6 @@ package cart
 
 import (
 	"gotrue/dao"
-	"gotrue/dto"
 	"gotrue/dto/request"
 	"gotrue/dto/response"
 	"gotrue/facility/utils"
@@ -12,6 +11,8 @@ import (
 
 	"github.com/shopspring/decimal"
 )
+
+var df response.CartItem
 
 // CartService 是Cart的一个单例
 var CartService *Cart
@@ -35,7 +36,7 @@ func initCartService() {
 	}
 }
 
-// Cart 作为规格服务，实现了api.ICart
+// Cart 作为购物车服务，实现了api.ICart
 type Cart struct {
 	dao             *dao.Cart
 	stockDao        *dao.Stock
@@ -120,37 +121,37 @@ func newCartResponseWrapper(items []model.Cart, stockMap map[int64]*model.GoodsS
 func (set *cartResposneWrapper) DTOItems() []response.CartItem {
 	dtos := make([]response.CartItem, len(set.items))
 	for i, model := range set.items {
-		dto := response.CartItem{}
-		dto.ID = model.ID
-		dto.GoodsName = model.GoodsName
-		dto.GoodsSN = model.GoodsSN
-		dto.GoodsSpecDescription = model.GoodsSpecDescription
-		dto.GoodsSpecIDs = model.GoodsSpecIDs
+		data := response.CartItem{}
+		data.ID = model.ID
+		data.GoodsName = model.GoodsName
+		data.GoodsSN = model.GoodsSN
+		data.GoodsSpecDescription = model.GoodsSpecDescription
+		data.GoodsSpecIDs = model.GoodsSpecIDs
 		if stock, ok := set.stockMap[model.StockID]; ok {
-			dto.MarketPrice = stock.SaleUnitPrice
-			dto.RetailPrice = stock.SaleUnitPrice
+			data.MarketPrice = stock.SaleUnitPrice
+			data.RetailPrice = stock.SaleUnitPrice
 		}
-		dto.Quantity = model.Quantity
-		dto.StockID = model.StockID
-		dto.GoodsID = model.GoodsID
-		dto.GoodsSpecIDs = model.GoodsSpecIDs
-		dto.ListPicURL = model.ListPicURL
-		dto.SessionID = model.SessionID
-		dto.Checked = model.Checked
-		dtos[i] = dto
+		data.Quantity = model.Quantity
+		data.StockID = model.StockID
+		data.GoodsID = model.GoodsID
+		data.GoodsSpecIDs = model.GoodsSpecIDs
+		data.ListPicURL = model.ListPicURL
+		data.SessionID = model.SessionID
+		data.Checked = model.Checked
+		dtos[i] = data
 	}
 	return dtos
 }
 
 type cartCreator struct {
-	goods    *dto.GoodsInfoDTO
-	stock    *dto.GoodsStockDTO
+	goods    *response.GoodsInfoDTO
+	stock    *response.GoodsStockDTO
 	userID   int64
 	quantity decimal.Decimal
 }
 
-func newCartCreator(goods *dto.GoodsInfoDTO,
-	stock *dto.GoodsStockDTO, userID int64, quantity decimal.Decimal) *cartCreator {
+func newCartCreator(goods *response.GoodsInfoDTO,
+	stock *response.GoodsStockDTO, userID int64, quantity decimal.Decimal) *cartCreator {
 	cc := new(cartCreator)
 	cc.goods = goods
 	cc.stock = stock

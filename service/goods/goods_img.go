@@ -2,7 +2,7 @@ package goods
 
 import (
 	"gotrue/dao"
-	"gotrue/dto"
+	"gotrue/dto/response"
 	"gotrue/model"
 )
 
@@ -22,7 +22,7 @@ type GoodsImg struct {
 	dao *dao.GoodsImg
 }
 
-func (s *GoodsImg) GetByGoodsID(goodsID int64) ([]*dto.GoodsGalleryDTO, error) {
+func (s *GoodsImg) GetByGoodsID(goodsID int64) ([]*response.GoodsGalleryDTO, error) {
 	imgs, err := s.dao.SelectByGoodsID(goodsID)
 	if err != nil {
 		return nil, err
@@ -30,20 +30,20 @@ func (s *GoodsImg) GetByGoodsID(goodsID int64) ([]*dto.GoodsGalleryDTO, error) {
 	return buildGalleryDTOs(imgs), nil
 }
 
-func installGalleryDTO(model *model.GoodsImg) *dto.GoodsGalleryDTO {
-	dto := new(dto.GoodsGalleryDTO)
-	dto.ID = model.ID
-	dto.ImgDesc = model.Name
-	dto.ImgURL = model.URL
-	dto.SortOrder = model.DisplayOrder
-	return dto
+func installGalleryDTO(model *model.GoodsImg) *response.GoodsGalleryDTO {
+	data := new(response.GoodsGalleryDTO)
+	data.ID = model.ID
+	data.ImgDesc = model.Name
+	data.ImgURL = model.URL
+	data.SortOrder = model.DisplayOrder
+	return data
 }
 
-func buildGalleryDTOs(models []*model.GoodsImg) []*dto.GoodsGalleryDTO {
+func buildGalleryDTOs(models []*model.GoodsImg) []*response.GoodsGalleryDTO {
 	if models == nil || len(models) == 0 {
 		return nil
 	}
-	dtos := make([]*dto.GoodsGalleryDTO, len(models))
+	dtos := make([]*response.GoodsGalleryDTO, len(models))
 	for i, model := range models {
 		dtos[i] = installGalleryDTO(model)
 	}
