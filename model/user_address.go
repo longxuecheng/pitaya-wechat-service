@@ -3,7 +3,7 @@ package model
 var Table_User_Address string = "user_address"
 
 type UserAddress struct {
-	ID         int    `db:"id"`
+	ID         int64  `db:"id"`
 	Name       string `db:"name"`
 	UserID     int64  `db:"user_id"`
 	CountryID  int    `db:"country_id"`

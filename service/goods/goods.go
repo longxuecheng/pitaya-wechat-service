@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"gotrue/dao"
 	"gotrue/dto/response"
-	"gotrue/facility/errors"
 	"gotrue/model"
 	"gotrue/service/api"
 	"gotrue/service/basic"
@@ -44,14 +43,17 @@ func (s *Goods) ExpressConstraint(stockID int64, addressID int64) (*response.Goo
 	if err != nil {
 		return nil, err
 	}
-
-	if address == nil {
-		return nil, errors.NewWithCodef("AddressInvalid", "收货地址有误")
-	}
-	constraint, err := s.expressConstraintDao.QueryByStockAndProvince(stockID, address.ProvinceID)
 	result := response.BusinessResult{
 		Code: "OK",
 	}
+	if address == nil {
+		result.Message = "配送地址无效"
+		result.Code = "InvalidAddress"
+		return &response.GoodsExpressConstraint{
+			BusinessResult: result,
+		}, nil
+	}
+	constraint, err := s.expressConstraintDao.QueryByStockAndProvince(stockID, address.ProvinceID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			result.Message = "不支持的配送范围"

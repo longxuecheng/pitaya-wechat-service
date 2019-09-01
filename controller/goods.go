@@ -20,7 +20,6 @@ func GoodsExpressConstraint(c *gin.Context) {
 		middle_ware.BadRequest(c, "请求参数有误")
 		return
 	}
-
 	stockIDInt64, err := utils.ParseInt64(stockID)
 	utils.CheckAndPanic(err)
 	addressIDInt64, err := utils.ParseInt64(addressId)

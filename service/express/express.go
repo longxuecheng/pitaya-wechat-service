@@ -2,6 +2,7 @@ package express
 
 import (
 	"encoding/json"
+	"fmt"
 	"gotrue/dto/response"
 	"gotrue/facility/errors"
 	"gotrue/facility/http_util"
@@ -12,14 +13,15 @@ import (
 )
 
 const (
-	baiduPartnerID string      = "4001"
-	url            string      = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury"
-	ems            expressType = "ems"
-	bsht           expressType = "huitongkuaidi"
-	sto            expressType = "shentong"
-	yunda          expressType = "yunda"
-	zto            expressType = "zhongtong"
-	yto            expressType = "yuantong"
+	baiduPartnerID   string      = "4001"
+	url              string      = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury"
+	ems              expressType = "ems"
+	bsht             expressType = "huitongkuaidi"
+	sto              expressType = "shentong"
+	yunda            expressType = "yunda"
+	zto              expressType = "zhongtong"
+	yto              expressType = "yuantong"
+	expressErrorTemp string      = "ExressError%s"
 )
 
 var baiduExpressMap = map[ExpressMethod]expressType{
@@ -131,5 +133,5 @@ func (s *expressService) ExpressInfo(expressCom ExpressMethod, expressNo string)
 		expressInfo.Info.ExpressNo = expressNo
 		return expressInfo.Info, nil
 	}
-	return nil, nil
+	return nil, errors.NewWithCodef(fmt.Sprintf(expressErrorTemp, baseResult.ErrorCode), baseResult.Msg)
 }

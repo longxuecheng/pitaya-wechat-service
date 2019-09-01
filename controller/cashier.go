@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"gotrue/dto"
 	"gotrue/dto/request"
+	"gotrue/dto/response"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
 	"gotrue/service/cashier"
@@ -22,7 +22,6 @@ func PreviewCashierFromCart(c *gin.Context) {
 	}
 	addressID, err := utils.ParseInt64(addressIDString)
 	utils.CheckAndPanic(err)
-
 	cashier, err := cashier.CashierService.CartCheckout(userID)
 	utils.CheckAndPanic(err)
 	address, err := getUserAddress(addressID, userID)
@@ -39,9 +38,10 @@ func PreviewCashierFromStock(c *gin.Context) {
 	req := &request.CashierPreview{}
 	err := c.BindJSON(req)
 	utils.CheckAndPanic(err)
-	cashier, err := cashier.CashierService.StockCheckout(*req)
-	utils.CheckAndPanic(err)
 	address, err := getUserAddress(req.AddressID, userID)
+	utils.CheckAndPanic(err)
+	req.AddressID = address.ID
+	cashier, err := cashier.CashierService.StockCheckout(*req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, gin.H{
 		"cashier": cashier,
@@ -49,7 +49,7 @@ func PreviewCashierFromStock(c *gin.Context) {
 	})
 }
 
-func getUserAddress(addressID, userID int64) (*dto.UserAddress, error) {
+func getUserAddress(addressID, userID int64) (*response.UserAddress, error) {
 	if addressID == 0 {
 		return user.UserService.DefaultAddress(userID)
 	}

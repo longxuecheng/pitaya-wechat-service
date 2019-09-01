@@ -6,7 +6,7 @@ import (
 )
 
 func TestExpressInfo(t *testing.T) {
-	expressInfo, err := ExpressService.ExpressInfo("BSHT", "71715801271000")
+	expressInfo, err := ExpressService.ExpressInfo("BSHT", "71715801271000xx")
 	if err != nil {
 		t.Error(err)
 	}

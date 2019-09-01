@@ -2,6 +2,7 @@ package request
 
 import (
 	"gotrue/dto/pagination"
+	"gotrue/facility/errors"
 
 	"github.com/shopspring/decimal"
 )
@@ -9,6 +10,13 @@ import (
 type SaleOrderAddRequest struct {
 	AddressID int64 `json:"addressId"`
 	CouponID  int64 `json:"couponId"`
+}
+
+func (s *SaleOrderAddRequest) Validate() error {
+	if s.AddressID == 0 {
+		return errors.NewWithCodef("InvalidAddress", "地址无效")
+	}
+	return nil
 }
 
 type SaleOrderQuickAddRequest struct {

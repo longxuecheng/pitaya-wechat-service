@@ -2,11 +2,11 @@ package user
 
 import (
 	"database/sql"
-	"gotrue/service/api"
 	"gotrue/dao"
-	"gotrue/dto"
 	"gotrue/dto/request"
+	"gotrue/dto/response"
 	"gotrue/model"
+	"gotrue/service/api"
 	"gotrue/service/region"
 	"gotrue/sys"
 )
@@ -45,13 +45,13 @@ func newAddress(data *model.UserAddress) *address {
 	}
 }
 
-func (a *address) userAddressDTO(fullRegion string) *dto.UserAddress {
+func (a *address) userAddressDTO(fullRegion string) *response.UserAddress {
 	dto := installUserAddress(a.data)
 	dto.FullRegion = fullRegion
 	return dto
 }
 
-func (s *User) GetList() ([]*dto.UserDTO, error) {
+func (s *User) GetList() ([]*response.UserDTO, error) {
 	users, err := s.userDao.SelectAll()
 	if err != nil {
 		return nil, err
@@ -59,8 +59,8 @@ func (s *User) GetList() ([]*dto.UserDTO, error) {
 	return buildUserDTOs(users), nil
 }
 
-func (s *User) DefaultAddress(userID int64) (*dto.UserAddress, error) {
-	var address = &dto.UserAddress{}
+func (s *User) DefaultAddress(userID int64) (*response.UserAddress, error) {
+	var address = &response.UserAddress{}
 	ads, err := s.addressDao.SelectByUserID(userID)
 	if err != nil {
 		return address, err
@@ -78,19 +78,19 @@ func (s *User) DeleteAddressByID(id int64) error {
 	return nil
 }
 
-func (s *User) AddressList(userID int64) ([]*dto.UserAddress, error) {
+func (s *User) AddressList(userID int64) ([]*response.UserAddress, error) {
 	ads, err := s.addressDao.SelectByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
-	dtos := make([]*dto.UserAddress, len(ads))
+	dtos := make([]*response.UserAddress, len(ads))
 	for i, ad := range ads {
 		dtos[i] = installUserAddress(ad)
 	}
 	return dtos, nil
 }
 
-func (s *User) GetAddressByID(ID int64) (dto *dto.UserAddress, err error) {
+func (s *User) GetAddressByID(ID int64) (dto *response.UserAddress, err error) {
 	a, err := s.addressDao.SelectByID(ID)
 	if err != nil {
 		return
@@ -103,7 +103,7 @@ func (s *User) GetAddressByID(ID int64) (dto *dto.UserAddress, err error) {
 	return address.userAddressDTO(fullRegion), nil
 }
 
-func (s *User) GetUserByID(userID int64) (dto *dto.UserDTO, err error) {
+func (s *User) GetUserByID(userID int64) (dto *response.UserDTO, err error) {
 	user, err := s.userDao.SelectByID(userID)
 	if err != nil {
 		return
@@ -182,8 +182,8 @@ func (s *User) Login(openID string, nickName string, avatarURL string) (*model.U
 	return user, nil
 }
 
-func installUserAddress(ad *model.UserAddress) *dto.UserAddress {
-	dto := &dto.UserAddress{}
+func installUserAddress(ad *model.UserAddress) *response.UserAddress {
+	dto := &response.UserAddress{}
 	dto.ID = ad.ID
 	dto.Name = ad.Name
 	dto.IsDefault = ad.IsDefault
@@ -195,8 +195,8 @@ func installUserAddress(ad *model.UserAddress) *dto.UserAddress {
 	return dto
 }
 
-func installUserDTO(model *model.User) *dto.UserDTO {
-	userDto := new(dto.UserDTO)
+func installUserDTO(model *model.User) *response.UserDTO {
+	userDto := new(response.UserDTO)
 	userDto.Name = model.Name.String
 	userDto.PhoneNo = model.PhoneNo.String
 	userDto.Email = model.Email.String
@@ -204,11 +204,11 @@ func installUserDTO(model *model.User) *dto.UserDTO {
 	return userDto
 }
 
-func buildUserDTOs(models []*model.User) []*dto.UserDTO {
+func buildUserDTOs(models []*model.User) []*response.UserDTO {
 	if models == nil || len(models) == 0 {
 		return nil
 	}
-	dtos := make([]*dto.UserDTO, len(models))
+	dtos := make([]*response.UserDTO, len(models))
 	for i, model := range models {
 		dtos[i] = installUserDTO(model)
 	}

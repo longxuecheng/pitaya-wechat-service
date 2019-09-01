@@ -3,7 +3,6 @@ package order
 import (
 	"database/sql"
 	"gotrue/dao"
-	"gotrue/dto"
 	"gotrue/dto/pagination"
 	"gotrue/dto/request"
 	"gotrue/dto/response"
@@ -322,6 +321,10 @@ func (s *SaleOrder) Cancel(orderID int64) (*response.SaleOrderInfo, error) {
 
 // QuickCreate 快速下单
 func (s *SaleOrder) QuickCreate(userID int64, req request.SaleOrderQuickAddRequest) (id int64, err error) {
+	err = req.Validate()
+	if err != nil {
+		return
+	}
 	stock, err := s.stockDao.SelectByID(req.StockID)
 	if err != nil {
 		return 0, err
@@ -517,6 +520,7 @@ func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse,
 	if err != nil {
 		return nil, err
 	}
+
 	prepayReq := &wechat.PrepayRequest{
 		OpenID:   user.OpenID,
 		OrderNo:  order.OrderNo,
@@ -693,11 +697,11 @@ type supplierOrder struct {
 	parentID       int64
 	supplierID     int64
 	userID         int64
-	address        *dto.UserAddress
+	address        *response.UserAddress
 	supplierStocks []supplierStock
 }
 
-func (so *supplierOrder) bindBasically(userID int64, address *dto.UserAddress) {
+func (so *supplierOrder) bindBasically(userID int64, address *response.UserAddress) {
 	so.userID = userID
 	so.address = address
 }
@@ -816,7 +820,7 @@ func (c *saleOrderCreator) setGoods(goods []*model.Goods) {
 	c.goodsMap = goodsSet.Map()
 }
 
-func (c *saleOrderCreator) bindNecessary(stocks []*model.GoodsStock, userID int64, address *dto.UserAddress) {
+func (c *saleOrderCreator) bindNecessary(stocks []*model.GoodsStock, userID int64, address *response.UserAddress) {
 	stockSet := model.NewStockSet(stocks)
 	stockMap := stockSet.Map()
 	supplierOrders := []*supplierOrder{}

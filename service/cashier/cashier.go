@@ -76,15 +76,10 @@ func (s *Cashier) StockCheckout(req request.CashierPreview) (*response.Cashier, 
 		return nil, err
 	}
 	gc := newGoodsCashier(stock, goods, specDesc, req.Quantity)
-	if express.IsOK() {
-		gc.express = express
-	}
+	gc.express = express
 	cs := gc.summary()
-	cs.GoodsExpressConstraint = express
 	return cs, nil
 }
-
-var defaultExpressFee = decimal.NewFromFloat32(3.00)
 
 type cashier interface {
 	summary() *response.Cashier
@@ -111,7 +106,9 @@ func newGoodsCashier(stock *model.GoodsStock, goods *model.Goods, specDesc strin
 func (gc *goodsCashier) summary() *response.Cashier {
 	goodsTotalPrice := gc.stock.SaleUnitPrice.Mul(gc.quantity)
 	// total express fee = (unit expresss fee) * quantity
-	gc.express.CalculateTotalExpressFee(gc.quantity)
+	if gc.express != nil {
+		gc.express.CalculateTotalExpressFee(gc.quantity)
+	}
 	cc := &response.Cashier{
 		GoodsTotalPrice:        goodsTotalPrice.StringFixed(2),
 		OrderTotalPrice:        goodsTotalPrice.Add(gc.express.TotalExpressFee).StringFixed(2),
@@ -177,8 +174,8 @@ func (cc *cartCashier) summary() *response.Cashier {
 	}
 	cashier := &response.Cashier{
 		GoodsTotalPrice: checkedGoodsPrice.StringFixed(2),
-		OrderTotalPrice: checkedGoodsPrice.Add(defaultExpressFee).StringFixed(2),
-		Items:           cashierItems,
+		// OrderTotalPrice: checkedGoodsPrice.Add(defaultExpressFee).StringFixed(2),
+		Items: cashierItems,
 	}
 	return cashier
 }

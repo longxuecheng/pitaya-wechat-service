@@ -8,20 +8,32 @@ import (
 
 // Response 是一个应用标准的业务响应模型
 type Response struct {
-	Data     interface{} `json:"data"`
-	ErrorMsg string      `json:"errorMsg"`
-	ErrorNo  ErrorCode   `json:"errno"`
+	Data       interface{} `json:"data"`
+	ResultDesc string      `json:"resultDesc"`
+	ResultCode string      `json:"resultCode"`
 }
 
-type ErrorCode int
+var okResponse = Response{
+	ResultCode: OK,
+	ResultDesc: "Success",
+}
+
+func newResponse(data interface{}, resultCode string, resultDesc string) Response {
+	responseDTO := Response{
+		Data:       data,
+		ResultCode: resultCode,
+		ResultDesc: resultDesc,
+	}
+	return responseDTO
+}
 
 const (
-	DATA_KEY                      = "data"
-	STATUS_SUCCESS      ErrorCode = 0
-	STATUS_ERROR        ErrorCode = 999
-	STATUS_UNAUTHORIZED ErrorCode = 401
-	STATUS_TOKEN_EXP    ErrorCode = 401
-	FORM_INVALID        ErrorCode = 400
+	DATA_KEY      = "data"
+	OK            = "Ok"
+	UNKNOWN_ERROR = "Unknown"
+	UNAUTHORIZED  = "UnAuthorized"
+	TOKEN_EXP     = "TokenExpired"
+	FORM_INVALID  = "FormInvalid"
 )
 
 // WrapResponse 在请求controller的handler完成之后获取上下文数据进行统一的业务封装
@@ -34,17 +46,8 @@ func WrapResponse(c *gin.Context) {
 		return
 	}
 	data, _ := c.Get(DATA_KEY)
-	responseDTO := newResponse(data, "Ok", STATUS_SUCCESS)
-	c.JSON(http.StatusOK, responseDTO)
-}
-
-func newResponse(data interface{}, errorMsg string, errorCode ErrorCode) Response {
-	responseDTO := Response{
-		Data:     data,
-		ErrorMsg: errorMsg,
-		ErrorNo:  errorCode,
-	}
-	return responseDTO
+	response := newResponse(data, OK, "Success")
+	c.JSON(http.StatusOK, response)
 }
 
 func SetResponseData(c *gin.Context, data interface{}) {
@@ -57,6 +60,9 @@ func SetResponseDataWithStatus(c *gin.Context, data interface{}, code int) {
 }
 
 func BadRequest(c *gin.Context, reason string) {
+	if reason == "" {
+		reason = "请求参数有误"
+	}
 	c.JSON(http.StatusBadRequest, newResponse(nil, reason, FORM_INVALID))
 	c.Abort()
 }
