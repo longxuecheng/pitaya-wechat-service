@@ -7,6 +7,7 @@ import (
 	"gotrue/dto/request"
 	"gotrue/dto/response"
 	"gotrue/facility/errors"
+	"gotrue/facility/utils"
 	"gotrue/model"
 	"gotrue/service/api"
 	"gotrue/service/cart"
@@ -46,7 +47,9 @@ func initSaleOrderService() {
 	SaleOrderService = &SaleOrder{
 		dao:              dao.SaleOrderDao,
 		stockDao:         dao.StockDao,
+		supplierDao:      dao.SupplierDao,
 		goodsDao:         dao.GoodsDao,
+		userDao:          dao.UserDaoSingleton,
 		saleDetailDao:    dao.SaleDetailDao,
 		wechatPaymentDao: dao.WechatPaymentDao,
 		regionService:    region.RegionService,
@@ -92,8 +95,10 @@ func (sof *saleOrderFSM) orderStatus() model.OrderStatus {
 type SaleOrder struct {
 	dao              *dao.SaleOrder
 	saleDetailDao    *dao.SaleDetail
+	supplierDao      *dao.Supplier
 	stockDao         *dao.Stock
 	goodsDao         *dao.Goods
+	userDao          *dao.UserDao
 	wechatPaymentDao *dao.WechatPayment
 	goodsService     *goods.Goods
 	cartService      *cart.Cart
@@ -145,38 +150,84 @@ func (s *SaleOrder) payStatus(req *payment.QueryOrderResponse) model.OrderStatus
 	return orderStatus
 }
 
+// notifyFarmer deprecated!!!
+// eg: PersonA paid a bill and wechat mp do not support mp send template message to
+// PersonB
 func (s *SaleOrder) notifyFarmer(prepayID string, order *model.SaleOrder) {
 	// if paid success then notify tenant to send goods
 	if model.Paid != order.Status {
 		return
 	}
-	openIDLXC := "ovxEC5YTWQk6Vv5FJdN_30gkBr-g"
-	notificationReq := &wechat.NotifyRequest{
-		ToUser:     openIDLXC,
-		TemplateID: "F56_89H1A2SiyEmnwUSGNw_kyTIcdFLBELFaU2sFUhU",
-		FormID:     prepayID,
-		Data: map[string]interface{}{
-			"keyword1": map[string]string{
-				"value": order.OrderNo,
-			},
-			"keyword2": map[string]string{
-				"value": "",
-			},
-			"keyword3": map[string]interface{}{
-				"value": order.OrderAmt,
-			},
-			"keyword4": map[string]interface{}{
-				"value": "商品名称",
-			},
-			"keyword5": map[string]interface{}{
-				"value": order.Status.Name(),
-			},
-			"keyword6": map[string]interface{}{
-				"value": "2019-08-20",
-			},
+	supplierName := ""
+	openID := "ovxEC5YTWQk6Vv5FJdN_30gkBr-g"
+	supplier, err := s.supplierDao.SelectByID(order.SupplierID)
+	if err != nil {
+		log.Printf("query supplier %d error %+v\n", order.SupplierID, err)
+	}
+	supplierName = supplier.Name
+	supplierAdmin, err := s.userDao.SelectByID(supplier.AdminID)
+	if err != nil {
+		log.Printf("query supplier admin %d error %+v\n", supplier.ID, err)
+	}
+	if supplierAdmin != nil {
+		openID = supplierAdmin.WechatID
+	}
+	log.Printf("notify to open id %s\n", openID)
+	data := map[string]interface{}{
+		"keyword1": map[string]string{
+			"value": order.OrderNo,
+		},
+		"keyword2": map[string]string{ // 订单详情
+			"value": "",
+		},
+		"keyword3": map[string]interface{}{
+			"value": order.OrderAmt,
+		},
+		"keyword4": map[string]interface{}{
+			"value": "商品名称",
+		},
+		"keyword5": map[string]interface{}{
+			"value": order.Status.Name(),
+		},
+		"keyword6": map[string]interface{}{ // 下单时间
+			"value": utils.FormatTime(order.CreateTime, utils.TimePrecision_Seconds),
+		},
+		"keyword7": map[string]interface{}{ // 地址
+			"value": "",
+		},
+		"keyword8": map[string]interface{}{
+			"value": "请及时发货，有问题随时沟通客户",
+		},
+		"keyword9": map[string]interface{}{
+			"value": supplierName,
+		},
+		"keyword10": map[string]interface{}{
+			"value": order.PhoneNo,
 		},
 	}
-	wechat.WechatService().SendNotification(notificationReq)
+	notificationReq := &wechat.TemplateMsgRequest{
+		ToUser:     openID,
+		TemplateID: templateID,
+		FormID:     prepayID,
+		Data:       data,
+	}
+	err = wechat.WechatService().SendTemplateMessage(notificationReq)
+	if err != nil {
+		log.Printf("[Error] Send template message to %s error %+v\n", openID, err)
+	}
+	uniformMsgReq := &wechat.UniformMsgRequest{
+		ToUser: openID,
+		WebAppTemplateMsg: wechat.WebAppTemplateMsg{
+			TemplateID:      templateID,
+			FormID:          prepayID,
+			Data:            data,
+			EmphasisKeyword: "keyword1.DATA",
+		},
+	}
+	err = wechat.WechatService().SendUniformMessage(uniformMsgReq)
+	if err != nil {
+		log.Printf("[Error] Send uniform message to %s error %+v\n", openID, err)
+	}
 }
 
 // UpdateByWechatPayResult 通过微信支付查询结果更新订单状态和交易状态
@@ -243,7 +294,7 @@ func (s *SaleOrder) UpdateByWechatPayResult(r *request.QueryWechatPayResult, req
 
 		return nil
 	})
-	go s.notifyFarmer(r.PrepayID, order)
+	// go s.notifyFarmer(r.PrepayID, order)
 	return nil
 }
 

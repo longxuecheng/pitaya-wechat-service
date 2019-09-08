@@ -9,6 +9,7 @@ import (
 	"gotrue/service/api"
 	"gotrue/service/region"
 	"gotrue/sys"
+	"log"
 )
 
 var UserService *User
@@ -158,6 +159,7 @@ func (s *User) CreateAddress(userID int64, req request.UserAddressAddRequest) (i
 }
 
 func (s *User) Login(openID string, nickName string, avatarURL string) (*model.User, error) {
+	log.Printf("openID %s nickName %s", openID, nickName)
 	user, err := s.userDao.SelectByWechatID(openID)
 	if err != nil {
 		return nil, err

@@ -5,7 +5,6 @@ import (
 	"gotrue/dao"
 	"gotrue/dto/response"
 	"gotrue/facility/errors"
-	"gotrue/facility/strings"
 )
 
 var SupplierService *supplier
@@ -33,6 +32,6 @@ func (s *supplier) QueryByAdmin(adminID int64) (*response.Supplier, error) {
 	}
 	return &response.Supplier{
 		ID:   supplier.ID,
-		Name: strings.PtrValue(supplier.Name),
+		Name: supplier.Name,
 	}, nil
 }

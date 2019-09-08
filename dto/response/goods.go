@@ -14,7 +14,7 @@ type AttributeDTO struct {
 
 type BusinessResult struct {
 	Code    string `json:"code"`
-	Message string `json:"messsage"`
+	Message string `json:"message"`
 }
 
 func (r *BusinessResult) IsOK() bool {

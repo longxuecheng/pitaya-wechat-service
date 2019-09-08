@@ -33,3 +33,9 @@ func (s *Supplier) SelectByAdmin(adminID int64) (*model.Supplier, error) {
 	err := s.SelectOneDSL(supplier, s.columns, s.table, squirrel.Eq{"admin_id": adminID})
 	return supplier, err
 }
+
+func (s *Supplier) SelectByID(id int64) (*model.Supplier, error) {
+	supplier := &model.Supplier{}
+	err := s.SelectOneDSL(supplier, s.columns, s.table, squirrel.Eq{"id": id})
+	return supplier, err
+}

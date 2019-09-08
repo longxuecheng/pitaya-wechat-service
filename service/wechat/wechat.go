@@ -43,12 +43,38 @@ func (s *wechatService) AccessToken() string {
 	return s.accessToken()
 }
 
-func (s *wechatService) SendNotification(req *NotifyRequest) error {
+func (s *wechatService) SendTemplateMessage(req *TemplateMsgRequest) error {
 	bytes, err := json.Marshal(req)
 	if err != nil {
 		return err
 	}
 	response, err := http_util.Send(http.MethodPost, sendmessage_url, strings.NewReader(string(bytes)), func(r *http.Request) error {
+		r.Header.Set("Content-Type", "application/json")
+		r.Form.Add("access_token", s.accessToken())
+		r.URL.RawQuery = r.Form.Encode()
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	result := &NotifyResponse{}
+	err = json.Unmarshal(body, result)
+	if err != nil {
+		return err
+	}
+	if ok, err := result.IsOK(); !ok {
+		return err
+	}
+	return nil
+}
+
+func (s *wechatService) SendUniformMessage(req *UniformMsgRequest) error {
+	bytes, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+	response, err := http_util.Send(http.MethodPost, uniformmessage_url, strings.NewReader(string(bytes)), func(r *http.Request) error {
 		r.Header.Set("Content-Type", "application/json")
 		r.Form.Add("access_token", s.accessToken())
 		r.URL.RawQuery = r.Form.Encode()

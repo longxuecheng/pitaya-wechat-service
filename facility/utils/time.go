@@ -3,26 +3,24 @@ package utils
 import "time"
 
 const (
-	TimePrecision_Year TimePrecision = iota
-	TimePrecision_Date
+	TimePrecision_Date TimePrecision = iota
 	TimePrecision_Seconds
 )
 
-type TimeFormatUnit string
-
 const (
-	TimeFormatUnit_Year TimeFormatUnit = ""
+	TimeFormatUnit_Date    string = "2006-1-2"
+	TimeFormatUnit_Seconds string = "2006-1-2 15:04:05"
 )
 
 type TimePrecision int8
 
-func FormatTime(t time.Time, layout string, precision TimePrecision) string {
-
+func FormatTime(t time.Time, precision TimePrecision) string {
+	formatedTime := ""
 	switch precision {
-	case TimePrecision_Year:
 	case TimePrecision_Date:
+		formatedTime = t.Format(TimeFormatUnit_Date)
 	case TimePrecision_Seconds:
-
+		formatedTime = t.Format(TimeFormatUnit_Seconds)
 	}
-	return ""
+	return formatedTime
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,9 @@ func Recovery() gin.HandlerFunc {
 			var response Response
 			if err := recover(); err != nil {
 				logRequest(c)
+
 				if err, ok := err.(error); ok {
+					printStackTrace(err)
 					if readable, ok := errors.Readable(err); ok {
 						readable.StackTrace()
 						response = newResponse(nil, readable.Code(), readable.Message())
@@ -41,22 +44,23 @@ func logRequest(c *gin.Context) {
 	log.Printf("[Recovery] %s request:\n%s", timeFormat(time.Now()), string(httprequest))
 }
 
-// func printStackTrace(err error) {
-// pc := make([]uintptr, 10)
-// n := runtime.Callers(4, pc)
-// if n == 0 {
-// 	return
-// }
-// pc = pc[:n]
-// frames := runtime.CallersFrames(pc)
-// for {
-// 	frame, more := frames.Next()
-// 	log.Printf("| %s file:%s line:%d entry address:%d\n", frame.Function, frame.File, frame.Line, frame.Entry)
-// 	if !more {
-// 		break
-// 	}
-// }
-// }
+func printStackTrace(err error) {
+	log.Printf("[Error] %v", err)
+	pc := make([]uintptr, 10)
+	n := runtime.Callers(4, pc)
+	if n == 0 {
+		return
+	}
+	pc = pc[:n]
+	frames := runtime.CallersFrames(pc)
+	for {
+		frame, more := frames.Next()
+		log.Printf("| %s file:%s line:%d entry address:%d\n", frame.Function, frame.File, frame.Line, frame.Entry)
+		if !more {
+			break
+		}
+	}
+}
 
 func timeFormat(t time.Time) string {
 	var timeString = t.Format("2006/01/02 - 15:04:05")
