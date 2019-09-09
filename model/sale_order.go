@@ -76,9 +76,11 @@ type SaleOrder struct {
 	SupplierID    int64           `db:"supplier_id"`
 	OrderAmt      decimal.Decimal `db:"order_amt"`
 	GoodsAmt      decimal.Decimal `db:"goods_amt"`
+	CostAmt       decimal.Decimal `db:"cost_amt"`
 	ExpressMethod *string         `db:"express_method"`
 	ExpressNo     *string         `db:"express_order_no"`
 	ExpressFee    decimal.Decimal `db:"express_fee"`
+	SettlementID  int64           `db:"settlement_id"`
 	Count         int64           `db:"count" count:"true"`
 }
 
@@ -97,4 +99,53 @@ func (so *SaleOrder) RegionIDs() []int {
 // IsMaster tells wether a sale order is master
 func (so *SaleOrder) IsMaster() bool {
 	return so.ParentID == 0
+}
+
+type SaleOrderSet struct {
+	Items          []SaleOrder
+	costPrice      decimal.Decimal
+	profitPrice    decimal.Decimal
+	totalSalePrice decimal.Decimal
+	settlePrice    decimal.Decimal
+}
+
+func (s *SaleOrderSet) Sum() {
+	totalPrice := decimal.Zero
+	goodsPrice := decimal.Zero
+	costPrice := decimal.Zero
+	settlePrice := decimal.Zero
+	expressPrice := decimal.Zero
+	for _, item := range s.Items {
+		totalPrice = totalPrice.Add(item.OrderAmt)
+		goodsPrice = goodsPrice.Add(item.GoodsAmt)
+		costPrice = costPrice.Add(item.CostAmt)
+		expressPrice = expressPrice.Add(item.ExpressFee)
+	}
+	// express fee + cost price is the money we should pay for supplier
+	settlePrice = costPrice.Add(expressPrice)
+	profitPrice := totalPrice.Sub(settlePrice)
+	s.totalSalePrice = totalPrice
+	s.costPrice = costPrice
+	s.settlePrice = settlePrice
+	s.profitPrice = profitPrice
+}
+
+func (s *SaleOrderSet) CostPrice() decimal.Decimal {
+	return s.costPrice
+}
+
+func (s *SaleOrderSet) SalePrice() decimal.Decimal {
+	return s.totalSalePrice
+}
+
+func (s *SaleOrderSet) ProfitPrice() decimal.Decimal {
+	return s.profitPrice
+}
+
+func (s *SaleOrderSet) SettlePrice() decimal.Decimal {
+	return s.settlePrice
+}
+
+func (s *SaleOrderSet) Size() int {
+	return len(s.Items)
 }

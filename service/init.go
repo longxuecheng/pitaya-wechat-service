@@ -22,4 +22,5 @@ func Init() {
 	cashier.Init()
 	order.Init()
 	supplier.Init()
+	InitSettlementService()
 }

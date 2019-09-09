@@ -787,22 +787,24 @@ func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error)
 		PhoneNo:    so.address.Mobile,
 		SupplierID: so.supplierID,
 	}
-	saleOrder.OrderAmt = decimal.Zero
-	saleOrder.GoodsAmt = decimal.Zero
 	// 总邮费
-	orderExpressFee := decimal.Zero
+	expressFeeSum := decimal.Zero
+	goodsSum := decimal.Zero
+	costSum := decimal.Zero
 	// 每一个库存都会有运费，整个订单可能有多个库存，需要累加所有库存运费
 	// 目前每个订单只有一个库存
 	saleDetails := []model.SaleDetail{}
 	for _, ss := range so.supplierStocks {
-		sum := ss.Stock.SaleUnitPrice.Mul(ss.Quantity)
-		orderExpressFee = orderExpressFee.Add(ss.UnitExpressFee)
-		saleOrder.GoodsAmt = saleOrder.GoodsAmt.Add(sum)
+		goodsSum = goodsSum.Add(ss.Stock.SaleUnitPrice.Mul(ss.Quantity))
+		costSum = costSum.Add(ss.Stock.CostUnitPrice.Mul(ss.Quantity))
+		expressFeeSum = expressFeeSum.Add(ss.UnitExpressFee)
 		saleDetail := ss.saleDetail()
 		saleDetails = append(saleDetails, saleDetail)
 	}
-	saleOrder.OrderAmt = saleOrder.GoodsAmt.Add(orderExpressFee)
-	saleOrder.ExpressFee = orderExpressFee
+	saleOrder.GoodsAmt = goodsSum
+	saleOrder.CostAmt = costSum
+	saleOrder.OrderAmt = goodsSum.Add(expressFeeSum)
+	saleOrder.ExpressFee = expressFeeSum
 	return saleOrder, saleDetails, nil
 }
 

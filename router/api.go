@@ -54,4 +54,6 @@ func apiRouter(r *gin.Engine) {
 	orderGroup.GET("express/list", controller.ExpressList)
 	orderGroup.GET("prepay", controller.WechatPrePay)
 	orderGroup.GET("pay/result", controller.WechatPayResult)
+	settleGroup := root.Group("/settlement", middle_ware.AuthCheck())
+	settleGroup.GET("supplier/show", controller.SettlementForSupplier)
 }

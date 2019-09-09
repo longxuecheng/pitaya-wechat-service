@@ -123,3 +123,11 @@ func (dao *SaleOrder) SelectBySupplier(supplierID int64) ([]model.SaleOrder, err
 	err := dao.db.SelectDSL(&orders, dao.columns, dao.table, sq.Eq{"supplier_id": supplierID})
 	return orders, err
 }
+
+func (dao *SaleOrder) QueryUnSettledOrdersBySupplier(supplierID int64) (*model.SaleOrderSet, error) {
+	orders := []model.SaleOrder{}
+	err := dao.db.SelectDSL(&orders, dao.columns, dao.table, sq.Eq{"supplier_id": supplierID, "settlement_id": 0, "status": model.Paid})
+	return &model.SaleOrderSet{
+		Items: orders,
+	}, err
+}
