@@ -1,0 +1,1 @@
+alter table goods_specification add is_delete TINYINT NOT NULL DEFAULT 0;

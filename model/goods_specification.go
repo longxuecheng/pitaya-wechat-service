@@ -8,6 +8,7 @@ type GoodsSpecification struct {
 	GoodsID         int64  `db:"goods_id"`
 	SpecificationID int64  `db:"specification_id"`
 	Value           string `db:"value"`
+	Is_Delete       bool   `db:"is_delete"`
 	PicURL          string `db:"pic_url"`
 }
 

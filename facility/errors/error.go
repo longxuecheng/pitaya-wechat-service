@@ -1,30 +1,72 @@
 package errors
 
 import (
-	pkgerror "github.com/pkg/errors"
+	"fmt"
+	"log"
+	"runtime"
+	"strings"
 )
 
 type Error struct {
-	raw  error
-	code string
+	cause   error
+	code    string
+	message string
+	pcs     []uintptr
 }
 
 func (e *Error) Error() string {
-	return e.raw.Error()
+	msg := ""
+	if e.cause == nil {
+		msg = fmt.Sprintf("Code is [ %s ] Message is [ %s ]", e.code, e.message)
+	} else {
+		msg = e.cause.Error()
+	}
+	return e.stackTrace() + msg
 }
 
 func (e *Error) Code() string {
 	return e.code
 }
 
-func (e *Error) Raw() error {
-	return e.raw
+func (e *Error) Message() string {
+	return e.message
+}
+
+func (e *Error) Cause() error {
+	return e.cause
+}
+
+func (e *Error) stackTrace() string {
+	sb := strings.Builder{}
+	defer sb.Reset()
+	frames := runtime.CallersFrames(e.pcs)
+	for {
+		frame, more := frames.Next()
+		sb.WriteString(fmt.Sprintf("| %s file:%s line:%d entry address:%d\n", frame.Function, frame.File, frame.Line, frame.Entry))
+		if !more {
+			break
+		}
+	}
+	return sb.String()
+}
+
+func (e *Error) PrintStackTrace() {
+	frames := runtime.CallersFrames(e.pcs)
+	for {
+		frame, more := frames.Next()
+		log.Printf("| %s file:%s line:%d entry address:%d\n", frame.Function, frame.File, frame.Line, frame.Entry)
+		if !more {
+			break
+		}
+	}
 }
 
 type readable interface {
 	Code() string
-	Raw() error
+	Cause() error
+	Message() string
 	Error() string
+	PrintStackTrace()
 }
 
 func Readable(err error) (readable, bool) {
@@ -35,29 +77,26 @@ func Readable(err error) (readable, bool) {
 // NewWithCodef use error.Error as result, will contains error code
 // to distinguish differences between errors
 func NewWithCodef(code, format string, args ...interface{}) error {
+
 	return &Error{
-		Newf(nil, format, args...),
-		code,
+		code:    code,
+		message: fmt.Sprintf(format, args...),
+		pcs:     stack(),
 	}
 }
 
-func WrapWithCodef(err error, code, format string, args ...interface{}) error {
+func CauseWithCodef(cause error, code, format string, args ...interface{}) error {
 	return &Error{
-		Newf(err, format, args...),
-		code,
+		cause:   cause,
+		code:    code,
+		message: fmt.Sprintf(format, args...),
+		pcs:     stack(),
 	}
 }
 
-// Newf is an adapt method of github.com/pkg/errors.Wrapf
-// in order to avoid confusing of which method in github.com/pkg/errors can be used to
-// fit for the error logging and responsing
-func Newf(err error, format string, args ...interface{}) error {
-	if err != nil {
-		return pkgerror.Wrapf(err, format, args)
-	}
-	return pkgerror.Errorf(format, args)
-}
-
-func Panicf(err error, format string, args ...interface{}) {
-	panic(pkgerror.Wrapf(err, format, args))
+func stack() []uintptr {
+	pc := make([]uintptr, 10)
+	n := runtime.Callers(2, pc)
+	pc = pc[:n]
+	return pc
 }

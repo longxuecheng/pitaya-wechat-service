@@ -1,0 +1,1 @@
+insert into goods_express_constraint (goods_id,is_free,province_id,express_fee,stock_id) values (5,1,2,0.00,8),(5,1,2,0.00,10);

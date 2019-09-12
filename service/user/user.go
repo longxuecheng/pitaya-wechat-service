@@ -86,7 +86,13 @@ func (s *User) AddressList(userID int64) ([]*response.UserAddress, error) {
 	}
 	dtos := make([]*response.UserAddress, len(ads))
 	for i, ad := range ads {
-		dtos[i] = installUserAddress(ad)
+		userAddress := installUserAddress(ad)
+		fullRegion, err := s.regionService.FullName(ad.RegionIDs())
+		if err != nil {
+			return nil, err
+		}
+		userAddress.FullRegion = fullRegion
+		dtos[i] = userAddress
 	}
 	return dtos, nil
 }

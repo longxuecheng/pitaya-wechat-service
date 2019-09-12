@@ -25,7 +25,7 @@ type GoodsSpec struct {
 
 func (dao *GoodsSpec) SelectByGoodsID(goodsID int64) ([]*model.GoodsSpecification, error) {
 	goodsSpecs := []*model.GoodsSpecification{}
-	err := dao.db.SelectDSL(&goodsSpecs, columns_goods_specs, model.Table_Goods_Specification, sq.Eq{"goods_id": goodsID})
+	err := dao.db.SelectDSL(&goodsSpecs, columns_goods_specs, model.Table_Goods_Specification, sq.Eq{"goods_id": goodsID, "is_delete": false})
 	if err != nil {
 		return nil, err
 	}

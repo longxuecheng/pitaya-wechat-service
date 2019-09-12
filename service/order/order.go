@@ -735,6 +735,7 @@ func (ss supplierStock) saleDetail() model.SaleDetail {
 		Quantity:      ss.Quantity,
 		StockID:       ss.Stock.ID,
 		SaleUnitPrice: ss.Stock.SaleUnitPrice,
+		CostUnitPrice: ss.Stock.CostUnitPrice,
 		GoodsSpecIDs:  ss.Stock.Specification.String,
 		ListPicURL:    ss.Goods.ListPicURL,
 	}

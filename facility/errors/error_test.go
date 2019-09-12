@@ -1,17 +1,23 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 )
 
-func TestWrafError(t *testing.T) {
-	err := NewWithCodef("ErrorCode1", "test error message %s", "ok")
-	if e, ok := err.(*Error); ok {
-		fmt.Printf("[ ERROR-Manage ] detail is : %+v\n", e.err)
+func TestError(t *testing.T) {
+	err := NewWithCodef("ErrorCodeTest", "Testing error")
+	if err, ok := err.(error); ok {
+		if readable, ok := Readable(err); ok {
+			readable.PrintStackTrace()
+		}
+	} else {
+		fmt.Println("Error is not readable")
 	}
+	fmt.Printf("error %+v\n", err)
 
-	err1 := Newf(nil, "test error message %s", "ok")
-	fmt.Printf("[ ERROR-Manage ] detail is : %+v\n", err1)
+	err = CauseWithCodef(errors.New("Raw error"), "Code1", "Test cause")
 
+	fmt.Printf("error %+v\n", err)
 }
