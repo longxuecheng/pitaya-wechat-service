@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"gotrue/facility/http_util"
+	"gotrue/facility/log"
 	"gotrue/service/wechat/payment"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -17,11 +16,14 @@ import (
 )
 
 var (
-	logger               = log.New(os.Stderr, "[Wechat-service] ", log.LstdFlags)
+	defaultWechatService *wechatService
+)
+
+func InitWechatService() {
 	defaultWechatService = &wechatService{
 		newTokenManager(true),
 	}
-)
+}
 
 // WechatService returns default wechat service instance
 func WechatService() *wechatService {
@@ -193,6 +195,8 @@ func newTokenManager(startSchedule bool) *wechatTokenManager {
 
 // crontab syntax https://github.com/mileusna/crontab
 func (m *wechatTokenManager) scheduleTasks() {
+	log.Log.Debug("Shedule token refreshing task")
+	// m.refreshAccessToken()
 	m.crontab.MustAddJob("*/10 * * * *", m.refreshAccessToken)
 	// run imediately when start
 	m.crontab.RunAll()
@@ -207,11 +211,11 @@ func (m *wechatTokenManager) refreshAccessToken() {
 	url := fmt.Sprintf(accessToken_url, "client_credential", appID, secret)
 	err := http_util.DoGet(&act, url, nil)
 	if err != nil {
-		logger.Printf("access token refresh error %+v\n", err)
+		log.Log.Debug("Access token refresh error %+v\n", err)
 	}
 	if act.isOk() {
 		m.at = act.AccessToken
 		m.atExpIn = act.ExpiresIn
 	}
-	logger.Printf("Access token : %s\n", act.AccessToken)
+	log.Log.Debug("Access token : %s\n", act.AccessToken)
 }

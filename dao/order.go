@@ -30,7 +30,7 @@ type SaleOrder struct {
 	table   string
 }
 
-func (dao *SaleOrder) Create(order model.SaleOrder, tx ...*sql.Tx) (id int64, err error) {
+func (dao *SaleOrder) Create(order *model.SaleOrder, tx ...*sql.Tx) (id int64, err error) {
 	setMap := utils.StructToMap(order, "db", "insert", "count")
 	_, id, err = dao.db.Insert(dao.table, setMap, tx...)
 	return
@@ -86,7 +86,8 @@ func (dao *SaleOrder) SelectByUserAndStatus(userID int64, statusList []model.Ord
 	return orderList, totalRecords, err
 }
 
-func (dao *SaleOrder) SelectAllBySupplierWithPagination(supplierID int64, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
+// SelectBySupplierWithPagination query orders for single supplier
+func (dao *SaleOrder) SelectBySupplierWithPagination(supplierID int64, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
 	c := sys.PaginationCondition{
 		Columns:   dao.columns,
@@ -99,14 +100,29 @@ func (dao *SaleOrder) SelectAllBySupplierWithPagination(supplierID int64, offset
 	return orderList, totalRecords, err
 }
 
-func (dao *SaleOrder) SelectBySupplierAndStatus(supplierID int64, stats []model.OrderStatus, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
+// SelectAllBySuppliersWithPagination query orders for multiple suppliers
+func (dao *SaleOrder) SelectAllBySuppliersWithPagination(supplierIDs []int64, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
 	c := sys.PaginationCondition{
 		Columns:   dao.columns,
 		TableName: dao.table,
 		Offset:    offset,
 		Limit:     limit,
-		WherePred: sq.Eq{"supplier_id": supplierID, "status": stats},
+		WherePred: sq.Eq{"supplier_id": supplierIDs},
+	}
+	totalRecords, err := dao.db.SelectPagination(&orderList, c)
+	return orderList, totalRecords, err
+}
+
+// SelectBySupplierAndStatus query orders by status
+func (dao *SaleOrder) SelectBySupplierAndStatus(supplierIDs []int64, stats []model.OrderStatus, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
+	orderList := []model.SaleOrder{}
+	c := sys.PaginationCondition{
+		Columns:   dao.columns,
+		TableName: dao.table,
+		Offset:    offset,
+		Limit:     limit,
+		WherePred: sq.Eq{"supplier_id": supplierIDs, "status": stats},
 	}
 	totalRecords, err := dao.db.SelectPagination(&orderList, c)
 	return orderList, totalRecords, err

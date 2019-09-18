@@ -10,6 +10,7 @@ import (
 func apiRouter(r *gin.Engine) {
 
 	root := r.Group("/api")
+	root.GET("/banner/list", controller.BannerList)
 	categoryGroup := root.Group("/category")
 	categoryGroup.GET("/tree", controller.GetCatogoriesTree)
 	categoryGroup.GET("/info", controller.GetCategoryInfo)
@@ -22,6 +23,7 @@ func apiRouter(r *gin.Engine) {
 	goodsGroup := root.Group("/goods")
 	goodsGroup.GET("/list", controller.GetGoodsListByCategory)
 	goodsGroup.GET("/constraint/express", controller.GoodsExpressConstraint)
+	goodsGroup.POST("/constraint/import", controller.ImportExpressConstraints)
 	goodsGroup.GET("/detail", controller.GetGoodsInfo)
 	goodsGroup.GET("/hot", controller.GetHotGoods)
 

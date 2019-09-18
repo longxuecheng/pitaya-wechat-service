@@ -2,12 +2,11 @@ package model
 
 import (
 	"database/sql"
+	"gotrue/facility/utils"
 	"time"
 
 	"github.com/shopspring/decimal"
 )
-
-const Table_Goods = "goods"
 
 type GoodsStatus string
 
@@ -19,6 +18,7 @@ const (
 type Goods struct {
 	ID               int64           `db:"id"`
 	Name             string          `db:"name"`
+	ProducingArea    string          `db:"producing_area"`
 	CategoryID       int             `db:"category_id"`
 	BriefDescription sql.NullString  `db:"brief_description"`
 	Description      sql.NullString  `db:"description"`
@@ -28,6 +28,14 @@ type Goods struct {
 	CreateTime       *time.Time      `db:"create_time"`
 	ListPicURL       sql.NullString  `db:"list_pic_url"`
 	RetailPrice      decimal.Decimal `db:"retail_price"`
+}
+
+func (g *Goods) TableName() string {
+	return "goods"
+}
+
+func (g *Goods) Columns() []string {
+	return utils.TagValues(g, "db")
 }
 
 type GoodsSet struct {

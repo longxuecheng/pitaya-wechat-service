@@ -108,10 +108,10 @@ func (s *Cart) CheckedItems(userID int64) ([]model.Cart, error) {
 
 type cartResposneWrapper struct {
 	items    []model.Cart
-	stockMap map[int64]*model.GoodsStock
+	stockMap map[int64]*model.Stock
 }
 
-func newCartResponseWrapper(items []model.Cart, stockMap map[int64]*model.GoodsStock) *cartResposneWrapper {
+func newCartResponseWrapper(items []model.Cart, stockMap map[int64]*model.Stock) *cartResposneWrapper {
 	return &cartResposneWrapper{
 		items:    items,
 		stockMap: stockMap,
@@ -144,13 +144,13 @@ func (set *cartResposneWrapper) DTOItems() []response.CartItem {
 }
 
 type cartCreator struct {
-	goods    *response.GoodsInfoDTO
+	goods    *response.GoodsInfo
 	stock    *response.GoodsStockDTO
 	userID   int64
 	quantity decimal.Decimal
 }
 
-func newCartCreator(goods *response.GoodsInfoDTO,
+func newCartCreator(goods *response.GoodsInfo,
 	stock *response.GoodsStockDTO, userID int64, quantity decimal.Decimal) *cartCreator {
 	cc := new(cartCreator)
 	cc.goods = goods

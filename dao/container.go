@@ -18,4 +18,6 @@ func Init() {
 	initUserDao()
 	initWechatPaymentDao()
 	InitGoodsExpressConstraintDao()
+	initSupplierAdminDao()
+	initBannerDao()
 }

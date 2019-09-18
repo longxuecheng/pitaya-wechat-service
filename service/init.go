@@ -10,9 +10,11 @@ import (
 	"gotrue/service/stock"
 	"gotrue/service/supplier"
 	"gotrue/service/user"
+	"gotrue/service/wechat"
 )
 
 func Init() {
+	wechat.InitWechatService()
 	user.Init()
 	basic.Init()
 	region.Init()
@@ -23,4 +25,5 @@ func Init() {
 	order.Init()
 	supplier.Init()
 	InitSettlementService()
+	InitBannerService()
 }

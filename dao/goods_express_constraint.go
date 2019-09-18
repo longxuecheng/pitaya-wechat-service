@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"database/sql"
+	"gotrue/facility/utils"
 	"gotrue/model"
 	"gotrue/sys"
 
@@ -36,4 +38,10 @@ func (d *GoodsExpressConstraint) QueryByStockAndProvince(stockID int64, province
 	data := &model.GoodsExpressConstraint{}
 	err := d.db.SelectOneDSL(&data, d.columns, d.table, squirrel.Eq{"stock_id": stockID, "province_id": provinceID})
 	return data, err
+}
+
+func (d *GoodsExpressConstraint) CreateConstraint(c *model.GoodsExpressConstraint, tx ...*sql.Tx) (int64, error) {
+	setMap := utils.InsertMap(c, "db")
+	_, id, err := d.db.Insert(d.table, setMap, tx...)
+	return id, err
 }

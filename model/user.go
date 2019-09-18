@@ -2,11 +2,10 @@ package model
 
 import (
 	"database/sql"
+	"gotrue/facility/utils"
 
 	"github.com/dgrijalva/jwt-go"
 )
-
-const Table_User = "user"
 
 type UserType int
 
@@ -29,6 +28,14 @@ type User struct {
 	NickName  string         `db:"nick_name"`
 	AvatarURL string         `db:"avatar_url"`
 	WechatID  string         `db:"wechat_id"`
+}
+
+func (u *User) TableName() string {
+	return "user"
+}
+
+func (u *User) Columns() []string {
+	return utils.TagValues(u, "db")
 }
 
 type UserClaims struct {

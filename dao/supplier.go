@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"gotrue/facility/utils"
 	"gotrue/model"
 	"gotrue/sys"
 
@@ -22,7 +21,7 @@ func initSupplierDao() {
 	}
 	splr := &model.Supplier{}
 	SupplierDao = &Supplier{
-		utils.TagValues(splr, "db"),
+		splr.Columns(),
 		splr.TableName(),
 		sys.GetEasyDB(),
 	}

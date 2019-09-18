@@ -41,7 +41,6 @@ type OrderListRequest struct {
 }
 
 type OrderExpressUpdate struct {
-	SupplierID    int64  `json:"-"`
 	OrderID       int64  `json:"orderId"`
 	ExpressMethod string `json:"expressMethod"`
 	ExpressNo     string `json:"expressNo"`

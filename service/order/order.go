@@ -47,7 +47,7 @@ func initSaleOrderService() {
 	SaleOrderService = &SaleOrder{
 		dao:              dao.SaleOrderDao,
 		stockDao:         dao.StockDao,
-		supplierDao:      dao.SupplierDao,
+		supplierAdminDao: dao.SupplierAdminDao,
 		goodsDao:         dao.GoodsDao,
 		userDao:          dao.UserDaoSingleton,
 		saleDetailDao:    dao.SaleDetailDao,
@@ -96,6 +96,7 @@ type SaleOrder struct {
 	dao              *dao.SaleOrder
 	saleDetailDao    *dao.SaleDetail
 	supplierDao      *dao.Supplier
+	supplierAdminDao *dao.SupplierAdmin
 	stockDao         *dao.Stock
 	goodsDao         *dao.Goods
 	userDao          *dao.UserDao
@@ -165,7 +166,7 @@ func (s *SaleOrder) notifyFarmer(prepayID string, order *model.SaleOrder) {
 		log.Printf("query supplier %d error %+v\n", order.SupplierID, err)
 	}
 	supplierName = supplier.Name
-	supplierAdmin, err := s.userDao.SelectByID(supplier.AdminID)
+	supplierAdmin, err := s.userDao.SelectByID(0)
 	if err != nil {
 		log.Printf("query supplier admin %d error %+v\n", supplier.ID, err)
 	}
@@ -230,8 +231,8 @@ func (s *SaleOrder) notifyFarmer(prepayID string, order *model.SaleOrder) {
 	}
 }
 
-// UpdateByWechatPayResult 通过微信支付查询结果更新订单状态和交易状态
-func (s *SaleOrder) UpdateByWechatPayResult(r *request.QueryWechatPayResult, req *payment.QueryOrderResponse) error {
+// PayResult 通过微信支付查询结果更新订单状态和交易状态
+func (s *SaleOrder) PayResult(r *request.QueryWechatPayResult, req *payment.QueryOrderResponse) error {
 	order, err := s.dao.SelectByID(r.OrderID)
 	if err != nil {
 		return err
@@ -298,52 +299,25 @@ func (s *SaleOrder) UpdateByWechatPayResult(r *request.QueryWechatPayResult, req
 	return nil
 }
 
-// Create 从购物车创建订单
-// 1. 创建订单
-// 2. 创建订单明细
-// 3. 删除购物车所选中的项目x
-// 4. 获取邮费及配送范围
-func (s *SaleOrder) Create(userID int64, req request.SaleOrderAddRequest) (id int64, err error) {
-	checkedItems, err := s.cartService.CheckedItems(userID)
-	if err != nil {
-		return
-	}
-	address, err := s.userService.GetAddressByID(req.AddressID)
-	if err != nil {
-		return
-	}
-	cartSet := model.NewCartSet(checkedItems)
-	goodsIDs := cartSet.GoodsIDs()
-	goodsList, err := s.goodsDao.SelectByIDs(goodsIDs)
-	if err != nil {
-		return
-	}
-	stocks, err := s.stockDao.SelectByIDs(cartSet.StockIDs())
-	if err != nil {
-		return
-	}
-	orderCreator := newSaleOrderCreator(cartSet)
-	orderCreator.setGoods(goodsList)
-	orderCreator.bindNecessary(stocks, userID, address)
-	supplierOrders := orderCreator.rawSupplierOrders()
-	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
-		for _, so := range supplierOrders {
-			if so.splitable() {
-				splittedSupplierOrders := so.split()
-				id, err = s.saveOrders(splittedSupplierOrders, tx)
-				if err != nil {
-					return err
-				}
-			} else {
-				id, err = s.save(so, tx)
-				if err != nil {
-					return err
-				}
-			}
-
-		}
-		return nil
-	})
+func (s *SaleOrder) CreateFromCart(userID int64, req request.SaleOrderAddRequest) (id int64, err error) {
+	// checkedItems, err := s.cartService.CheckedItems(userID)
+	// if err != nil {
+	// 	return
+	// }
+	// address, err := s.userService.GetAddressByID(req.AddressID)
+	// if err != nil {
+	// 	return
+	// }
+	// cartSet := model.NewCartSet(checkedItems)
+	// goodsIDs := cartSet.GoodsIDs()
+	// goodsList, err := s.goodsDao.SelectByIDs(goodsIDs)
+	// if err != nil {
+	// 	return
+	// }
+	// stocks, err := s.stockDao.SelectByIDs(cartSet.StockIDs())
+	// if err != nil {
+	// 	return
+	// }
 	return
 }
 
@@ -370,8 +344,8 @@ func (s *SaleOrder) Cancel(orderID int64) (*response.SaleOrderInfo, error) {
 	return s.Info(orderID)
 }
 
-// QuickCreate 快速下单
-func (s *SaleOrder) QuickCreate(userID int64, req request.SaleOrderQuickAddRequest) (id int64, err error) {
+// CreateFromStock create order from stock
+func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddRequest) (id int64, err error) {
 	err = req.Validate()
 	if err != nil {
 		return
@@ -393,78 +367,34 @@ func (s *SaleOrder) QuickCreate(userID int64, req request.SaleOrderQuickAddReque
 		return 0, expressConstraint.Error()
 	}
 	expressFee := expressConstraint.UnitExpressFee
-	// 由于目前水果的包装都是按照一个快递单来进行的，所以目前对每一个项目创建一个订单
+	sb := &StockOrderBuilder{
+		Goods:          goods,
+		Quantity:       req.Quantity,
+		Stock:          stock,
+		UserID:         userID,
+		UnitExpressFee: expressFee,
+		Address:        address,
+	}
+	stockOrders, err := sb.Build()
+	if err != nil {
+		return 0, err
+	}
 	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
-		ss := []supplierStock{
-			supplierStock{
-				SupplierID:     goods.SupplierID,
-				Quantity:       req.Quantity,
-				Stock:          stock,
-				Goods:          goods,
-				UnitExpressFee: expressFee,
-			},
-		}
-		so := &supplierOrder{
-			supplierID:     goods.SupplierID,
-			supplierStocks: ss,
-		}
-		so.bindBasically(userID, address)
-		if so.splitable() {
-			splittedSupplierOrders := so.split()
-			id, err = s.saveOrders(splittedSupplierOrders, tx)
-			if err != nil {
-				return err
-			}
-		} else {
-			id, err = s.save(so, tx)
-			if err != nil {
-				return err
-			}
+		id, err = s.createStockOrders(stockOrders, tx)
+		if err != nil {
+			return err
 		}
 		return nil
 	})
-
 	return
 }
 
-func (s *SaleOrder) saveOrders(orderList []*supplierOrder, tx *sql.Tx) (int64, error) {
-	var masterID int64
-	if len(orderList) > 1 {
-		// save master order
-		masterOrder := orderList[0]
-		masterID, err := s.save(masterOrder, tx)
-		if err != nil {
-			return 0, err
-		}
-		// children order
-		orderList = orderList[1:]
-		for _, order := range orderList {
-			order.parentID = masterID
-			_, err := s.save(order, tx)
-			if err != nil {
-				return 0, err
-			}
-		}
-		return masterID, nil
-	}
-	masterID, err := s.save(orderList[0], tx)
+func (s *SaleOrder) createOrder(order *model.SaleOrder, details []*model.SaleDetail, tx *sql.Tx) (int64, error) {
+	orderID, err := s.dao.Create(order, tx)
 	if err != nil {
 		return 0, err
 	}
-	return masterID, nil
-}
-
-// save 将业务模型转换成数据库模型并持久化
-func (s *SaleOrder) save(so *supplierOrder, tx *sql.Tx) (int64, error) {
-	saleOrder, saleDetails, err := so.transfer()
-	if err != nil {
-		return 0, err
-	}
-	orderID, err := s.dao.Create(saleOrder, tx)
-	if err != nil {
-		return 0, err
-	}
-	for _, detail := range saleDetails {
+	for _, detail := range details {
 		detail.OrderID = orderID
 		_, err := s.saleDetailDao.Create(detail)
 		if err != nil {
@@ -474,15 +404,46 @@ func (s *SaleOrder) save(so *supplierOrder, tx *sql.Tx) (int64, error) {
 	return orderID, nil
 }
 
-// ListSupplierOrders list orders for a supplier's admin
-func (s *SaleOrder) ListSupplierOrders(supplierID int64, req request.OrderListRequest) (page *pagination.Page, err error) {
+func (s *SaleOrder) createStockOrders(orders []*StockOrder, tx *sql.Tx) (masterID int64, err error) {
+	masterOrder := orders[0]
+	if len(orders) > 1 {
+		// save master order
+		masterID, err = s.createOrder(masterOrder.SaleOrder, masterOrder.SaleDetails, tx)
+		if err != nil {
+			return 0, err
+		}
+		// children order
+		children := orders[1:]
+		for _, stockOrder := range children {
+			order := stockOrder.SaleOrder
+			order.ParentID = masterID
+			_, err := s.createOrder(order, stockOrder.SaleDetails, tx)
+			if err != nil {
+				return 0, err
+			}
+		}
+	} else {
+		masterID, err = s.createOrder(masterOrder.SaleOrder, masterOrder.SaleDetails, tx)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return masterID, nil
+}
+
+// ListManagedOrders list orders for a supplier's admin
+func (s *SaleOrder) ListManagedOrders(userID int64, req request.OrderListRequest) (page *pagination.Page, err error) {
+	admins, err := s.supplierAdminDao.QueryByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
 	var orders []model.SaleOrder
 	var total int64
 	if req.Type == request.All {
-		orders, total, err = s.dao.SelectAllBySupplierWithPagination(supplierID, req.Offet(), req.Limit())
+		orders, total, err = s.dao.SelectAllBySuppliersWithPagination(admins.SupplierIDs(), req.Offet(), req.Limit())
 	} else {
 		stats := s.mappingRequestStatus(req)
-		orders, total, err = s.dao.SelectBySupplierAndStatus(supplierID, stats, req.Offet(), req.Limit())
+		orders, total, err = s.dao.SelectBySupplierAndStatus(admins.SupplierIDs(), stats, req.Offet(), req.Limit())
 	}
 	if err != nil {
 		return nil, err
@@ -702,7 +663,7 @@ func installSaleDetailDTO(model *model.SaleDetail) response.SaleOrderGoodsDTO {
 }
 
 // installSaleDetailFromStock 从库存创建一个订单明细,且数量为1个用于目前的供应商
-func installSaleDetailFromStock(orderID int64, stock *model.GoodsStock, goods *model.Goods) model.SaleDetail {
+func installSaleDetailFromStock(orderID int64, stock *model.Stock, goods *model.Goods) model.SaleDetail {
 	sd := model.SaleDetail{
 		OrderID:       orderID,
 		GoodsID:       stock.GoodsID,
@@ -723,12 +684,12 @@ type supplierStock struct {
 	Quantity   decimal.Decimal
 	// 单件商品库存的运费
 	UnitExpressFee decimal.Decimal
-	Stock          *model.GoodsStock
+	Stock          *model.Stock
 	Goods          *model.Goods
 }
 
-func (ss supplierStock) saleDetail() model.SaleDetail {
-	return model.SaleDetail{
+func (ss supplierStock) saleDetail() *model.SaleDetail {
+	return &model.SaleDetail{
 		OrderID:       0,
 		GoodsID:       ss.Stock.GoodsID,
 		GoodsName:     ss.Goods.Name,
@@ -740,171 +701,6 @@ func (ss supplierStock) saleDetail() model.SaleDetail {
 		ListPicURL:    ss.Goods.ListPicURL,
 	}
 
-}
-
-// supplierOrder 是供应商的订单信息
-// 一个供应商有多个库存，每个库存可能数量大于1
-// 数量大于1的库存可以拆分为1的单位库存
-type supplierOrder struct {
-	parentID       int64
-	supplierID     int64
-	userID         int64
-	address        *response.UserAddress
-	supplierStocks []supplierStock
-}
-
-func (so *supplierOrder) bindBasically(userID int64, address *response.UserAddress) {
-	so.userID = userID
-	so.address = address
-}
-
-func (so *supplierOrder) validate() error {
-	if so.userID == 0 || so.address.ID == 0 {
-		return errors.NewWithCodef("AddressBoundError", "user id and address must be bound first")
-	}
-	return nil
-}
-
-// transfer a supplier order to a sale order db model
-func (so *supplierOrder) transfer() (model.SaleOrder, []model.SaleDetail, error) {
-	err := so.validate()
-	if err != nil {
-		return model.SaleOrder{}, nil, err
-	}
-	orderNo, err := generateOrderNumber(1)
-	if err != nil {
-		return model.SaleOrder{}, nil, err
-	}
-	// assemble data
-	saleOrder := model.SaleOrder{
-		ParentID:   so.parentID,
-		OrderNo:    orderNo,
-		UserID:     so.userID,
-		ProvinceID: so.address.ProvinceID,
-		CityID:     so.address.CityID,
-		DistrictID: so.address.DistrictID,
-		Address:    so.address.Address,
-		Receiver:   so.address.Name,
-		PhoneNo:    so.address.Mobile,
-		SupplierID: so.supplierID,
-	}
-	// 总邮费
-	expressFeeSum := decimal.Zero
-	goodsSum := decimal.Zero
-	costSum := decimal.Zero
-	// 每一个库存都会有运费，整个订单可能有多个库存，需要累加所有库存运费
-	// 目前每个订单只有一个库存
-	saleDetails := []model.SaleDetail{}
-	for _, ss := range so.supplierStocks {
-		goodsSum = goodsSum.Add(ss.Stock.SaleUnitPrice.Mul(ss.Quantity))
-		costSum = costSum.Add(ss.Stock.CostUnitPrice.Mul(ss.Quantity))
-		expressFeeSum = expressFeeSum.Add(ss.UnitExpressFee)
-		saleDetail := ss.saleDetail()
-		saleDetails = append(saleDetails, saleDetail)
-	}
-	saleOrder.GoodsAmt = goodsSum
-	saleOrder.CostAmt = costSum
-	saleOrder.OrderAmt = goodsSum.Add(expressFeeSum)
-	saleOrder.ExpressFee = expressFeeSum
-	return saleOrder, saleDetails, nil
-}
-
-// split 按照库存单位1对一个供应商的原始订单进行拆分
-func (so *supplierOrder) split() []*supplierOrder {
-	sos := []*supplierOrder{}
-	for _, ss := range so.supplierStocks {
-		for i := 0; i < int(ss.Quantity.IntPart()); i++ {
-			ssList := []supplierStock{
-				supplierStock{
-					SupplierID:     so.supplierID,
-					Quantity:       decimal.NewFromFloat32(1.0),
-					Stock:          ss.Stock,
-					Goods:          ss.Goods,
-					UnitExpressFee: ss.UnitExpressFee,
-				},
-			}
-			sorder := &supplierOrder{
-				supplierID:     so.supplierID,
-				supplierStocks: ssList,
-			}
-			sorder.bindBasically(so.userID, so.address)
-			sos = append(sos, sorder)
-		}
-	}
-	return sos
-}
-
-// splitable 判断订单是否可以拆分，目前只有供应商ID为1时可以拆
-func (so *supplierOrder) splitable() bool {
-	return so.supplierID == 1
-}
-
-// SaleOrderCreator 是订单服务中特有的购物车管理
-// 若进行为服务拆分，那么购物车可能会作为一个单独的服务提供数据，
-// 该对象对返回的购物车数据进行业务处理
-type saleOrderCreator struct {
-	goodsMap map[int64]*model.Goods
-	// 供应商购物车项目
-	supplierCart map[int64][]model.Cart
-	// 供应商订单
-	supplierOrders []*supplierOrder
-	stocks         map[int64]*model.GoodsStock
-}
-
-func newSaleOrderCreator(cartSet *model.CartSet) *saleOrderCreator {
-	creator := new(saleOrderCreator)
-	supplierCart := map[int64][]model.Cart{}
-	supplierIDs := cartSet.SupplierIDs()
-	// Classify cart items of different suppliers
-	for _, supplierID := range supplierIDs {
-		carts := []model.Cart{}
-		for _, cart := range cartSet.List() {
-			if cart.SupplierID == supplierID {
-				carts = append(carts, cart)
-			}
-		}
-		supplierCart[supplierID] = carts
-	}
-	creator.supplierCart = supplierCart
-	return creator
-}
-
-func (c *saleOrderCreator) setGoods(goods []*model.Goods) {
-	goodsSet := model.NewGoodsSet(goods)
-	c.goodsMap = goodsSet.Map()
-}
-
-func (c *saleOrderCreator) bindNecessary(stocks []*model.GoodsStock, userID int64, address *response.UserAddress) {
-	stockSet := model.NewStockSet(stocks)
-	stockMap := stockSet.Map()
-	supplierOrders := []*supplierOrder{}
-	for supplierID, carts := range c.supplierCart {
-		supplierOrder := &supplierOrder{
-			supplierID: supplierID,
-		}
-		supplierOrder.bindBasically(userID, address)
-		supplierStocks := make([]supplierStock, len(carts))
-		for idx, cart := range carts {
-			supplierStock := supplierStock{
-				SupplierID: supplierID,
-				Quantity:   cart.Quantity,
-			}
-			if stock, ok := stockMap[cart.StockID]; ok {
-				supplierStock.Stock = stock
-			}
-			if goods, ok := c.goodsMap[cart.GoodsID]; ok {
-				supplierStock.Goods = goods
-			}
-			supplierStocks[idx] = supplierStock
-		}
-		supplierOrder.supplierStocks = supplierStocks
-		supplierOrders = append(supplierOrders, supplierOrder)
-	}
-	c.supplierOrders = supplierOrders
-}
-
-func (c *saleOrderCreator) rawSupplierOrders() []*supplierOrder {
-	return c.supplierOrders
 }
 
 type SaleOrderSet struct {

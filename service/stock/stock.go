@@ -39,7 +39,7 @@ func (s *Stock) GetStocksByGoodsID(goodsID int64) ([]*response.GoodsStockDTO, er
 	return buildGoodsStockDTOs(stocks), nil
 }
 
-func installGoodsStockDTO(model *model.GoodsStock) *response.GoodsStockDTO {
+func installGoodsStockDTO(model *model.Stock) *response.GoodsStockDTO {
 	dto := new(response.GoodsStockDTO)
 	dto.ID = model.ID
 	dto.GoodsID = model.GoodsID
@@ -49,7 +49,7 @@ func installGoodsStockDTO(model *model.GoodsStock) *response.GoodsStockDTO {
 	return dto
 }
 
-func buildGoodsStockDTOs(models []*model.GoodsStock) []*response.GoodsStockDTO {
+func buildGoodsStockDTOs(models []*model.Stock) []*response.GoodsStockDTO {
 	if models == nil || len(models) == 0 {
 		return nil
 	}

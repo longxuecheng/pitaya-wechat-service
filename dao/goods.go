@@ -13,21 +13,24 @@ import (
 var GoodsDao *Goods
 
 func initGoodsDao() {
+	goods := &model.Goods{}
 	GoodsDao = &Goods{
-		db: sys.GetEasyDB(),
+		table:   goods.TableName(),
+		columns: goods.Columns(),
+		db:      sys.GetEasyDB(),
 	}
 }
 
-var columns_goods = []string{"id", "name", "category_id", "description", "brief_description", "status", "is_delete", "supplier_id", "create_time", "list_pic_url", "retail_price"}
-
 // Goods is dao
 type Goods struct {
-	db *sys.EasyDB
+	table   string
+	columns []string
+	db      *sys.EasyDB
 }
 
 func (dao *Goods) SelectByCategory(categoryID int64) ([]*model.Goods, error) {
 	goods := []*model.Goods{}
-	err := dao.db.Select(&goods, fmt.Sprintf("SELECT %s FROM goods WHERE category_id = ? ORDER BY id ASC", strings.Join(columns_goods, ",")), categoryID)
+	err := dao.db.Select(&goods, fmt.Sprintf("SELECT %s FROM goods WHERE category_id = ? ORDER BY id ASC", strings.Join(dao.columns, ",")), categoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +39,7 @@ func (dao *Goods) SelectByCategory(categoryID int64) ([]*model.Goods, error) {
 
 func (dao *Goods) SelectByID(ID int64) (*model.Goods, error) {
 	goods := new(model.Goods)
-	err := dao.db.SelectOne(goods, fmt.Sprintf("SELECT %s FROM goods WHERE id = ?", strings.Join(columns_goods, ",")), ID)
+	err := dao.db.SelectOne(goods, fmt.Sprintf("SELECT %s FROM goods WHERE id = ?", strings.Join(dao.columns, ",")), ID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +48,7 @@ func (dao *Goods) SelectByID(ID int64) (*model.Goods, error) {
 
 func (dao *Goods) SelectByIDs(IDs []int64) ([]*model.Goods, error) {
 	goods := []*model.Goods{}
-	err := dao.db.SelectDSL(&goods, columns_goods, model.Table_Goods, sq.Eq{"id": IDs})
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, sq.Eq{"id": IDs})
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +57,7 @@ func (dao *Goods) SelectByIDs(IDs []int64) ([]*model.Goods, error) {
 
 func (dao *Goods) SelectAllByStatus(status model.GoodsStatus) ([]*model.Goods, error) {
 	goods := []*model.Goods{}
-	err := dao.db.SelectDSL(&goods, columns_goods, model.Table_Goods, sq.Eq{"status": string(status)})
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, sq.Eq{"status": string(status)})
 	if err != nil {
 		return nil, err
 	}

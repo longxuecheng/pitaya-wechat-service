@@ -13,6 +13,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+var one = decimal.NewFromFloat32(1.0)
+
 var CashierService *Cashier
 
 func beforeInit() {
@@ -88,13 +90,13 @@ type cashier interface {
 // goodsCashier 是商品结算台
 type goodsCashier struct {
 	quantity decimal.Decimal
-	stock    *model.GoodsStock
+	stock    *model.Stock
 	goods    *model.Goods
 	express  *response.GoodsExpressConstraint
 	specText string
 }
 
-func newGoodsCashier(stock *model.GoodsStock, goods *model.Goods, specDesc string, quantity decimal.Decimal) *goodsCashier {
+func newGoodsCashier(stock *model.Stock, goods *model.Goods, specDesc string, quantity decimal.Decimal) *goodsCashier {
 	return &goodsCashier{
 		stock:    stock,
 		goods:    goods,
@@ -106,8 +108,12 @@ func newGoodsCashier(stock *model.GoodsStock, goods *model.Goods, specDesc strin
 func (gc *goodsCashier) summary() *response.Cashier {
 	goodsTotalPrice := gc.stock.SaleUnitPrice.Mul(gc.quantity)
 	// total express fee = (unit expresss fee) * quantity
-	if gc.express != nil {
-		gc.express.CalculateTotalExpressFee(gc.quantity)
+	if !gc.stock.Splitable {
+		gc.express.CalculateTotalExpressFee(one)
+	} else {
+		if gc.express != nil {
+			gc.express.CalculateTotalExpressFee(gc.quantity)
+		}
 	}
 	cc := &response.Cashier{
 		GoodsTotalPrice:        goodsTotalPrice.StringFixed(2),

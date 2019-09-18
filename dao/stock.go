@@ -11,39 +11,42 @@ import (
 var StockDao *Stock
 
 func initStockDao() {
+	stock := &model.Stock{}
 	StockDao = &Stock{
-		db: sys.GetEasyDB(),
+		Table:   stock.TableName(),
+		Columns: stock.Columns(),
+		db:      sys.GetEasyDB(),
 	}
 }
 
-var columns_goods_stock = []string{"id", "supplier_id", "goods_id", "sale_unit_price", "cost_unit_price", "available_quantity", "specification"}
-
 // Stock is dao
 type Stock struct {
-	db *sys.EasyDB
+	Table   string
+	Columns []string
+	db      *sys.EasyDB
 }
 
-func (dao *Stock) SelectByID(ID int64) (*model.GoodsStock, error) {
-	stock := new(model.GoodsStock)
-	err := dao.db.SelectOneDSL(stock, columns_goods_stock, model.Table_Stock, sq.Eq{"id": ID})
+func (dao *Stock) SelectByID(ID int64) (*model.Stock, error) {
+	stock := new(model.Stock)
+	err := dao.db.SelectOneDSL(stock, dao.Columns, dao.Table, sq.Eq{"id": ID})
 	if err != nil {
 		return nil, err
 	}
 	return stock, nil
 }
 
-func (dao *Stock) SelectByGoodsID(goodsID int64) ([]*model.GoodsStock, error) {
-	stocks := []*model.GoodsStock{}
-	err := dao.db.SelectDSL(&stocks, columns_goods_stock, model.Table_Stock, sq.Eq{"goods_id": goodsID})
+func (dao *Stock) SelectByGoodsID(goodsID int64) ([]*model.Stock, error) {
+	stocks := []*model.Stock{}
+	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"goods_id": goodsID})
 	if err != nil {
 		return nil, err
 	}
 	return stocks, nil
 }
 
-func (dao *Stock) SelectByIDs(ids []int64) ([]*model.GoodsStock, error) {
-	stocks := []*model.GoodsStock{}
-	err := dao.db.SelectDSL(&stocks, columns_goods_stock, model.Table_Stock, sq.Eq{"id": ids})
+func (dao *Stock) SelectByIDs(ids []int64) ([]*model.Stock, error) {
+	stocks := []*model.Stock{}
+	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"id": ids})
 	if err != nil {
 		return nil, err
 	}

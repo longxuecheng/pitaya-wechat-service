@@ -77,8 +77,8 @@ func (db *EasyDB) Stats() string {
 	return fmt.Sprintf("Idle %d InUse %d Open %d wait %d", stats.Idle, stats.InUse, stats.OpenConnections, stats.WaitCount)
 }
 
+// ExecTx exec a pipline operation in transation
 func (db *EasyDB) ExecTx(execFunc func(tx *sql.Tx) error) {
-
 	tx, err := db.connection.Begin()
 	utils.CheckAndPanic(err)
 	err = execFunc(tx)

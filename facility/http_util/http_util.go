@@ -1,6 +1,7 @@
 package http_util
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -8,7 +9,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"time"
 )
+
+var client = &http.Client{
+	Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	},
+	Timeout: 30 * time.Second,
+}
 
 func Get(url string, dst interface{}) error {
 	response, err := http.Get(url)
@@ -38,7 +49,10 @@ func DoGet(dst interface{}, url string, modifyFn func(r *http.Request)) error {
 	if modifyFn != nil {
 		modifyFn(rq)
 	}
-	rp, err := http.DefaultClient.Do(rq)
+	rp, err := client.Do(rq)
+	if err != nil {
+		return err
+	}
 	if rp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Http get %s with status code %d", url, rp.StatusCode)
 	}
@@ -92,5 +106,5 @@ func Send(method, target string, data io.Reader, handlers ...Handler) (*http.Res
 		}
 
 	}
-	return http.DefaultClient.Do(req)
+	return client.Do(req)
 }

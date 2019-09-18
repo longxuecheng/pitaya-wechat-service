@@ -2,11 +2,15 @@ package goods
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"gotrue/dao"
 	"gotrue/dto/response"
 	"gotrue/model"
 	"gotrue/service/api"
 	"gotrue/service/basic"
+	"gotrue/sys"
+	"io"
+	"log"
 	"strings"
 )
 
@@ -19,6 +23,7 @@ func initGoodsService() {
 
 	GoodsService = &Goods{
 		goodsDao:             dao.GoodsDao,
+		stockDao:             dao.StockDao,
 		userAddressDao:       dao.UserAddressDao,
 		expressConstraintDao: dao.GoodsExpressConstraintDao,
 		goodsAttributeDao:    dao.GoodsAttributeDao,
@@ -29,11 +34,53 @@ func initGoodsService() {
 
 type Goods struct {
 	goodsDao             *dao.Goods
+	stockDao             *dao.Stock
 	userAddressDao       *dao.UserAddress
 	expressConstraintDao *dao.GoodsExpressConstraint
 	goodsAttributeDao    *dao.GoodsAttribute
 	goodsSpecDao         *dao.GoodsSpec
 	attributeService     api.IAttributeService
+}
+
+func (s *Goods) ImportExpressConstraints(stockID int64, r io.Reader) error {
+	stock, err := s.stockDao.SelectByID(stockID)
+	if err != nil {
+		return err
+	}
+	// Parse the file
+	csvReader := csv.NewReader(r)
+	// Iterate through the records
+	constrains := []*model.GoodsExpressConstraint{}
+	for {
+		// Read each record from csv
+		record, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		constraint := &model.GoodsExpressConstraint{
+			StockID: stockID,
+			GoodsID: stock.GoodsID,
+		}
+		err = constraint.SetFeeFromCsv(record)
+		if err != nil {
+			return err
+		}
+		constrains = append(constrains, constraint)
+	}
+	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+		for _, c := range constrains {
+			_, err = s.expressConstraintDao.CreateConstraint(c, tx)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return err
 }
 
 // ExpressConstraint gets express constraint for a given goods' stock
@@ -62,6 +109,10 @@ func (s *Goods) ExpressConstraint(stockID int64, addressID int64) (*response.Goo
 			return nil, err
 		}
 	}
+	if !constraint.Reachable {
+		result.Message = "不支持的配送范围"
+		result.Code = "NoneSupportedArea"
+	}
 	return &response.GoodsExpressConstraint{
 		IsFree:         constraint.IsFree,
 		UnitExpressFee: constraint.ExpressFee,
@@ -69,25 +120,24 @@ func (s *Goods) ExpressConstraint(stockID int64, addressID int64) (*response.Goo
 	}, nil
 }
 
-func (s *Goods) GetGoodsByCategory(categoryID int64) ([]*response.GoodsItemDTO, error) {
+func (s *Goods) GetGoodsByCategory(categoryID int64) ([]*response.GoodsItem, error) {
 	goods, err := s.goodsDao.SelectByCategory(categoryID)
 	if err != nil {
 		return nil, err
 	}
-	return buildGoodsDTOs(goods), nil
+	return buildApiGoods(goods), nil
 }
 
 func (s *Goods) Gallery(goodsID int64) ([]response.GoodsGalleryDTO, error) {
 	return nil, nil
 }
 
-func (s *Goods) Info(goodsID int64) (*response.GoodsInfoDTO, error) {
+func (s *Goods) Info(goodsID int64) (*response.GoodsInfo, error) {
 	goods, err := s.goodsDao.SelectByID(goodsID)
 	if err != nil {
 		return nil, err
 	}
-	dto := installGoodsInfoDTO(goods)
-	return dto, nil
+	return installApiGoodsInfo(goods), nil
 }
 
 func (s *Goods) Attributes(goodsID int64) ([]*response.AttributeDTO, error) {
@@ -144,12 +194,12 @@ func (s *Goods) SpecificationDesc(goodsID int64, specIDs []int64, sep string) (s
 	return strings.Join(specNames, sep), nil // 商品规格组合描述
 }
 
-func (s *Goods) HotGoods() ([]*response.GoodsItemDTO, error) {
+func (s *Goods) HotGoods() ([]*response.GoodsItem, error) {
 	goodsList, err := s.goodsDao.SelectAllByStatus(model.GoodsStatusOnSale)
 	if err != nil {
 		return nil, err
 	}
-	return buildGoodsDTOs(goodsList), nil
+	return buildApiGoods(goodsList), nil
 }
 
 func buildGoodsSpecificationDTOs(models []*model.GoodsSpecification) []*response.GoodsSpecificationDTO {
@@ -167,8 +217,8 @@ func buildGoodsSpecificationDTOs(models []*model.GoodsSpecification) []*response
 
 }
 
-func installGoodsInfoDTO(model *model.Goods) *response.GoodsInfoDTO {
-	data := new(response.GoodsInfoDTO)
+func installApiGoodsInfo(model *model.Goods) *response.GoodsInfo {
+	data := new(response.GoodsInfo)
 	data.ID = model.ID
 	data.SupplierID = model.SupplierID
 	data.Name = model.Name
@@ -180,25 +230,27 @@ func installGoodsInfoDTO(model *model.Goods) *response.GoodsInfoDTO {
 		data.BriefDesc = model.BriefDescription.String
 	}
 	data.RetailPrice = model.RetailPrice
+	data.ProducingArea = model.ProducingArea
 	return data
 }
 
-func installGoodsDTO(model *model.Goods) *response.GoodsItemDTO {
-	data := new(response.GoodsItemDTO)
+func installApiGoods(model *model.Goods) *response.GoodsItem {
+	data := new(response.GoodsItem)
 	data.ID = model.ID
 	data.Name = model.Name
 	data.PicURL = model.ListPicURL.String
 	data.RetailPrice = model.RetailPrice
+	data.ProducingArea = model.ProducingArea
 	return data
 }
 
-func buildGoodsDTOs(models []*model.Goods) []*response.GoodsItemDTO {
+func buildApiGoods(models []*model.Goods) []*response.GoodsItem {
 	if models == nil || len(models) == 0 {
 		return nil
 	}
-	dtos := make([]*response.GoodsItemDTO, len(models))
+	dtos := make([]*response.GoodsItem, len(models))
 	for i, model := range models {
-		dtos[i] = installGoodsDTO(model)
+		dtos[i] = installApiGoods(model)
 	}
 	return dtos
 }

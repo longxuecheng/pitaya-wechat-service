@@ -2,8 +2,11 @@ package order
 
 import (
 	"fmt"
+	"gotrue/dto/response"
 	"gotrue/model"
 	"testing"
+
+	"github.com/shopspring/decimal"
 
 	"github.com/looplab/fsm"
 )
@@ -79,4 +82,46 @@ func TestOrderFSM(t *testing.T) {
 	}
 	sof.fsm.Event("send")
 	fmt.Println(sof.fsm.Current())
+}
+
+func TestStockOrder(t *testing.T) {
+	quantity, _ := decimal.NewFromString("2")
+	unitExpressFee, _ := decimal.NewFromString("10")
+	cost_unit_price, _ := decimal.NewFromString("20")
+	sale_unit_price, _ := decimal.NewFromString("30")
+	sb := StockOrderBuilder{
+		UserID:         999,
+		Quantity:       quantity,
+		UnitExpressFee: unitExpressFee,
+		Address: &response.UserAddress{
+			ProvinceID: 1,
+			CityID:     2,
+			DistrictID: 3,
+			Address:    "address detail",
+			Mobile:     "189117923194",
+		},
+		Goods: &model.Goods{
+			ID:         1,
+			Name:       "test_goods_name",
+			SupplierID: 90,
+		},
+		Stock: &model.Stock{
+			ID:            10,
+			SupplierID:    90,
+			GoodsID:       1,
+			CostUnitPrice: cost_unit_price,
+			SaleUnitPrice: sale_unit_price,
+			Splitable:     false,
+		},
+	}
+	stockOrderList, err := sb.Build()
+	if err != nil {
+		t.Error(err)
+	}
+	for _, stockOrder := range stockOrderList {
+		fmt.Printf("[sale order is %+v\n", stockOrder.SaleOrder)
+		for _, detail := range stockOrder.SaleDetails {
+			fmt.Printf("details is %+v\n", detail)
+		}
+	}
 }

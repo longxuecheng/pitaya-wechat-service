@@ -28,11 +28,12 @@ func (r *BusinessResult) Error() error {
 	return nil
 }
 
-type GoodsItemDTO struct {
-	ID          int64           `json:"id"`
-	Name        string          `json:"name"`
-	PicURL      string          `json:"picUrl"`
-	RetailPrice decimal.Decimal `json:"retailPrice"`
+type GoodsItem struct {
+	ID            int64           `json:"id"`
+	Name          string          `json:"name"`
+	PicURL        string          `json:"picUrl"`
+	RetailPrice   decimal.Decimal `json:"retailPrice"`
+	ProducingArea string          `json:"producingArea"`
 }
 
 type GoodsExpressConstraint struct {
@@ -46,15 +47,16 @@ func (g *GoodsExpressConstraint) CalculateTotalExpressFee(quantity decimal.Decim
 	g.TotalExpressFee = g.UnitExpressFee.Mul(quantity)
 }
 
-type GoodsInfoDTO struct {
-	ID          int64           `json:"id"`
-	SupplierID  int64           `json:"supplierId"`
-	Name        string          `json:"name"`
-	BriefDesc   string          `json:"briefDesc"`
-	RetailPrice decimal.Decimal `json:"retailPrice"`
-	Unit        string          `json:"unit"`
-	Description string          `json:"description"`
-	ListPicURL  string          `json:"listPicUrl"`
+type GoodsInfo struct {
+	ID            int64           `json:"id"`
+	SupplierID    int64           `json:"supplierId"`
+	Name          string          `json:"name"`
+	BriefDesc     string          `json:"briefDesc"`
+	RetailPrice   decimal.Decimal `json:"retailPrice"`
+	Unit          string          `json:"unit"`
+	Description   string          `json:"description"`
+	ListPicURL    string          `json:"listPicUrl"`
+	ProducingArea string          `json:"producintArea"`
 }
 
 type GoodsGalleryDTO struct {

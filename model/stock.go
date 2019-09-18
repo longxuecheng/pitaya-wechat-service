@@ -2,14 +2,13 @@ package model
 
 import (
 	"database/sql"
+	"gotrue/facility/utils"
 
 	"github.com/shopspring/decimal"
 )
 
-var Table_Stock = "stock"
-
-// GoodsStock 商品库存数据模型
-type GoodsStock struct {
+// Stock 商品库存数据模型
+type Stock struct {
 	ID                int64           `db:"id"`
 	SupplierID        int64           `db:"supplier_id"`
 	Name              sql.NullString  `db:"name"`
@@ -18,13 +17,22 @@ type GoodsStock struct {
 	AvailableQuantity decimal.Decimal `db:"available_quantity"`
 	Specification     sql.NullString  `db:"specification"`
 	GoodsID           int64           `db:"goods_id"`
+	Splitable         bool            `db:"splitable"`
+}
+
+func (s *Stock) TableName() string {
+	return "stock"
+}
+
+func (s *Stock) Columns() []string {
+	return utils.TagValues(s, "db")
 }
 
 type StockSet struct {
-	stocks []*GoodsStock
+	stocks []*Stock
 }
 
-func NewStockSet(stocks []*GoodsStock) *StockSet {
+func NewStockSet(stocks []*Stock) *StockSet {
 	return &StockSet{
 		stocks: stocks,
 	}
@@ -32,8 +40,8 @@ func NewStockSet(stocks []*GoodsStock) *StockSet {
 
 // Map 是库存的集合
 // 用在这里是因为这个函数于业务不相关，指示作为一个基础的model转换
-func (s *StockSet) Map() map[int64]*GoodsStock {
-	stockMap := map[int64]*GoodsStock{}
+func (s *StockSet) Map() map[int64]*Stock {
+	stockMap := map[int64]*Stock{}
 	for _, item := range s.stocks {
 		stockMap[item.ID] = item
 	}

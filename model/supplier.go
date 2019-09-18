@@ -1,11 +1,16 @@
 package model
 
+import "gotrue/facility/utils"
+
 type Supplier struct {
-	ID      int64  `db:"id"`
-	Name    string `db:"name"`
-	AdminID int64  `db:"admin_id"`
+	ID   int64  `db:"id"`
+	Name string `db:"name"`
 }
 
-func (*Supplier) TableName() string {
+func (s *Supplier) TableName() string {
 	return "supplier"
+}
+
+func (s *Supplier) Columns() []string {
+	return utils.TagValues(s, "db")
 }

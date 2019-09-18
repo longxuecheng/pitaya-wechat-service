@@ -6,7 +6,6 @@ import (
 	"gotrue/middle_ware"
 	"gotrue/service/express"
 	"gotrue/service/order"
-	"gotrue/service/supplier"
 	"gotrue/service/wechat"
 	"strconv"
 
@@ -19,7 +18,7 @@ func SubmitSaleOrder(c *gin.Context) {
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	orderID, err := order.SaleOrderService.Create(userID, req)
+	orderID, err := order.SaleOrderService.CreateFromCart(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, orderID)
 }
@@ -29,7 +28,7 @@ func QuickSubmitOrder(c *gin.Context) {
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	orderID, err := order.SaleOrderService.QuickCreate(userID, req)
+	orderID, err := order.SaleOrderService.CreateFromStock(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, orderID)
 }
@@ -45,15 +44,13 @@ func ListSaleOrders(c *gin.Context) {
 	middle_ware.SetResponseData(c, result)
 }
 
-// ListSupplierOrders 给发货商列出订单
+// ListSupplierOrders 给供应商管理员用户列出所有的订单
 func ListSupplierOrders(c *gin.Context) {
 	req := request.OrderListRequest{}
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
-	supplier, err := supplier.SupplierService.QueryByAdmin(userID)
-	utils.CheckAndPanic(err)
-	orderList, err := order.SaleOrderService.ListSupplierOrders(supplier.ID, req)
+	orderList, err := order.SaleOrderService.ListManagedOrders(userID, req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, orderList)
 }
@@ -98,22 +95,19 @@ func WechatPayResult(c *gin.Context) {
 	utils.CheckAndPanic(err)
 	payResult, err := wechat.WechatService().QueryPayResult(orderInfo.OrderNo)
 	utils.CheckAndPanic(err)
-	err = order.SaleOrderService.UpdateByWechatPayResult(req, payResult)
+	err = order.SaleOrderService.PayResult(req, payResult)
 	utils.CheckAndPanic(err)
 }
 
 // UpdateExpressInfo is used to update express information by tenant
 func UpdateExpressInfo(c *gin.Context) {
-	userID := middle_ware.MustGetCurrentUser(c)
+	// userID := middle_ware.MustGetCurrentUser(c)
 	req := &request.OrderExpressUpdate{}
 	err := c.BindJSON(req)
 	if err != nil {
 		middle_ware.BadRequest(c, "请求参数不合法")
 		return
 	}
-	supplier, err := supplier.SupplierService.QueryByAdmin(userID)
-	utils.CheckAndPanic(err)
-	req.SupplierID = supplier.ID
 	utils.CheckAndPanic(err)
 	err = order.SaleOrderService.UpdateExpressInfo(req)
 	utils.CheckAndPanic(err)
