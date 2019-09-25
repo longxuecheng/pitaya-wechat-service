@@ -126,3 +126,12 @@ func GetHotGoods(c *gin.Context) {
 		"hotGoods": hotGoods,
 	})
 }
+
+// GetOnlineGoodsCards ...
+func GetOnlineGoodsCards(c *gin.Context) {
+	cards, err := goods.GoodsService.OneSaleGoodsCards()
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, gin.H{
+		"cards": cards,
+	})
+}

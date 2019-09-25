@@ -8,7 +8,6 @@ import (
 )
 
 func apiRouter(r *gin.Engine) {
-
 	root := r.Group("/api")
 	root.GET("/banner/list", controller.BannerList)
 	categoryGroup := root.Group("/category")
@@ -26,26 +25,28 @@ func apiRouter(r *gin.Engine) {
 	goodsGroup.POST("/constraint/import", controller.ImportExpressConstraints)
 	goodsGroup.GET("/detail", controller.GetGoodsInfo)
 	goodsGroup.GET("/hot", controller.GetHotGoods)
+	goodsGroup.GET("/card/list", controller.GetOnlineGoodsCards)
 
-	cartGroup := root.Group("/cart", middle_ware.AuthCheck())
+	cartGroup := root.Group("/cart", middle_ware.ValidateAuthorization)
 	cartGroup.POST("add", controller.AddCart)
 	cartGroup.GET("index", controller.CartIndex)
 	cartGroup.POST("checked", controller.CartItemCheck)
 	cartGroup.GET("goodscount", controller.CartGoodsCount)
 
-	cashierGroup := root.Group("/cashier", middle_ware.AuthCheck())
+	cashierGroup := root.Group("/cashier", middle_ware.ValidateAuthorization)
 	cashierGroup.GET("preview/cart", controller.PreviewCashierFromCart)
 	cashierGroup.POST("preview/stock", controller.PreviewCashierFromStock)
 
 	regionGroup := root.Group("/region")
 	regionGroup.GET("list", controller.RegionList)
+	regionGroup.GET("tips", controller.AddressTips)
 
-	addressGroup := root.Group("/address", middle_ware.AuthCheck())
+	addressGroup := root.Group("/address", middle_ware.ValidateAuthorization)
 	addressGroup.GET("list", controller.UserAddressList)
 	addressGroup.POST("save", controller.AddNewAddress)
 	addressGroup.GET("detail", controller.UserAddressDetail)
 
-	orderGroup := root.Group("/order", middle_ware.AuthCheck())
+	orderGroup := root.Group("/order", middle_ware.ValidateAuthorization)
 	orderGroup.POST("submit", controller.SubmitSaleOrder)
 	orderGroup.POST("submit/quick", controller.QuickSubmitOrder)
 	orderGroup.POST("list", controller.ListSaleOrders)
@@ -56,6 +57,6 @@ func apiRouter(r *gin.Engine) {
 	orderGroup.GET("express/list", controller.ExpressList)
 	orderGroup.GET("prepay", controller.WechatPrePay)
 	orderGroup.GET("pay/result", controller.WechatPayResult)
-	settleGroup := root.Group("/settlement", middle_ware.AuthCheck())
+	settleGroup := root.Group("/settlement", middle_ware.ValidateAuthorization)
 	settleGroup.GET("supplier/show", controller.SettlementForSupplier)
 }

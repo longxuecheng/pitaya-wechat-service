@@ -21,7 +21,7 @@ var (
 
 func InitWechatService() {
 	defaultWechatService = &wechatService{
-		newTokenManager(true),
+		NewTokenManager(true),
 	}
 }
 
@@ -31,7 +31,7 @@ func WechatService() *wechatService {
 }
 
 type wechatService struct {
-	*wechatTokenManager
+	*TokenManager
 }
 
 func (s *wechatService) UserInfo(code string) (Code2SessionResponse, error) {
@@ -42,7 +42,7 @@ func (s *wechatService) UserInfo(code string) (Code2SessionResponse, error) {
 }
 
 func (s *wechatService) AccessToken() string {
-	return s.accessToken()
+	return s.AccessToken()
 }
 
 func (s *wechatService) SendTemplateMessage(req *TemplateMsgRequest) error {
@@ -50,11 +50,10 @@ func (s *wechatService) SendTemplateMessage(req *TemplateMsgRequest) error {
 	if err != nil {
 		return err
 	}
-	response, err := http_util.Send(http.MethodPost, sendmessage_url, strings.NewReader(string(bytes)), func(r *http.Request) error {
+	response, err := http_util.Send(http.MethodPost, sendmessage_url, strings.NewReader(string(bytes)), func(r *http.Request) {
 		r.Header.Set("Content-Type", "application/json")
-		r.Form.Add("access_token", s.accessToken())
+		r.Form.Add("access_token", s.AccessToken())
 		r.URL.RawQuery = r.Form.Encode()
-		return nil
 	})
 	if err != nil {
 		return err
@@ -76,11 +75,10 @@ func (s *wechatService) SendUniformMessage(req *UniformMsgRequest) error {
 	if err != nil {
 		return err
 	}
-	response, err := http_util.Send(http.MethodPost, uniformmessage_url, strings.NewReader(string(bytes)), func(r *http.Request) error {
+	response, err := http_util.Send(http.MethodPost, uniformmessage_url, strings.NewReader(string(bytes)), func(r *http.Request) {
 		r.Header.Set("Content-Type", "application/json")
-		r.Form.Add("access_token", s.accessToken())
+		r.Form.Add("access_token", s.AccessToken())
 		r.URL.RawQuery = r.Form.Encode()
-		return nil
 	})
 	if err != nil {
 		return err
@@ -178,38 +176,38 @@ func (s *wechatService) QueryPayResult(orderNo string) (*payment.QueryOrderRespo
 	return result, nil
 }
 
-type wechatTokenManager struct {
+type TokenManager struct {
 	at      string
 	atExpIn int64
 	crontab *crontab.Crontab
 }
 
-func newTokenManager(startSchedule bool) *wechatTokenManager {
-	m := &wechatTokenManager{}
+func NewTokenManager(startSchedule bool) *TokenManager {
+	m := &TokenManager{}
 	m.crontab = crontab.New()
 	if startSchedule {
-		m.scheduleTasks()
+		m.ScheduleTasks()
 	}
 	return m
 }
 
-// crontab syntax https://github.com/mileusna/crontab
-func (m *wechatTokenManager) scheduleTasks() {
+// ScheduleTasks crontab syntax https://github.com/mileusna/crontab
+func (m *TokenManager) ScheduleTasks() {
 	log.Log.Debug("Shedule token refreshing task")
 	// m.refreshAccessToken()
-	m.crontab.MustAddJob("*/10 * * * *", m.refreshAccessToken)
+	m.crontab.MustAddJob("*/10 * * * *", m.RefreshAccessToken)
 	// run imediately when start
 	m.crontab.RunAll()
 }
 
-func (m *wechatTokenManager) accessToken() string {
+func (m *TokenManager) AccessToken() string {
 	return m.at
 }
 
-func (m *wechatTokenManager) refreshAccessToken() {
+func (m *TokenManager) RefreshAccessToken() {
 	act := AccessTokenResonse{}
 	url := fmt.Sprintf(accessToken_url, "client_credential", appID, secret)
-	err := http_util.DoGet(&act, url, nil)
+	err := http_util.DoGet(&act, url)
 	if err != nil {
 		log.Log.Debug("Access token refresh error %+v\n", err)
 	}

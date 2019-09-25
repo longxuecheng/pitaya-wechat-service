@@ -38,6 +38,20 @@ func (u *User) Columns() []string {
 	return utils.TagValues(u, "db")
 }
 
+type UserCollection struct {
+	Items []*User
+}
+
+func (c *UserCollection) UserMobiles() []string {
+	mobiles := []string{}
+	for _, item := range c.Items {
+		if item.PhoneNo.String != "" {
+			mobiles = append(mobiles, item.PhoneNo.String)
+		}
+	}
+	return mobiles
+}
+
 type UserClaims struct {
 	UserID int64 `json:"userId"`
 	jwt.StandardClaims

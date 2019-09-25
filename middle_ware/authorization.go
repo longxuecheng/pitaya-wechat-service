@@ -12,21 +12,20 @@ const (
 	currentUserKey = "current-user"
 )
 
-func AuthCheck() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		accessToken := c.GetHeader(accessTokenKey)
-		if accessToken == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, newResponse(nil, "user unauthorized", UNAUTHORIZED))
-			return
-		}
-		userClaims, err := service.ParseToken(accessToken)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, newResponse(nil, "invalid token or expired", TOKEN_EXP))
-			return
-		}
-		c.Set(currentUserKey, userClaims.UserID)
-		c.Next()
+// ValidateAuthorization check whether a request is authorized
+func ValidateAuthorization(c *gin.Context) {
+	accessToken := c.GetHeader(accessTokenKey)
+	if accessToken == "" {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, newResponse(nil, "user unauthorized", UNAUTHORIZED))
+		return
 	}
+	userClaims, err := service.ParseToken(accessToken, true)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, newResponse(nil, "invalid token or expired", TOKEN_EXP))
+		return
+	}
+	c.Set(currentUserKey, userClaims.UserID)
+	c.Next()
 }
 
 func MustGetCurrentUser(c *gin.Context) int64 {

@@ -3,11 +3,32 @@ package payment
 import (
 	"database/sql/driver"
 	"fmt"
+	"gotrue/model"
 
 	"go.planetmeican.com/meican.x/manage/facility/errors"
 )
 
 const success = "SUCCESS"
+
+const (
+	Success  tradeState = "SUCCESS"
+	Refund   tradeState = "REFUND"
+	NotPay   tradeState = "NOTPAY"
+	CLOSED   tradeState = "CLOSED"
+	Revoked  tradeState = "REVOKED"
+	Paying   tradeState = "USERPAYING"
+	PayError tradeState = "PAYERROR"
+)
+
+type tradeState string
+
+func (ts tradeState) String() string {
+	return string(ts)
+}
+
+func (ts tradeState) Value() (driver.Value, error) {
+	return ts.String(), nil
+}
 
 // baseResponse 代表接口状态结果，属于接口层结果
 type baseResponse struct {
@@ -87,22 +108,20 @@ type QueryOrderResponse struct {
 	price
 	couponSummary
 }
-type tradeState string
 
-func (ts tradeState) String() string {
-	return string(ts)
+func (q *QueryOrderResponse) OrderStatus() model.OrderStatus {
+	var orderStatus model.OrderStatus
+	if q.TradeState == Success {
+		orderStatus = model.Paid
+	}
+	if q.TradeState == Paying || q.TradeState == NotPay {
+		orderStatus = model.Paying
+	}
+	if q.TradeState == CLOSED {
+		orderStatus = model.Closed
+	}
+	if q.TradeState == PayError {
+		orderStatus = model.PayFailed
+	}
+	return orderStatus
 }
-
-func (ts tradeState) Value() (driver.Value, error) {
-	return ts.String(), nil
-}
-
-const (
-	Success  tradeState = "SUCCESS"
-	Refund   tradeState = "REFUND"
-	NotPay   tradeState = "NOTPAY"
-	CLOSED   tradeState = "CLOSED"
-	Revoked  tradeState = "REVOKED"
-	Paying   tradeState = "USERPAYING"
-	PayError tradeState = "PAYERROR"
-)

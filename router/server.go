@@ -2,11 +2,11 @@ package router
 
 import (
 	"context"
+	"gotrue/middle_ware"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"gotrue/middle_ware"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,13 +14,9 @@ import (
 
 func router() *gin.Engine {
 	r := gin.New()
-
-	// Global middleware
-	// Logger middleware will write the logs to gin.DefaultWriter even if you set with GIN_MODE=release.
-	// By default gin.DefaultWriter = os.Stdout
 	r.Use(middle_ware.Logger())
 	// Recovery middleware recovers from any panics and writes a 500 if there was one.
-	r.Use(middle_ware.Recovery())
+	r.Use(middle_ware.Recovery)
 	r.Use(middle_ware.WrapResponse)
 	apiRouter(r)
 	return r

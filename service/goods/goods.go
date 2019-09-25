@@ -202,6 +202,33 @@ func (s *Goods) HotGoods() ([]*response.GoodsItem, error) {
 	return buildApiGoods(goodsList), nil
 }
 
+func (s *Goods) OneSaleGoodsCards() ([]*response.GoodsCard, error) {
+	goodsList, err := s.goodsDao.SelectAllByStatus(model.GoodsStatusOnSale)
+	if err != nil {
+		return nil, err
+	}
+	cards := []*response.GoodsCard{}
+	for _, goods := range goodsList {
+		if goods.ProdAreaLng == 0 && goods.ProdAreaLat == 0 {
+			continue
+		}
+		cards = append(cards, &response.GoodsCard{
+			ID:            goods.ID,
+			Name:          goods.Name,
+			CardPicURL:    goods.CardPicURL,
+			RetailPrice:   goods.RetailPrice,
+			Description:   goods.BriefDescription.String,
+			Status:        goods.StatusName(),
+			ProducingArea: goods.ProducingArea,
+			Location: response.Location{
+				Longitude: goods.ProdAreaLng,
+				Latitude:  goods.ProdAreaLat,
+			},
+		})
+	}
+	return cards, nil
+}
+
 func buildGoodsSpecificationDTOs(models []*model.GoodsSpecification) []*response.GoodsSpecificationDTO {
 	dtos := make([]*response.GoodsSpecificationDTO, len(models))
 	for i, spec := range models {

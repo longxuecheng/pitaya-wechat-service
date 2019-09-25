@@ -21,6 +21,14 @@ type SupplierAdminCollection struct {
 	Items []*SupplierAdmin
 }
 
+func (c *SupplierAdminCollection) UserIDs() []int64 {
+	userIDs := []int64{}
+	for _, item := range c.Items {
+		userIDs = append(userIDs, item.UserID)
+	}
+	return userIDs
+}
+
 func (c *SupplierAdminCollection) SupplierIDs() []int64 {
 	distinctMap := map[int64]bool{}
 	for _, item := range c.Items {

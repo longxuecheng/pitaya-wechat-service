@@ -56,12 +56,13 @@ func AddNewAddress(c *gin.Context) {
 func LoginByWechat(c *gin.Context) {
 	req := request.WechatLogin{}
 	utils.CheckAndPanic(c.BindJSON(&req))
+	err := req.Validate()
+	utils.CheckAndPanic(err)
 	wechatResp, err := wechat.WechatService().UserInfo(req.Code)
 	utils.CheckAndPanic(err)
 	user, err := user.UserService.Login(wechatResp.OpenID, req.NickName, req.AvatarURL)
 	utils.CheckAndPanic(err)
 	log.Printf("LoginByWechat response code is %d jscode is %s nickname %s avatar url %s\n", wechatResp.ErrorCode, req.Code, req.NickName, req.AvatarURL)
-	utils.CheckAndPanic(err)
 	accessToken, err := service.BuildToken(user.ID, 3600)
 	utils.CheckAndPanic(err)
 	wechatUser := response.User{

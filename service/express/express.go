@@ -95,7 +95,7 @@ func (s *expressService) ExpressInfo(expressCom ExpressMethod, expressNo string)
 	if strings.IsEmpty(expressNo) {
 		return nil, nil
 	}
-	resp, err := http_util.Send(http.MethodGet, url, nil, func(r *http.Request) error {
+	resp, err := http_util.Send(http.MethodGet, url, nil, func(r *http.Request) {
 		c := &http.Cookie{
 			Name:     "BAIDUID",
 			Value:    "363248B1E700BC951CA9F586683F104D:FG=1",
@@ -110,7 +110,6 @@ func (s *expressService) ExpressInfo(expressCom ExpressMethod, expressNo string)
 		r.Form.Set("com", expressType.String())
 		r.Form.Set("nu", expressNo)
 		r.URL.RawQuery = r.Form.Encode()
-		return nil
 	})
 	if err != nil {
 		return nil, err

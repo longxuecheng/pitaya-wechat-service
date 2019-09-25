@@ -30,7 +30,8 @@ type Goods struct {
 
 func (dao *Goods) SelectByCategory(categoryID int64) ([]*model.Goods, error) {
 	goods := []*model.Goods{}
-	err := dao.db.Select(&goods, fmt.Sprintf("SELECT %s FROM goods WHERE category_id = ? ORDER BY id ASC", strings.Join(dao.columns, ",")), categoryID)
+	pred := sq.Eq{"category_id": categoryID, "status": model.GoodsStatusOnSale}
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "id ASC")
 	if err != nil {
 		return nil, err
 	}

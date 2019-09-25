@@ -34,3 +34,11 @@ func (s *SupplierAdmin) QueryByUserID(userID int64) (*model.SupplierAdminCollect
 		Items: supplierAdmins,
 	}, err
 }
+
+func (s *SupplierAdmin) QueryBySupplierID(supplierID int64) (*model.SupplierAdminCollection, error) {
+	supplierAdmins := []*model.SupplierAdmin{}
+	err := s.SelectDSL(&supplierAdmins, s.columns, s.table, squirrel.Eq{"supplier_id": supplierID})
+	return &model.SupplierAdminCollection{
+		Items: supplierAdmins,
+	}, err
+}

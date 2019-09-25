@@ -92,6 +92,10 @@ func (so *SaleOrder) Columns() []string {
 	return reflect_util.TagValues(so, "db", "count")
 }
 
+func (so *SaleOrder) OrderNo12() string {
+	return so.OrderNo[0:10] + ".."
+}
+
 func (so *SaleOrder) RegionIDs() []int {
 	return []int{so.ProvinceID, so.CityID, so.DistrictID}
 }

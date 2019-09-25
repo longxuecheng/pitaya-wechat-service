@@ -125,3 +125,10 @@ func TestStockOrder(t *testing.T) {
 		}
 	}
 }
+
+func TestOrderNo12(t *testing.T) {
+	o := model.SaleOrder{
+		OrderNo: "0123456789012",
+	}
+	fmt.Println(o.OrderNo12())
+}

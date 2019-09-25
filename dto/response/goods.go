@@ -36,6 +36,22 @@ type GoodsItem struct {
 	ProducingArea string          `json:"producingArea"`
 }
 
+type GoodsCard struct {
+	ID            int64           `json:"id"`
+	Name          string          `json:"name"`
+	CardPicURL    string          `json:"cardPicUrl"`
+	Description   string          `json:"description"`
+	RetailPrice   decimal.Decimal `json:"retailPrice"`
+	Status        string          `json:"status"`
+	ProducingArea string          `json:"producingArea"`
+	Location      Location        `json:"location"`
+}
+
+type Location struct {
+	Longitude float32 `json:"longitude"`
+	Latitude  float32 `json:"latitude"`
+}
+
 type GoodsExpressConstraint struct {
 	IsFree          bool            `json:"isFree"`
 	UnitExpressFee  decimal.Decimal `json:"unitExpressFee"`

@@ -11,6 +11,24 @@ import (
 var signSecrete = []byte("geluxiya")
 var issuer = "geluxiya-access-token"
 
+var IgnoreEXP = func(token *jwt.Token, ve *jwt.ValidationError) {
+	if token.Valid {
+		return
+	}
+	if ve.Errors&(jwt.ValidationErrorExpired) != 0 {
+		token.Valid = true
+	}
+}
+
+var IgnoreNBF = func(token *jwt.Token, ve *jwt.ValidationError) {
+	if token.Valid {
+		return
+	}
+	if ve.Errors&(jwt.ValidationErrorNotValidYet) != 0 {
+		token.Valid = true
+	}
+}
+
 // BuildToken build a jwt token with a total life in seconds
 func BuildToken(userID int64, ttl int64) (string, error) {
 	claim := model.UserClaims{
@@ -34,23 +52,25 @@ func cacheCurrentUser(token string, userID int64) {
 }
 
 // ParseToken validate signed token and return claims
-func ParseToken(ss string) (*model.UserClaims, error) {
-	token, err := jwt.ParseWithClaims(ss, &model.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+func ParseToken(ss string, skipExp bool) (*model.UserClaims, error) {
+	claims := &model.UserClaims{}
+	token, err := jwt.ParseWithClaims(ss, claims, func(token *jwt.Token) (interface{}, error) {
 		return signSecrete, nil
 	})
-	if err != nil {
+	if err == nil {
+		return claims, nil
+	}
+	ve, ok := err.(*jwt.ValidationError)
+	if !ok {
 		return nil, err
 	}
-	if claims, ok := token.Claims.(*model.UserClaims); ok {
-		if token.Valid {
-			expiresAt := claims.StandardClaims.ExpiresAt
-			if time.Now().Unix() >= expiresAt {
-				return nil, jwt.NewValidationError("token has already expired", jwt.ValidationErrorExpired)
-			}
-			return claims, nil
+	if ve.Errors == jwt.ValidationErrorExpired {
+		if skipExp {
+			token.Valid = true
 		}
-		return nil, jwt.NewValidationError("token invalid", jwt.ValidationErrorNotValidYet)
-
 	}
-	return nil, jwt.NewValidationError("token claims invalid", jwt.ValidationErrorClaimsInvalid)
+	if token.Valid {
+		return claims, nil
+	}
+	return nil, err
 }

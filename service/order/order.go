@@ -2,6 +2,7 @@ package order
 
 import (
 	"database/sql"
+	"fmt"
 	"gotrue/dao"
 	"gotrue/dto/pagination"
 	"gotrue/dto/request"
@@ -14,15 +15,16 @@ import (
 	"gotrue/service/express"
 	"gotrue/service/goods"
 	"gotrue/service/region"
+	"gotrue/service/sms"
 	"gotrue/service/user"
 	"gotrue/service/wechat"
 	"gotrue/service/wechat/payment"
 	"gotrue/sys"
-	"log"
 	"strconv"
 	"time"
 
 	"github.com/looplab/fsm"
+	"github.com/rs/zerolog/log"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/shopspring/decimal"
@@ -134,23 +136,6 @@ func (s *SaleOrder) UpdateExpressInfo(req *request.OrderExpressUpdate) error {
 	return nil
 }
 
-func (s *SaleOrder) payStatus(req *payment.QueryOrderResponse) model.OrderStatus {
-	var orderStatus model.OrderStatus
-	if req.TradeState == payment.Success {
-		orderStatus = model.Paid
-	}
-	if req.TradeState == payment.Paying || req.TradeState == payment.NotPay {
-		orderStatus = model.Paying
-	}
-	if req.TradeState == payment.CLOSED {
-		orderStatus = model.Closed
-	}
-	if req.TradeState == payment.PayError {
-		orderStatus = model.PayFailed
-	}
-	return orderStatus
-}
-
 // notifyFarmer deprecated!!!
 // eg: PersonA paid a bill and wechat mp do not support mp send template message to
 // PersonB
@@ -242,7 +227,7 @@ func (s *SaleOrder) PayResult(r *request.QueryWechatPayResult, req *payment.Quer
 	if err != nil {
 		return err
 	}
-	orderStatus := s.payStatus(req)
+	orderStatus := req.OrderStatus()
 	if orderStatus == "" {
 		return nil
 	}
@@ -256,10 +241,10 @@ func (s *SaleOrder) PayResult(r *request.QueryWechatPayResult, req *payment.Quer
 			}
 			// 一个或者多个订单对应一笔支付
 			if len(txns) == 1 {
-				updateMap := map[string]interface{}{
-					"status": req.TradeState,
-				}
-				err = s.wechatPaymentDao.UpdateByID(txns[0].ID, updateMap, nil)
+				err = s.wechatPaymentDao.UpdateByID(txns[0].ID,
+					map[string]interface{}{
+						"status": req.TradeState,
+					}, nil)
 				if err != nil {
 					return err
 				}
@@ -295,7 +280,25 @@ func (s *SaleOrder) PayResult(r *request.QueryWechatPayResult, req *payment.Quer
 
 		return nil
 	})
-	// go s.notifyFarmer(r.PrepayID, order)
+	if order.Status == model.Paid {
+		go func() {
+			admins, err := s.supplierAdminDao.QueryBySupplierID(order.SupplierID)
+			if err != nil {
+				return
+			}
+			users, err := s.userDao.SelectByIDs(admins.UserIDs())
+			if err != nil {
+				return
+			}
+			err = sms.SendPayNotificationMsg(&sms.MultiSendRequest{
+				Mobiles: users.UserMobiles(),
+				Params:  []string{"果真管理员", order.OrderNo12()},
+			})
+			if err != nil {
+				fmt.Printf("Send notification msg err %+v\n", err)
+			}
+		}()
+	}
 	return nil
 }
 

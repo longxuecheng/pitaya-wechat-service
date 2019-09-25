@@ -22,5 +22,7 @@ type IGoodsService interface {
 	// HotGoods get hot saled goods
 	HotGoods() ([]*response.GoodsItem, error)
 
+	OneSaleGoodsCards() ([]*response.GoodsCard, error)
+
 	ImportExpressConstraints(stockID int64, r io.Reader) error
 }

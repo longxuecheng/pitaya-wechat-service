@@ -58,6 +58,17 @@ func (dao *UserDao) SelectByID(userID int64) (*model.User, error) {
 	return users, err
 }
 
+func (dao *UserDao) SelectByIDs(userIDs []int64) (*model.UserCollection, error) {
+	users := []*model.User{}
+	err := dao.db.SelectDSL(&users, dao.columns, dao.table, squirrel.Eq{"id": userIDs})
+	if err != nil {
+		return nil, err
+	}
+	return &model.UserCollection{
+		Items: users,
+	}, err
+}
+
 func (dao *UserDao) CreateUser(setMap map[string]interface{}) (int64, error) {
 	_, id, err := dao.db.Insert(dao.table, setMap)
 	return id, err

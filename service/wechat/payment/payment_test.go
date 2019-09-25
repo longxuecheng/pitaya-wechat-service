@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"gotrue/model"
 	"testing"
 )
 
@@ -77,4 +78,16 @@ func TestCustomerMarshal(t *testing.T) {
 
 func TestSign(t *testing.T) {
 	v.Sign = v.SignParams()
+}
+
+func TestQueryOrderStatus(t *testing.T) {
+	r := &QueryOrderResponse{
+		trade: trade{
+			TradeState: Success,
+		},
+	}
+	orderstatus := r.OrderStatus()
+	if orderstatus == model.Paid {
+		fmt.Println(orderstatus)
+	}
 }

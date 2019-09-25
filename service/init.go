@@ -26,4 +26,5 @@ func Init() {
 	supplier.Init()
 	InitSettlementService()
 	InitBannerService()
+	InitGaodeMapService()
 }

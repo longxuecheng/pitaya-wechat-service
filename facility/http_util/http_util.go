@@ -21,6 +21,20 @@ var client = &http.Client{
 	Timeout: 30 * time.Second,
 }
 
+func JsonHeader(r *http.Request) {
+	r.Header.Set("Content-Type", "application/json")
+}
+
+func UnmarshalBody(r *http.Response, dst interface{}) error {
+	bs, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(bs, dst)
+}
+
+type Handler func(*http.Request)
+
 func Get(url string, dst interface{}) error {
 	response, err := http.Get(url)
 	if err != nil {
@@ -41,13 +55,15 @@ func Get(url string, dst interface{}) error {
 	return nil
 }
 
-func DoGet(dst interface{}, url string, modifyFn func(r *http.Request)) error {
+func DoGet(dst interface{}, url string, interceptors ...Handler) error {
 	rq, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
-	if modifyFn != nil {
-		modifyFn(rq)
+	if interceptors != nil {
+		for _, interceptor := range interceptors {
+			interceptor(rq)
+		}
 	}
 	rp, err := client.Do(rq)
 	if err != nil {
@@ -85,8 +101,6 @@ func PostXml(dst interface{}, url string, data io.Reader) error {
 	return nil
 }
 
-type Handler func(*http.Request) error
-
 func Send(method, target string, data io.Reader, handlers ...Handler) (*http.Response, error) {
 	req, err := http.NewRequest(method, target, data)
 	if err != nil {
@@ -97,9 +111,7 @@ func Send(method, target string, data io.Reader, handlers ...Handler) (*http.Res
 			req.Form = url.Values{}
 		}
 		for _, handler := range handlers {
-			if err := handler(req); err != nil {
-				return nil, err
-			}
+			handler(req)
 		}
 		if http.MethodGet == method {
 			req.Form = nil
