@@ -11,6 +11,7 @@ const (
 	ExpressMethodEMS  ExpressMethod = "EMS"
 	ExpressMethodYDA  ExpressMethod = "YDA"
 	ExpressMethodBSHT ExpressMethod = "BSHT"
+	ExpressMethodTT   ExpressMethod = "TT"
 )
 
 var expressMethodMap = map[ExpressMethod]string{
@@ -20,6 +21,7 @@ var expressMethodMap = map[ExpressMethod]string{
 	ExpressMethodEMS:  "EMS",
 	ExpressMethodYDA:  "韵达快递",
 	ExpressMethodBSHT: "百世汇通快递",
+	ExpressMethodTT:   "天天快递",
 }
 
 func (e ExpressMethod) String() string {

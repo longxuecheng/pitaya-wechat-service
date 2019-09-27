@@ -21,6 +21,7 @@ const (
 	yunda            expressType = "yunda"
 	zto              expressType = "zhongtong"
 	yto              expressType = "yuantong"
+	tt               expressType = "tiantian"
 	expressErrorTemp string      = "ExressError%s"
 )
 
@@ -31,6 +32,7 @@ var baiduExpressMap = map[ExpressMethod]expressType{
 	ExpressMethodEMS:  ems,
 	ExpressMethodYDA:  yunda,
 	ExpressMethodBSHT: bsht,
+	ExpressMethodTT:   tt,
 }
 
 type expressType string
@@ -44,6 +46,14 @@ type ExpressBaseResponse struct {
 	Status    string          `json:"status"`
 	ErrorCode string          `json:"error_code"`
 	Data      json.RawMessage `json:"data"`
+}
+
+func (r *ExpressBaseResponse) IsOK() bool {
+	return r.Status == "0"
+}
+
+func (r *ExpressBaseResponse) Error() error {
+	return errors.NewWithCodef(fmt.Sprintf(expressErrorTemp, r.ErrorCode), r.Msg)
 }
 
 type ExpressBody struct {
@@ -123,7 +133,7 @@ func (s *expressService) ExpressInfo(expressCom ExpressMethod, expressNo string)
 	if err != nil {
 		return nil, err
 	}
-	if baseResult.Status == "0" {
+	if baseResult.IsOK() {
 		expressInfo := &ExpressBody{}
 		err = json.Unmarshal(baseResult.Data, expressInfo)
 		if err != nil {
@@ -132,5 +142,5 @@ func (s *expressService) ExpressInfo(expressCom ExpressMethod, expressNo string)
 		expressInfo.Info.ExpressNo = expressNo
 		return expressInfo.Info, nil
 	}
-	return nil, errors.NewWithCodef(fmt.Sprintf(expressErrorTemp, baseResult.ErrorCode), baseResult.Msg)
+	return nil, baseResult.Error()
 }
