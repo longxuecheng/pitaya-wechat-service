@@ -20,13 +20,11 @@ import (
 	"gotrue/service/wechat"
 	"gotrue/service/wechat/payment"
 	"gotrue/sys"
-	"strconv"
 	"time"
 
 	"github.com/looplab/fsm"
 	"github.com/rs/zerolog/log"
 
-	"github.com/bwmarrin/snowflake"
 	"github.com/shopspring/decimal"
 )
 
@@ -598,17 +596,6 @@ func (s *SaleOrder) ListGoods(orderID int64) ([]response.SaleOrderGoodsDTO, erro
 		dtos[i] = installSaleDetailDTO(goods)
 	}
 	return dtos, nil
-}
-
-func generateOrderNumber(nodeNo int64) (string, error) {
-	// Create a new Node with a Node number of 1
-	node, err := snowflake.NewNode(nodeNo)
-	if err != nil {
-		return "", err
-	}
-	// Generate a snowflake ID.
-	id := node.Generate()
-	return strconv.FormatInt(id.Int64(), 10), nil
 }
 
 func (s *SaleOrder) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrderInfo {

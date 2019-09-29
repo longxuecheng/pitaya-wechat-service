@@ -52,7 +52,7 @@ func (s *StockOrderBuilder) BuildSingleOrder() (*model.SaleOrder, error) {
 	sale_order.ParentID = 0
 	sale_order.UserID = s.UserID
 	sale_order.SupplierID = s.Goods.SupplierID
-	orderNo, err := generateOrderNumber(1)
+	orderNo := DefaultGenerator.GenerateNumber()
 	if err != nil {
 		return nil, err
 	}

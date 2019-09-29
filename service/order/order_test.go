@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"gotrue/dto/response"
 	"gotrue/model"
+	"log"
+	"strconv"
 	"testing"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/shopspring/decimal"
 
 	"github.com/looplab/fsm"
@@ -94,6 +97,7 @@ func TestStockOrder(t *testing.T) {
 		Quantity:       quantity,
 		UnitExpressFee: unitExpressFee,
 		Address: &response.UserAddress{
+			ID:         10,
 			ProvinceID: 1,
 			CityID:     2,
 			DistrictID: 3,
@@ -111,7 +115,7 @@ func TestStockOrder(t *testing.T) {
 			GoodsID:       1,
 			CostUnitPrice: cost_unit_price,
 			SaleUnitPrice: sale_unit_price,
-			Splitable:     false,
+			Splitable:     true,
 		},
 	}
 	stockOrderList, err := sb.Build()
@@ -131,4 +135,16 @@ func TestOrderNo12(t *testing.T) {
 		OrderNo: "0123456789012",
 	}
 	fmt.Println(o.OrderNo12())
+}
+
+func TestSnowFlake(t *testing.T) {
+	node, err := snowflake.NewNode(1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for i := 0; i < 100; i++ {
+		// Generate a snowflake ID.
+		id := node.Generate()
+		fmt.Println(strconv.FormatInt(id.Int64(), 10))
+	}
 }
