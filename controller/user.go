@@ -76,3 +76,11 @@ func LoginByWechat(c *gin.Context) {
 		"userInfo": wechatUser,
 	})
 }
+
+func BindChannelUser(c *gin.Context) {
+	userID := middle_ware.MustGetCurrentUser(c)
+	channelCode := c.Query("code")
+	err := user.UserService.BindChannelPerson(userID, channelCode)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, nil)
+}
