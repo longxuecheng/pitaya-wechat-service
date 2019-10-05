@@ -10,7 +10,7 @@ func TestCreateUser(t *testing.T) {
 	dao.Init()
 	setMap := map[string]interface{}{
 		"wechat_id": "wechat id",
-		"nick_name": "\xF0\x9F\x90\x91",
+		"nick_name": "我爱国家\xF0\x9F\x90\x91",
 	}
 	_, err := dao.UserDaoSingleton.CreateUser(setMap)
 	if err != nil {

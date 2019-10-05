@@ -16,6 +16,7 @@ const (
 	baiduPartnerID   string      = "4001"
 	url              string      = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury"
 	ems              expressType = "ems"
+	youzheng         expressType = "youzhengguonei"
 	bsht             expressType = "huitongkuaidi"
 	sto              expressType = "shentong"
 	yunda            expressType = "yunda"
@@ -30,6 +31,7 @@ var baiduExpressMap = map[ExpressMethod]expressType{
 	ExpressMethodSTO:  sto,
 	ExpressMethodYTO:  yto,
 	ExpressMethodEMS:  ems,
+	ExpressMethodYZ:   youzheng,
 	ExpressMethodYDA:  yunda,
 	ExpressMethodBSHT: bsht,
 	ExpressMethodTT:   tt,

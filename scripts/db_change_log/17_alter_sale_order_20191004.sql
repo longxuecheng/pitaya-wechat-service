@@ -1,0 +1,1 @@
+ALTER TABLE sale_order CHANGE COLUMN `address` `address` VARCHAR(128);
