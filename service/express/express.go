@@ -14,7 +14,7 @@ import (
 
 const (
 	baiduPartnerID   string      = "4001"
-	url              string      = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury"
+	baiduExpressURL  string      = "https://sp0.baidu.com/9_Q4sjW91Qh3otqbppnN2DJv/pae/channel/data/asyncqury"
 	ems              expressType = "ems"
 	youzheng         expressType = "youzhengguonei"
 	bsht             expressType = "huitongkuaidi"
@@ -99,6 +99,41 @@ func (s *expressService) ExpressList() []*response.Express {
 	return expressList
 }
 
+func (s *expressService) GetExpressFromChinaPost(expressNo string) (*ExpressSummary, error) {
+	slideDecoder := NewSlideDecoder()
+	summary := &ExpressSummary{
+		ExpressNo: expressNo,
+		Company:   "中国邮政",
+	}
+	err := slideDecoder.LoadVerifyCode()
+	if err != nil {
+		summary.Traces = []*ExpressTrace{
+			&ExpressTrace{
+				Time: "",
+				Desc: "从邮政获取信息异常，请不用担心",
+			},
+		}
+		return summary, nil
+	}
+	err = slideDecoder.CheckStartPosition()
+	if err != nil {
+		summary.Traces = []*ExpressTrace{
+			&ExpressTrace{
+				Time: "",
+				Desc: "解析邮政验证码错误，30秒后重新尝试查询，请不用担心",
+			},
+		}
+		return summary, nil
+	}
+	chinaPostTraces, err := slideDecoder.QueryExpress(expressNo)
+	commonTraces := make([]*ExpressTrace, len(chinaPostTraces))
+	for i, chinaPostTrace := range chinaPostTraces {
+		commonTraces[i] = chinaPostTrace.ExpressTrace()
+	}
+	summary.Traces = commonTraces
+	return summary, nil
+}
+
 func (s *expressService) ExpressInfo(expressCom ExpressMethod, expressNo string) (*ExpressSummary, error) {
 	expressType, ok := baiduExpressMap[expressCom]
 	if !ok {
@@ -107,7 +142,10 @@ func (s *expressService) ExpressInfo(expressCom ExpressMethod, expressNo string)
 	if strings.IsEmpty(expressNo) {
 		return nil, nil
 	}
-	resp, err := http_util.Send(http.MethodGet, url, nil, func(r *http.Request) {
+	if expressType == youzheng {
+		return s.GetExpressFromChinaPost(expressNo)
+	}
+	resp, err := http_util.Send(http.MethodGet, baiduExpressURL, nil, func(r *http.Request) {
 		c := &http.Cookie{
 			Name:     "BAIDUID",
 			Value:    "363248B1E700BC951CA9F586683F104D:FG=1",
