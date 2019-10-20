@@ -6,6 +6,7 @@ import (
 	"gotrue/sys"
 
 	"github.com/Masterminds/squirrel"
+	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
 )
 
 var UserDaoSingleton *UserDao
@@ -56,6 +57,17 @@ func (dao *UserDao) SelectByID(userID int64) (*model.User, error) {
 		return nil, err
 	}
 	return users, err
+}
+
+func (dao *UserDao) SelectByChannelCode(code string) (*model.User, error) {
+	user := new(model.User)
+	return user, dao.db.SelectOneDSL(user, dao.columns, dao.table, squirrel.Eq{"channel_code": code})
+}
+
+func (dao *UserDao) UpdateByID(user *model.User) error {
+	updateMap := reflect_util.StructToMap(user, "db", "pk", "count")
+	_, err := dao.db.Update(dao.table, updateMap, squirrel.Eq{"id": user.ID})
+	return err
 }
 
 func (dao *UserDao) SelectByIDs(userIDs []int64) (*model.UserCollection, error) {

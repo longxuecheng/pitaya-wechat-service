@@ -8,6 +8,7 @@ import (
 	"gotrue/facility/utils"
 	"gotrue/settings"
 	"log"
+	"net/url"
 	"os"
 
 	sq "github.com/Masterminds/squirrel"
@@ -17,6 +18,8 @@ import (
 
 var easyDB *EasyDB
 var dbConnection *sqlx.DB
+
+const dsnTmplate = "%s:%s@tcp(%s)/mymall?charset=utf8mb4&allowNativePasswords=true&parseTime=true&loc=%s"
 
 // EasyDB is a
 type EasyDB struct {
@@ -33,7 +36,6 @@ func GetEasyDB() *EasyDB {
 	if easyDB != nil {
 		return easyDB
 	}
-	easyDB = new(EasyDB)
 	easyDB = &EasyDB{
 		ctx:        context.Background(),
 		connection: DBConnection(),
@@ -51,8 +53,7 @@ func connect() {
 			dbHost = settings.DevDBHost
 		}
 		log.Println(fmt.Sprintf("connecting to database %s", dbHost))
-		connectURL := fmt.Sprintf("%s:%s@tcp(%s)/mymall?allowNativePasswords=true&parseTime=true", "root", "6263272lxc", dbHost)
-		// db, err := sqlx.Connect("mysql", connectURL)
+		connectURL := fmt.Sprintf(dsnTmplate, "root", "6263272lxc", dbHost, url.QueryEscape("Asia/Shanghai"))
 		db, err := sqlx.Connect("mysql", connectURL)
 		if err != nil {
 			log.Fatalln(err)

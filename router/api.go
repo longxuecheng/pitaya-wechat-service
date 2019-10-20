@@ -37,6 +37,9 @@ func apiRouter(r *gin.Engine) {
 	cashierGroup.GET("preview/cart", controller.PreviewCashierFromCart)
 	cashierGroup.POST("preview/stock", controller.PreviewCashierFromStock)
 
+	userGroup := root.Group("/user", middle_ware.ValidateAuthorization)
+	userGroup.POST("/channel/bind", controller.BindChannelUser)
+
 	regionGroup := root.Group("/region")
 	regionGroup.GET("list", controller.RegionList)
 	regionGroup.GET("tips", controller.AddressTips)

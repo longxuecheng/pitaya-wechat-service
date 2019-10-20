@@ -9,6 +9,7 @@ const (
 	ExpressMethodSTO  ExpressMethod = "STO"
 	ExpressMethodYTO  ExpressMethod = "YTO"
 	ExpressMethodEMS  ExpressMethod = "EMS"
+	ExpressMethodYZ   ExpressMethod = "YZ"
 	ExpressMethodYDA  ExpressMethod = "YDA"
 	ExpressMethodBSHT ExpressMethod = "BSHT"
 	ExpressMethodTT   ExpressMethod = "TT"
@@ -19,6 +20,7 @@ var expressMethodMap = map[ExpressMethod]string{
 	ExpressMethodSTO:  "申通快递",
 	ExpressMethodYTO:  "圆通快递",
 	ExpressMethodEMS:  "EMS",
+	ExpressMethodYZ:   "邮政包裹",
 	ExpressMethodYDA:  "韵达快递",
 	ExpressMethodBSHT: "百世汇通快递",
 	ExpressMethodTT:   "天天快递",

@@ -20,14 +20,17 @@ func (ut UserType) Int() int {
 }
 
 type User struct {
-	ID        int64          `db:"id"`
-	UserType  UserType       `db:"user_type"`
-	Name      sql.NullString `db:"name"`
-	PhoneNo   sql.NullString `db:"phone_no"`
-	Email     sql.NullString `db:"email"`
-	NickName  string         `db:"nick_name"`
-	AvatarURL string         `db:"avatar_url"`
-	WechatID  string         `db:"wechat_id"`
+	ID              int64          `db:"id" pk:"true"`
+	UserType        UserType       `db:"user_type"`
+	Name            sql.NullString `db:"name"`
+	PhoneNo         sql.NullString `db:"phone_no"`
+	Email           sql.NullString `db:"email"`
+	NickName        string         `db:"nick_name"`
+	AvatarURL       string         `db:"avatar_url"`
+	WechatID        string         `db:"wechat_id"`
+	ChannelUserID   int64          `db:"channel_user_id"`
+	BindChannelTime NullUTC8Time   `db:"bind_channel_time"`
+	ChannelCode     string         `db:"channel_code"`
 }
 
 func (u *User) TableName() string {

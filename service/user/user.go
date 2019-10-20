@@ -5,11 +5,15 @@ import (
 	"gotrue/dao"
 	"gotrue/dto/request"
 	"gotrue/dto/response"
+	"gotrue/facility/errors"
 	"gotrue/model"
 	"gotrue/service/api"
 	"gotrue/service/region"
 	"gotrue/sys"
 	"log"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 var UserService *User
@@ -97,6 +101,29 @@ func (s *User) AddressList(userID int64) ([]*response.UserAddress, error) {
 	return dtos, nil
 }
 
+func (s *User) BindChannelPerson(userID int64, channelCode string) error {
+	channelPerson, err := s.userDao.SelectByChannelCode(channelCode)
+	if err != nil {
+		return errors.NewWithCodef("ChannelCodeInvalid", "渠道码不合法")
+	}
+	if userID == channelPerson.ID {
+		return errors.NewWithCodef("ChannelPersonInvalid", "渠道人不合法")
+	}
+	user, err := s.userDao.SelectByID(userID)
+	if err != nil {
+		return err
+	}
+	if user.ChannelUserID > 0 {
+		return errors.NewWithCodef("ChannelPersonUnchangeable", "渠道人不可变更")
+	}
+	user.ChannelUserID = channelPerson.ID
+	user.BindChannelTime = model.NullUTC8Time{
+		Time:  time.Now(),
+		Valid: true,
+	}
+	return s.userDao.UpdateByID(user)
+}
+
 func (s *User) GetAddressByID(ID int64) (dto *response.UserAddress, err error) {
 	a, err := s.addressDao.SelectByID(ID)
 	if err != nil {
@@ -171,12 +198,19 @@ func (s *User) Login(openID string, nickName string, avatarURL string) (*model.U
 		return nil, err
 	}
 	if user != nil {
+		if user.NickName == "" {
+			user.NickName = nickName
+			user.AvatarURL = avatarURL
+			return user, s.userDao.UpdateByID(user)
+		}
 		return user, nil
 	}
+	uuid := uuid.New()
 	setmap := map[string]interface{}{
-		"wechat_id":  openID,
-		"nick_name":  nickName,
-		"avatar_url": avatarURL,
+		"wechat_id":    openID,
+		"nick_name":    nickName,
+		"avatar_url":   avatarURL,
+		"channel_code": uuid.String(),
 	}
 	id, err := s.userDao.CreateUser(setmap)
 	if err != nil {
