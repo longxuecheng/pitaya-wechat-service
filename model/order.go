@@ -27,6 +27,12 @@ const (
 	Closed           OrderStatus = "CLOSED"
 )
 
+const (
+	DiscountTypeNone   DiscountType = "None"
+	DiscountTypeCutoff DiscountType = "Cutoff"
+	DiscountTypeScore  DiscountType = "Score"
+)
+
 var orderStatuMap = map[OrderStatus]string{
 	Created:          "已创建",
 	Canceled:         "已取消",
@@ -60,6 +66,12 @@ func (so OrderStatus) Name() string {
 	return "未知"
 }
 
+type DiscountType string
+
+func (d DiscountType) Value() (driver.Value, error) {
+	return string(d), nil
+}
+
 type SaleOrder struct {
 	ID            int64           `db:"id" insert:"true" pk:"true"`
 	ParentID      int64           `db:"parent_id"`
@@ -74,6 +86,8 @@ type SaleOrder struct {
 	Address       string          `db:"address"`
 	PhoneNo       string          `db:"phone_no"`
 	SupplierID    int64           `db:"supplier_id"`
+	DiscountAmt   decimal.Decimal `db:"discount_amt"`
+	DiscountType  DiscountType    `db:"discount_type"`
 	OrderAmt      decimal.Decimal `db:"order_amt"`
 	GoodsAmt      decimal.Decimal `db:"goods_amt"`
 	CostAmt       decimal.Decimal `db:"cost_amt"`
@@ -82,6 +96,10 @@ type SaleOrder struct {
 	ExpressFee    decimal.Decimal `db:"express_fee"`
 	SettlementID  int64           `db:"settlement_id"`
 	Count         int64           `db:"count" count:"true"`
+}
+
+func (so *SaleOrder) OrderPrice() decimal.Decimal {
+	return so.OrderAmt
 }
 
 func (so *SaleOrder) TableName() string {

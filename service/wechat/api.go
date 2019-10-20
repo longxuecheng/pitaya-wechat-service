@@ -7,14 +7,15 @@ import (
 )
 
 const (
-	appID              string = "wx91eb35616f475761"
-	secret             string = "41f8cb23aab151c6aa8ca64a0cfb596c"
-	merchantID         string = "1540271371"
-	authorize_url      string = "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code"
-	accessToken_url    string = "https://api.weixin.qq.com/cgi-bin/token?grant_type=%s&appid=%s&secret=%s"
-	unifiedorder_url   string = "https://api.mch.weixin.qq.com/pay/unifiedorder"
-	sendmessage_url    string = "https://api.weixin.qq.com/cgi-bin/message/wxopen/template/send"
-	uniformmessage_url string = "https://api.weixin.qq.com/cgi-bin/message/wxopen/template/uniform_send"
+	appID                  string = "wx91eb35616f475761"
+	secret                 string = "41f8cb23aab151c6aa8ca64a0cfb596c"
+	merchantID             string = "1540271371"
+	authorize_url          string = "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code"
+	accessToken_url        string = "https://api.weixin.qq.com/cgi-bin/token?grant_type=%s&appid=%s&secret=%s"
+	unifiedorder_url       string = "https://api.mch.weixin.qq.com/pay/unifiedorder"
+	sendmessage_url        string = "https://api.weixin.qq.com/cgi-bin/message/wxopen/template/send"
+	uniformmessage_url     string = "https://api.weixin.qq.com/cgi-bin/message/wxopen/template/uniform_send"
+	wxcodeGetUnlimited_url string = "https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=%s"
 )
 
 type IWechat interface {
@@ -99,4 +100,26 @@ type AccessTokenResonse struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int64  `json:"expires_in"`
 	BasicResponse
+}
+
+type WxAcodeUnlimitedRequest struct {
+	// AccessToken string `json:"access_token"`
+	Scene     string `json:"scene"`
+	Page      string `json:"page"`
+	Width     int    `json:"width"`
+	AutoColor bool   `json:"auto_color"`
+	LineColor RGB    `json:"line_color"`
+	IsHyaline bool   `json:"is_hyaline"`
+}
+
+type WxAcodeUnlimitedResponse struct {
+	ErrCode     int    `json:"errcode"`
+	ErrMessage  string `json:"errmsg"`
+	ContentType string `json:"contentType"`
+	// Buffer      json.RawMessage `json:"buffer"`
+}
+type RGB struct {
+	Red   int `json:"r"`
+	Green int `json:"g"`
+	Blue  int `json:"b"`
 }

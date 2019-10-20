@@ -9,8 +9,9 @@ type Cashier struct {
 	GoodsTotalPrice string `json:"goodsTotalPrice"`
 	OrderTotalPrice string `json:"orderTotalPrice"`
 	*GoodsExpressConstraint
-	Items []CashierItem `json:"items"`
-	Count int64         `json:"count"`
+	Items    []CashierItem `json:"items"`
+	Count    int64         `json:"count"`
+	CutOrder *CutOrder     `json:"cutOrder"`
 }
 
 // CashierItem is the checkout unit of cashier

@@ -40,8 +40,8 @@ func (d *GoodsExpressConstraint) QueryByStockAndProvince(stockID int64, province
 	return data, err
 }
 
-func (d *GoodsExpressConstraint) CreateConstraint(c *model.GoodsExpressConstraint, tx ...*sql.Tx) (int64, error) {
+func (d *GoodsExpressConstraint) CreateConstraint(c *model.GoodsExpressConstraint, tx *sql.Tx) (int64, error) {
 	setMap := utils.InsertMap(c, "db")
-	_, id, err := d.db.Insert(d.table, setMap, tx...)
+	_, id, err := d.db.Insert(d.table, setMap, nil)
 	return id, err
 }

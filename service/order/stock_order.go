@@ -31,6 +31,8 @@ type StockOrderBuilder struct {
 	UserID         int64
 	UnitExpressFee decimal.Decimal
 	Address        *response.UserAddress
+	CutOrder       *response.CutOrder
+	stockOrders    []*StockOrder
 }
 
 func (s *StockOrderBuilder) validate() error {
@@ -83,12 +85,12 @@ func (s *StockOrderBuilder) splitable() bool {
 	return s.Stock.Splitable
 }
 
-func (s *StockOrderBuilder) Build() ([]*StockOrder, error) {
+func (s *StockOrderBuilder) Build() error {
 	stock_orders := []*StockOrder{}
 	if !s.splitable() || s.Quantity.Equals(one) {
 		order, err := s.BuildSingleOrder()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		stock_order := &StockOrder{
 			SaleOrder: order,
@@ -107,7 +109,7 @@ func (s *StockOrderBuilder) Build() ([]*StockOrder, error) {
 			}
 			order, err := sb.BuildSingleOrder()
 			if err != nil {
-				return nil, err
+				return err
 			}
 			stock_order := &StockOrder{
 				SaleOrder: order,
@@ -116,7 +118,29 @@ func (s *StockOrderBuilder) Build() ([]*StockOrder, error) {
 			stock_orders = append(stock_orders, stock_order)
 		}
 	}
-	return stock_orders, nil
+	s.stockOrders = stock_orders
+	return nil
+}
+
+// CuttoffFirst will cut off price for first order
+func (s *StockOrderBuilder) CuttoffFirst() {
+	if s.CutOrder == nil {
+		return
+	}
+	for i, stockOrder := range s.stockOrders {
+		if i == 0 {
+			cutoffPrice := s.CutOrder.CutoffPrice
+			orderPrice := stockOrder.SaleOrder.OrderAmt.Sub(cutoffPrice)
+			stockOrder.SaleOrder.OrderAmt = orderPrice
+			stockOrder.SaleOrder.DiscountAmt = cutoffPrice
+			stockOrder.SaleOrder.DiscountType = model.DiscountTypeCutoff
+			break
+		}
+	}
+}
+
+func (s *StockOrderBuilder) StockOrders() []*StockOrder {
+	return s.stockOrders
 }
 
 func (s *StockOrderBuilder) BuildSaleDetail() *model.SaleDetail {

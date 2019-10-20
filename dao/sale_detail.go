@@ -29,9 +29,9 @@ func (dao *SaleDetail) ExecTx(execFunc func(tx *sql.Tx) error) {
 	dao.db.ExecTx(execFunc)
 }
 
-func (dao *SaleDetail) Create(detail *model.SaleDetail, tx ...*sql.Tx) (id int64, err error) {
+func (dao *SaleDetail) Create(detail *model.SaleDetail, tx *sql.Tx) (id int64, err error) {
 	setMap := utils.StructToMap(detail, "db", "exclude")
-	_, id, err = dao.db.Insert(model.Table_Sale_Detail, setMap, tx...)
+	_, id, err = dao.db.Insert(model.Table_Sale_Detail, setMap, tx)
 	return
 }
 

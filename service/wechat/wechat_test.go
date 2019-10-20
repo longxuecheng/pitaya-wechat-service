@@ -48,6 +48,21 @@ func TestQueryPayResult(t *testing.T) {
 	fmt.Printf(" result is %+v\n", result)
 }
 
+func TestWxAcodeUnlimited(t *testing.T) {
+	// InitWechatService()
+	// _, err := WechatService().GetWxAcodeUnlimited()
+	ws := wechatService{
+		&TokenManager{
+			at: "26_-o1sqNPZ0uaaFLBVpr_JtXJY2Zk1qRp2z2pypBs1LtxuEdD4xhx_fTHC6dtgvIcW-iQZxQbtsu2W-j1682AM2fWs39J5TzQYj5YqBnfItG758738dcOWz1ia1W3u8ZXhtDIfiW0XiE4uxcuuFBZbAEASOM",
+		},
+	}
+	_, err := ws.GetWxAcodeUnlimited()
+
+	if err != nil {
+		fmt.Printf("%+v\n", err)
+	}
+}
+
 func TestOpenID(t *testing.T) {
 	req := request.WechatLogin{
 		Code: "071YwLU32wEmVP0l4lW32wdHU32YwLUh",

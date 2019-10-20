@@ -41,7 +41,8 @@ func PreviewCashierFromStock(c *gin.Context) {
 	address, err := getUserAddress(req.AddressID, userID)
 	utils.CheckAndPanic(err)
 	req.AddressID = address.ID
-	cashier, err := cashier.CashierService.StockCheckout(*req)
+	req.UserID = userID
+	cashier, err := cashier.CashierService.StockCheckout(req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, gin.H{
 		"cashier": cashier,

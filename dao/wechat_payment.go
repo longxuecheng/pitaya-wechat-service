@@ -29,9 +29,9 @@ type WechatPayment struct {
 	tableName string
 }
 
-func (dao *WechatPayment) Create(order *model.WechatPayment, tx ...*sql.Tx) (id int64, err error) {
+func (dao *WechatPayment) Create(order *model.WechatPayment, tx *sql.Tx) (id int64, err error) {
 	setMap := utils.InsertMap(order, "db")
-	_, id, err = dao.db.Insert(dao.tableName, setMap, tx...)
+	_, id, err = dao.db.Insert(dao.tableName, setMap, tx)
 	return
 }
 

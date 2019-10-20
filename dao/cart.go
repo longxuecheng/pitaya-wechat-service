@@ -26,7 +26,8 @@ type Cart struct {
 
 func (dao *Cart) AddCart(cart model.Cart) (id int64, err error) {
 	setMap := utils.StructToMap(cart, "db", "exclude")
-	_, id, err = dao.db.Insert(model.Table_Cart, setMap)
+	_, id, err = dao.db.Insert(model.Table_Cart, setMap, nil)
+
 	return
 }
 

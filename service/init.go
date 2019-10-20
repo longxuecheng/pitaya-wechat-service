@@ -27,4 +27,5 @@ func Init() {
 	InitSettlementService()
 	InitBannerService()
 	InitGaodeMapService()
+	InitCosService()
 }

@@ -12,6 +12,7 @@ import (
 	"gotrue/model"
 	"gotrue/service/api"
 	"gotrue/service/cart"
+	"gotrue/service/cut"
 	"gotrue/service/express"
 	"gotrue/service/goods"
 	"gotrue/service/region"
@@ -56,6 +57,7 @@ func initSaleOrderService() {
 		cartService:      cart.CartService,
 		userService:      user.UserService,
 		goodsService:     goods.GoodsService,
+		cutService:       cut.GetCutService(),
 	}
 
 }
@@ -105,6 +107,7 @@ type SaleOrder struct {
 	cartService      *cart.Cart
 	userService      *user.User
 	regionService    api.IRegionService
+	cutService       api.ICutService
 }
 
 // UpdateExpressInfo will send express
@@ -355,6 +358,15 @@ func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddR
 	if err != nil {
 		return 0, err
 	}
+	cutReq := &request.CutOrder{
+		GoodsID: stock.GoodsID,
+		StockID: stock.ID,
+		UserID:  userID,
+	}
+	cutorder, err := s.cutService.MyActivatedCutOrder(cutReq)
+	if err != nil {
+		return 0, err
+	}
 	address, err := s.userService.GetAddressByID(req.AddressID)
 	if err != nil {
 		return 0, err
@@ -375,17 +387,23 @@ func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddR
 		UserID:         userID,
 		UnitExpressFee: expressFee,
 		Address:        address,
+		CutOrder:       cutorder,
 	}
-	stockOrders, err := sb.Build()
+	err = sb.Build()
 	if err != nil {
 		return 0, err
 	}
+	sb.CuttoffFirst()
 	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
-		id, err = s.createStockOrders(stockOrders, tx)
+		id, err = s.createStockOrders(sb.StockOrders(), tx)
 		if err != nil {
 			return err
 		}
-		return nil
+		consumeReq := &request.ConsumeCutOrder{
+			SaleOrderID: id,
+			CutOrderID:  cutorder.ID,
+		}
+		return s.cutService.ConsumeCutOrder(utils.ContextWithTx(tx), consumeReq)
 	})
 	return
 }
@@ -397,7 +415,7 @@ func (s *SaleOrder) createOrder(order *model.SaleOrder, details []*model.SaleDet
 	}
 	for _, detail := range details {
 		detail.OrderID = orderID
-		_, err := s.saleDetailDao.Create(detail)
+		_, err := s.saleDetailDao.Create(detail, nil)
 		if err != nil {
 			return 0, err
 		}
@@ -405,6 +423,7 @@ func (s *SaleOrder) createOrder(order *model.SaleOrder, details []*model.SaleDet
 	return orderID, nil
 }
 
+// createStockOrders will create orders and return mater order id
 func (s *SaleOrder) createStockOrders(orders []*StockOrder, tx *sql.Tx) (masterID int64, err error) {
 	masterOrder := orders[0]
 	if len(orders) > 1 {
@@ -457,7 +476,7 @@ func (s *SaleOrder) ListManagedOrders(userID int64, req request.OrderListRequest
 	orderSet.setSaleDetails(details)
 	page = req.Page
 	page.SetCount(total)
-	page.Data = orderSet.orderDTOs()
+	page.Data = orderSet.apiOrders()
 	return
 }
 
@@ -501,7 +520,7 @@ func (s *SaleOrder) List(userID int64, req request.OrderListRequest) (*paginatio
 	page := req.Page
 	orderSet.setSaleDetails(details)
 	page.SetCount(total)
-	page.Data = orderSet.orderDTOs()
+	page.Data = orderSet.apiOrders()
 	return page, nil
 }
 
@@ -553,7 +572,7 @@ func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse,
 		CreateTime:     time.Now(),
 		TransationType: model.TransactionTypePay,
 	}
-	_, err = s.wechatPaymentDao.Create(wp)
+	_, err = s.wechatPaymentDao.Create(wp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -617,7 +636,7 @@ func (s *SaleOrder) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrd
 		data.ExpressNo = *order.ExpressNo
 	}
 	data.ExpressFee = order.ExpressFee
-	data.OrderAmt = order.OrderAmt
+	data.OrderAmt = order.OrderPrice()
 	return data
 }
 
@@ -625,7 +644,7 @@ func installSaleOrderItemDTO(model model.SaleOrder) response.SaleOrderItemDTO {
 	dto := response.SaleOrderItemDTO{}
 	dto.ID = model.ID
 	dto.OrderNo = model.OrderNo
-	dto.OrderAmt = model.OrderAmt
+	dto.OrderAmt = model.OrderPrice()
 	dto.Status = model.Status.Name()
 	return dto
 }
@@ -729,7 +748,7 @@ func (set *SaleOrderSet) orderIDList() []int64 {
 	return set.orderIDs
 }
 
-func (set *SaleOrderSet) orderDTOs() []response.SaleOrderItemDTO {
+func (set *SaleOrderSet) apiOrders() []response.SaleOrderItemDTO {
 	if len(set.orders) == 0 {
 		return nil
 	}

@@ -9,4 +9,5 @@ type CashierPreview struct {
 	StockID   int64           `json:"stockId"`
 	Quantity  decimal.Decimal `json:"quantity"`
 	AddressID int64           `json:"addressId"`
+	UserID    int64           `json:"-"`
 }

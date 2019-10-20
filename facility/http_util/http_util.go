@@ -30,6 +30,7 @@ func UnmarshalBody(r *http.Response, dst interface{}) error {
 	if err != nil {
 		return err
 	}
+	// fmt.Println(string(bs))
 	return json.Unmarshal(bs, dst)
 }
 
