@@ -399,11 +399,14 @@ func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddR
 		if err != nil {
 			return err
 		}
-		consumeReq := &request.ConsumeCutOrder{
-			SaleOrderID: id,
-			CutOrderID:  cutorder.ID,
+		if cutorder != nil {
+			consumeReq := &request.ConsumeCutOrder{
+				SaleOrderID: id,
+				CutOrderID:  cutorder.ID,
+			}
+			return s.cutService.ConsumeCutOrder(utils.ContextWithTx(tx), consumeReq)
 		}
-		return s.cutService.ConsumeCutOrder(utils.ContextWithTx(tx), consumeReq)
+		return nil
 	})
 	return
 }
