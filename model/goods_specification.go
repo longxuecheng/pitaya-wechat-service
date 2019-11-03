@@ -12,6 +12,12 @@ type GoodsSpecification struct {
 	PicURL          string `db:"pic_url"`
 }
 
+type GoodsSpecMap map[int64]*GoodsSpecification
+
+func (m GoodsSpecMap) Get(specID int64) *GoodsSpecification {
+	return m[specID]
+}
+
 type GoodsSpecSet struct {
 	items []*GoodsSpecification
 }
@@ -22,8 +28,8 @@ func NewGoodsSpecSet(items []*GoodsSpecification) *GoodsSpecSet {
 	}
 }
 
-func (s *GoodsSpecSet) Map() map[int64]*GoodsSpecification {
-	result := map[int64]*GoodsSpecification{}
+func (s *GoodsSpecSet) Map() GoodsSpecMap {
+	result := GoodsSpecMap{}
 	for _, item := range s.items {
 		result[item.ID] = item
 	}

@@ -194,12 +194,21 @@ func (s *Goods) SpecificationDesc(goodsID int64, specIDs []int64, sep string) (s
 	return strings.Join(specNames, sep), nil // 商品规格组合描述
 }
 
-func (s *Goods) HotGoods() ([]*response.GoodsItem, error) {
+func (s *Goods) HotGoods() ([]response.HotGoods, error) {
 	goodsList, err := s.goodsDao.SelectAllByStatus(model.GoodsStatusOnSale)
 	if err != nil {
 		return nil, err
 	}
-	return buildApiGoods(goodsList), nil
+	goodsSet := model.NewGoodsSet(goodsList)
+	stockSet, err := s.stockDao.SelectByGoodsIDs(goodsSet.GoodsIDs())
+	if err != nil {
+		return nil, err
+	}
+	goodsSpecSet, err := s.goodsSpecDao.SelectByGoodsIDs(goodsSet.GoodsIDs())
+	if err != nil {
+		return nil, err
+	}
+	return s.buildApiHotGoods(goodsList, stockSet, goodsSpecSet), nil
 }
 
 func (s *Goods) OneSaleGoodsCards() ([]*response.GoodsCard, error) {
@@ -269,6 +278,44 @@ func installApiGoods(model *model.Goods) *response.GoodsItem {
 	data.RetailPrice = model.RetailPrice
 	data.ProducingArea = model.ProducingArea
 	return data
+}
+
+func (s *Goods) buildApiHotGoods(models []*model.Goods, stockSet *model.StockSet, goodsSpecSet *model.GoodsSpecSet) []response.HotGoods {
+	if models == nil || len(models) == 0 {
+		return nil
+	}
+	stockSpecMap := stockSet.SpecMap()
+	goodsSpecMap := goodsSpecSet.Map()
+	dtos := make([]response.HotGoods, len(models))
+	// goods => stocks => specifications
+	for i, model := range models {
+		data := response.HotGoods{
+			ID:            model.ID,
+			Name:          model.Name,
+			PicURL:        model.ListPicURL.String,
+			RetailPrice:   model.RetailPrice,
+			ProducingArea: model.ProducingArea,
+		}
+		stocks := stockSet.GetByGoods(model.ID)
+		stockPriceList := make([]response.StockPrice, len(stocks))
+		for i, stock := range stocks {
+			specIDList := stockSpecMap.GetSpecs(stock.ID)
+			specNames := []string{}
+			for _, specID := range specIDList {
+				spec := goodsSpecMap.Get(specID)
+				if spec != nil {
+					specNames = append(specNames, spec.Value)
+				}
+			}
+			stockPriceList[i] = response.StockPrice{
+				Spec:      strings.Join(specNames, "|"),
+				SalePrice: stock.SaleUnitPrice.StringFixed(2),
+			}
+		}
+		data.StockPrices = stockPriceList
+		dtos[i] = data
+	}
+	return dtos
 }
 
 func buildApiGoods(models []*model.Goods) []*response.GoodsItem {

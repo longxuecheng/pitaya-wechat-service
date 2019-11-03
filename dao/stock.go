@@ -44,6 +44,15 @@ func (dao *Stock) SelectByGoodsID(goodsID int64) ([]*model.Stock, error) {
 	return stocks, nil
 }
 
+func (dao *Stock) SelectByGoodsIDs(goodsIDs []int64) (*model.StockSet, error) {
+	stocks := []*model.Stock{}
+	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"goods_id": goodsIDs})
+	if err != nil {
+		return nil, err
+	}
+	return model.NewStockSet(stocks), nil
+}
+
 func (dao *Stock) SelectByIDs(ids []int64) ([]*model.Stock, error) {
 	stocks := []*model.Stock{}
 	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"id": ids})

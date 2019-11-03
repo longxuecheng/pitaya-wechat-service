@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"gotrue/facility/utils"
+	"strings"
 
 	"github.com/shopspring/decimal"
 )
@@ -28,6 +29,16 @@ func (s *Stock) Columns() []string {
 	return utils.TagValues(s, "db")
 }
 
+func (s *Stock) SpecIDs() []int64 {
+	specStrings := strings.Split(s.Specification.String, "_")
+	specIn64IDs := []int64{}
+	for _, specString := range specStrings {
+		specInt64ID, _ := utils.ParseInt64(specString)
+		specIn64IDs = append(specIn64IDs, specInt64ID)
+	}
+	return specIn64IDs
+}
+
 type StockSet struct {
 	stocks []*Stock
 }
@@ -38,8 +49,6 @@ func NewStockSet(stocks []*Stock) *StockSet {
 	}
 }
 
-// Map 是库存的集合
-// 用在这里是因为这个函数于业务不相关，指示作为一个基础的model转换
 func (s *StockSet) Map() map[int64]*Stock {
 	stockMap := map[int64]*Stock{}
 	for _, item := range s.stocks {
@@ -59,4 +68,28 @@ func (s *StockSet) GoodsIDs() []int64 {
 		goodsIDs = append(goodsIDs, v)
 	}
 	return goodsIDs
+}
+
+func (s *StockSet) SpecMap() StockSpecMap {
+	m := StockSpecMap{}
+	for _, item := range s.stocks {
+		m[item.ID] = item.SpecIDs()
+	}
+	return m
+}
+
+func (s *StockSet) GetByGoods(goodsID int64) []*Stock {
+	gStocks := []*Stock{}
+	for _, item := range s.stocks {
+		if goodsID == item.GoodsID {
+			gStocks = append(gStocks, item)
+		}
+	}
+	return gStocks
+}
+
+type StockSpecMap map[int64][]int64
+
+func (m StockSpecMap) GetSpecs(stockID int64) []int64 {
+	return m[stockID]
 }
