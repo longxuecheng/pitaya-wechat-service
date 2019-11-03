@@ -46,7 +46,7 @@ func (dao *Stock) SelectByGoodsID(goodsID int64) ([]*model.Stock, error) {
 
 func (dao *Stock) SelectByGoodsIDs(goodsIDs []int64) (*model.StockSet, error) {
 	stocks := []*model.Stock{}
-	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"goods_id": goodsIDs})
+	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"goods_id": goodsIDs, "status": model.StockStatusOnSale})
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (dao *Stock) SelectByGoodsIDs(goodsIDs []int64) (*model.StockSet, error) {
 
 func (dao *Stock) SelectByIDs(ids []int64) ([]*model.Stock, error) {
 	stocks := []*model.Stock{}
-	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"id": ids})
+	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"id": ids, "status": model.StockStatusOnSale})
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,7 @@ func CutOrderInfo(c *gin.Context) {
 	cutOrder, err := cut.GetCutService().GetCutOrderByCutNo(cutNo)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, gin.H{
-		"cutOrder": cutOrder,
+		"cutoffInfo": cutOrder,
 	})
 }
 

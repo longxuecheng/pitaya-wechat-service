@@ -3,17 +3,19 @@ package response
 import "github.com/shopspring/decimal"
 
 type CutOrder struct {
-	ID                int64           `json:"id"`
-	UserID            int64           `json:"userId"`
-	CutNo             string          `json:"cutNo"`
-	GoodsID           int64           `json:"goodsId"`
-	StockID           int64           `json:"stockId"`
-	OriginPriceString string          `json:"originPrice"`
-	CutoffPriceString string          `json:"cutoffPrice"`
-	CutoffPrice       decimal.Decimal `json:"-"`
-	CreateTime        string          `json:"createTime"`
-	ExpireTime        string          `json:"expireTime"`
-	Items             []*CutDetail    `json:"items"`
+	ID                 int64           `json:"id"`
+	UserID             int64           `json:"userId"`
+	CutNo              string          `json:"cutNo"`
+	GoodsID            int64           `json:"goodsId"`
+	StockID            int64           `json:"stockId"`
+	SpecName           string          `json:"specName"`
+	OriginPriceString  string          `json:"originPrice"`
+	CutoffPriceString  string          `json:"cutoffPrice"`
+	CutoffPrice        decimal.Decimal `json:"-"`
+	CurrentPriceString string          `json:"currentPrice"`
+	CreateTime         string          `json:"createTime"`
+	ExpireTime         string          `json:"expireTime"`
+	Items              []*CutDetail    `json:"items"`
 }
 
 func (c *CutOrder) SetCutoffPrice(cutoff decimal.Decimal) {
