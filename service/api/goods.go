@@ -20,7 +20,7 @@ type IGoodsService interface {
 	Specifications(goodsID int64) ([]*response.GoodsSpecificationDTO, error)
 
 	// HotGoods get hot saled goods
-	HotGoods() ([]*response.GoodsItem, error)
+	HotGoods() ([]response.HotGoods, error)
 
 	OneSaleGoodsCards() ([]*response.GoodsCard, error)
 

@@ -77,3 +77,15 @@ func (s *GoodsSet) Map() map[int64]*Goods {
 	}
 	return goodsMap
 }
+
+func (s *GoodsSet) GoodsIDs() []int64 {
+	distinctMap := map[int64]bool{}
+	for _, item := range s.items {
+		distinctMap[item.ID] = true
+	}
+	goodsIDs := []int64{}
+	for v := range distinctMap {
+		goodsIDs = append(goodsIDs, v)
+	}
+	return goodsIDs
+}

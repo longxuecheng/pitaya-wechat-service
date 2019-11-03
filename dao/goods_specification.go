@@ -31,3 +31,12 @@ func (dao *GoodsSpec) SelectByGoodsID(goodsID int64) ([]*model.GoodsSpecificatio
 	}
 	return goodsSpecs, nil
 }
+
+func (dao *GoodsSpec) SelectByGoodsIDs(goodsIDs []int64) (*model.GoodsSpecSet, error) {
+	goodsSpecs := []*model.GoodsSpecification{}
+	err := dao.db.SelectDSL(&goodsSpecs, columns_goods_specs, model.Table_Goods_Specification, sq.Eq{"goods_id": goodsIDs, "is_delete": false})
+	if err != nil {
+		return nil, err
+	}
+	return model.NewGoodsSpecSet(goodsSpecs), nil
+}
