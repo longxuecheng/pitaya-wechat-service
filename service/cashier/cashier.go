@@ -6,11 +6,18 @@ import (
 	"gotrue/dto/response"
 	"gotrue/facility/utils"
 	"gotrue/model"
+	"gotrue/service/api"
 	"gotrue/service/cart"
+	"gotrue/service/cut"
 	"gotrue/service/goods"
 	"gotrue/service/user"
 
 	"github.com/shopspring/decimal"
+)
+
+const (
+	specSep     = "_"
+	specDescSep = "/"
 )
 
 var one = decimal.NewFromFloat32(1.0)
@@ -33,6 +40,7 @@ func initCashierService() {
 		goodsService: goods.GoodsService,
 		cartService:  cart.CartService,
 		userService:  user.UserService,
+		cutService:   cut.GetCutService(),
 	}
 }
 
@@ -43,6 +51,7 @@ type Cashier struct {
 	goodsService *goods.Goods
 	cartService  *cart.Cart
 	userService  *user.User
+	cutService   api.ICutService
 }
 
 // CartCheckout is 从购物车结算
@@ -56,7 +65,7 @@ func (s *Cashier) CartCheckout(userID int64) (*response.Cashier, error) {
 }
 
 // StockCheckout is 从库存进行快速结算
-func (s *Cashier) StockCheckout(req request.CashierPreview) (*response.Cashier, error) {
+func (s *Cashier) StockCheckout(req *request.CashierPreview) (*response.Cashier, error) {
 	stock, err := s.stockDao.SelectByID(req.StockID)
 	if err != nil {
 		return nil, err
@@ -65,11 +74,11 @@ func (s *Cashier) StockCheckout(req request.CashierPreview) (*response.Cashier, 
 	if err != nil {
 		return nil, err
 	}
-	stockSpecIDs, err := utils.ParseIntArray(stock.Specification.String, "_", 10, 64)
+	stockSpecIDs, err := utils.ParseIntArray(stock.Specification.String, specSep, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	specDesc, err := s.goodsService.SpecificationDesc(stock.GoodsID, stockSpecIDs, "/")
+	specDesc, err := s.goodsService.SpecificationDesc(stock.GoodsID, stockSpecIDs, specDescSep)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +86,18 @@ func (s *Cashier) StockCheckout(req request.CashierPreview) (*response.Cashier, 
 	if err != nil {
 		return nil, err
 	}
+	cutReq := &request.CutOrder{
+		GoodsID: goods.ID,
+		StockID: stock.ID,
+		UserID:  req.UserID,
+	}
+	cutOrder, err := s.cutService.MyActivatedCutOrder(cutReq)
+	if err != nil {
+		return nil, err
+	}
 	gc := newGoodsCashier(stock, goods, specDesc, req.Quantity)
 	gc.express = express
+	gc.setCutoff(cutOrder)
 	cs := gc.summary()
 	return cs, nil
 }
@@ -93,6 +112,7 @@ type goodsCashier struct {
 	stock    *model.Stock
 	goods    *model.Goods
 	express  *response.GoodsExpressConstraint
+	cutoff   *response.CutOrder
 	specText string
 }
 
@@ -105,8 +125,16 @@ func newGoodsCashier(stock *model.Stock, goods *model.Goods, specDesc string, qu
 	}
 }
 
+func (gc *goodsCashier) setCutoff(cutoff *response.CutOrder) {
+	gc.cutoff = cutoff
+}
+
 func (gc *goodsCashier) summary() *response.Cashier {
 	goodsTotalPrice := gc.stock.SaleUnitPrice.Mul(gc.quantity)
+	orderTotalPrice := goodsTotalPrice
+	if gc.cutoff != nil {
+		orderTotalPrice = goodsTotalPrice.Sub(gc.cutoff.CutoffPrice)
+	}
 	// total express fee = (unit expresss fee) * quantity
 	if !gc.stock.Splitable {
 		gc.express.CalculateTotalExpressFee(one)
@@ -117,8 +145,9 @@ func (gc *goodsCashier) summary() *response.Cashier {
 	}
 	cc := &response.Cashier{
 		GoodsTotalPrice:        goodsTotalPrice.StringFixed(2),
-		OrderTotalPrice:        goodsTotalPrice.Add(gc.express.TotalExpressFee).StringFixed(2),
+		OrderTotalPrice:        orderTotalPrice.Add(gc.express.TotalExpressFee).StringFixed(2),
 		GoodsExpressConstraint: gc.express,
+		CutOrder:               gc.cutoff,
 	}
 
 	ci := response.CashierItem{
@@ -134,6 +163,7 @@ func (gc *goodsCashier) summary() *response.Cashier {
 	cc.Items = []response.CashierItem{
 		ci,
 	}
+
 	return cc
 }
 

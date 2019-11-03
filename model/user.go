@@ -45,6 +45,14 @@ type UserCollection struct {
 	Items []*User
 }
 
+func (c *UserCollection) ToMap() map[int64]*User {
+	userMap := map[int64]*User{}
+	for _, item := range c.Items {
+		userMap[item.ID] = item
+	}
+	return userMap
+}
+
 func (c *UserCollection) UserMobiles() []string {
 	mobiles := []string{}
 	for _, item := range c.Items {

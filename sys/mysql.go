@@ -162,16 +162,21 @@ func (db *EasyDB) SelectOne(target interface{}, query string, args ...interface{
 	return nil
 }
 
-func (db *EasyDB) Insert(tableName string, setMap map[string]interface{}, tx ...*sql.Tx) (rowsAffected, lastInsertID int64, err error) {
+func (db *EasyDB) Insert(tableName string, setMap map[string]interface{}, tx *sql.Tx) (rowsAffected, lastInsertID int64, err error) {
 	query, args, err := sq.Insert(tableName).SetMap(setMap).ToSql()
 	if err != nil {
 		return
 	}
 	var result sql.Result
-	if len(tx) == 0 {
+	// if tx == nil || len(tx) == 0 {
+	// 	result, err = db.connection.ExecContext(db.ctx, query, args...)
+	// } else {
+	// 	result, err = tx[0].ExecContext(db.ctx, query, args...)
+	// }
+	if tx == nil {
 		result, err = db.connection.ExecContext(db.ctx, query, args...)
 	} else {
-		result, err = tx[0].ExecContext(db.ctx, query, args...)
+		result, err = tx.ExecContext(db.ctx, query, args...)
 	}
 	if err != nil {
 		return

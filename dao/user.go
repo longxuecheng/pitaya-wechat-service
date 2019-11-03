@@ -82,6 +82,6 @@ func (dao *UserDao) SelectByIDs(userIDs []int64) (*model.UserCollection, error) 
 }
 
 func (dao *UserDao) CreateUser(setMap map[string]interface{}) (int64, error) {
-	_, id, err := dao.db.Insert(dao.table, setMap)
+	_, id, err := dao.db.Insert(dao.table, setMap, nil)
 	return id, err
 }

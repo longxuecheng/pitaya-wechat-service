@@ -1,18 +1,17 @@
 package wechat
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"gotrue/facility/http_util"
-	"gotrue/facility/log"
 	"gotrue/service/wechat/payment"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/mileusna/crontab"
 )
 
 var (
@@ -42,7 +41,7 @@ func (s *wechatService) UserInfo(code string) (Code2SessionResponse, error) {
 }
 
 func (s *wechatService) AccessToken() string {
-	return s.AccessToken()
+	return s.TokenManager.AccessToken()
 }
 
 func (s *wechatService) SendTemplateMessage(req *TemplateMsgRequest) error {
@@ -176,44 +175,31 @@ func (s *wechatService) QueryPayResult(orderNo string) (*payment.QueryOrderRespo
 	return result, nil
 }
 
-type TokenManager struct {
-	at      string
-	atExpIn int64
-	crontab *crontab.Crontab
-}
-
-func NewTokenManager(startSchedule bool) *TokenManager {
-	m := &TokenManager{}
-	m.crontab = crontab.New()
-	if startSchedule {
-		m.ScheduleTasks()
+func (s *wechatService) GetWxAcodeUnlimited() (*payment.QueryOrderResponse, error) {
+	url := fmt.Sprintf(wxcodeGetUnlimited_url, s.AccessToken())
+	req := WxAcodeUnlimitedRequest{
+		Scene: "xxx;ooo",
+		Page:  "pages/goods/goods",
+		Width: 430,
 	}
-	return m
-}
-
-// ScheduleTasks crontab syntax https://github.com/mileusna/crontab
-func (m *TokenManager) ScheduleTasks() {
-	log.Log.Debug("Shedule token refreshing task")
-	// m.refreshAccessToken()
-	m.crontab.MustAddJob("*/10 * * * *", m.RefreshAccessToken)
-	// run imediately when start
-	m.crontab.RunAll()
-}
-
-func (m *TokenManager) AccessToken() string {
-	return m.at
-}
-
-func (m *TokenManager) RefreshAccessToken() {
-	act := AccessTokenResonse{}
-	url := fmt.Sprintf(accessToken_url, "client_credential", appID, secret)
-	err := http_util.DoGet(&act, url)
+	data, _ := json.Marshal(req)
+	resp, err := http_util.Send(http.MethodPost, url, bytes.NewReader(data), http_util.JsonHeader)
 	if err != nil {
-		log.Log.Debug("Access token refresh error %+v\n", err)
+		return nil, err
 	}
-	if act.isOk() {
-		m.at = act.AccessToken
-		m.atExpIn = act.ExpiresIn
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	// result := &WxAcodeUnlimitedResponse{}
+	// err = http_util.UnmarshalBody(resp, result)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if !result.isOk() {
+	// 	return nil, errors.New(result.ErrorMsg)
+	// }
+	f, err := os.Create("wxacode.jpeg")
+	if err != nil {
+		return nil, err
 	}
-	log.Log.Debug("Access token : %s\n", act.AccessToken)
+	_, err = f.Write(respBytes)
+	return nil, err
 }

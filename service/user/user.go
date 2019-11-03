@@ -79,10 +79,6 @@ func (s *User) DefaultAddress(userID int64) (*response.UserAddress, error) {
 	return address, nil
 }
 
-func (s *User) DeleteAddressByID(id int64) error {
-	return nil
-}
-
 func (s *User) AddressList(userID int64) ([]*response.UserAddress, error) {
 	ads, err := s.addressDao.SelectByUserID(userID)
 	if err != nil {

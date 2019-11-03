@@ -20,4 +20,6 @@ func Init() {
 	InitGoodsExpressConstraintDao()
 	initSupplierAdminDao()
 	initBannerDao()
+	initCutOrderDao()
+	initCutDetailDao()
 }

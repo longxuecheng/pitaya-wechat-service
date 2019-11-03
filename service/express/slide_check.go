@@ -59,6 +59,7 @@ func (s *SlideDecoder) LoadVerifyCode() error {
 		return err
 	}
 	s.slideImage = slideImg
+	fmt.Println(slideImg.MainBase64PNGImage)
 	return nil
 }
 

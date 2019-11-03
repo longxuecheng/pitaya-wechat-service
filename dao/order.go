@@ -30,9 +30,9 @@ type SaleOrder struct {
 	table   string
 }
 
-func (dao *SaleOrder) Create(order *model.SaleOrder, tx ...*sql.Tx) (id int64, err error) {
+func (dao *SaleOrder) Create(order *model.SaleOrder, tx *sql.Tx) (id int64, err error) {
 	setMap := utils.StructToMap(order, "db", "insert", "count")
-	_, id, err = dao.db.Insert(dao.table, setMap, tx...)
+	_, id, err = dao.db.Insert(dao.table, setMap, tx)
 	return
 }
 

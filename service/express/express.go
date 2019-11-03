@@ -7,7 +7,6 @@ import (
 	"gotrue/facility/errors"
 	"gotrue/facility/http_util"
 	"gotrue/facility/strings"
-	"gotrue/facility/utils"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -110,8 +109,8 @@ func (s *expressService) GetExpressFromChinaPost(expressNo string) (*ExpressSumm
 	if err != nil {
 		summary.Traces = []*ExpressTrace{
 			&ExpressTrace{
-				Time: utils.FormatTime(time.Now(), utils.TimePrecision_Seconds),
-				Desc: "请不用担心,从邮政获取信息异常",
+				Time: "",
+				Desc: "从邮政获取信息异常，请不用担心",
 			},
 		}
 		return summary, nil
@@ -120,27 +119,15 @@ func (s *expressService) GetExpressFromChinaPost(expressNo string) (*ExpressSumm
 	if err != nil {
 		summary.Traces = []*ExpressTrace{
 			&ExpressTrace{
-				Time: utils.FormatTime(time.Now(), utils.TimePrecision_Seconds),
-				Desc: "请不用担心,解析邮政验证码错误，30秒后重新尝试查询",
+				Time: "",
+				Desc: "解析邮政验证码错误，30秒后重新尝试查询，请不用担心",
 			},
 		}
 		return summary, nil
 	}
 	chinaPostTraces, err := slideDecoder.QueryExpress(expressNo)
-	if err != nil {
-		summary.Traces = []*ExpressTrace{
-			&ExpressTrace{
-				Time: utils.FormatTime(time.Now(), utils.TimePrecision_Seconds),
-				Desc: "请不用担心,解析邮政数据错误，请重试",
-			},
-		}
-		return summary, nil
-	}
 	commonTraces := make([]*ExpressTrace, len(chinaPostTraces))
 	for i, chinaPostTrace := range chinaPostTraces {
-		if i == len(chinaPostTraces)-1 {
-			summary.SendTime = chinaPostTrace.OpTime
-		}
 		commonTraces[i] = chinaPostTrace.ExpressTrace()
 	}
 	summary.Traces = commonTraces
@@ -156,7 +143,6 @@ func (s *expressService) ExpressInfo(expressCom ExpressMethod, expressNo string)
 		return nil, nil
 	}
 	if expressType == youzheng {
-		return s.GetExpressFromChinaPost(expressNo)
 	}
 	resp, err := http_util.Send(http.MethodGet, baiduExpressURL, nil, func(r *http.Request) {
 		c := &http.Cookie{
