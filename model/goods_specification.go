@@ -1,5 +1,7 @@
 package model
 
+import "strings"
+
 var Table_Goods_Specification = "goods_specification"
 
 // GoodsSpecification 定义了某商品的规格
@@ -16,6 +18,18 @@ type GoodsSpecMap map[int64]*GoodsSpecification
 
 func (m GoodsSpecMap) Get(specID int64) *GoodsSpecification {
 	return m[specID]
+}
+
+func (m GoodsSpecMap) SpecName(specIDs []int64) string {
+	specNames := []string{}
+	for _, specID := range specIDs {
+		spec := m.Get(specID)
+		if spec != nil {
+			specNames = append(specNames, spec.Value)
+		}
+	}
+	return strings.Join(specNames, "/")
+
 }
 
 type GoodsSpecSet struct {

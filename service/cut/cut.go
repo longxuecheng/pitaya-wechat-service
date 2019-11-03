@@ -23,6 +23,7 @@ type Cut struct {
 	cutDetailDao *dao.CutDetail
 	userDao      *dao.UserDao
 	stockDao     *dao.Stock
+	goodsSpecDao *dao.GoodsSpec
 }
 
 func GetCutService() api.ICutService {
@@ -38,6 +39,7 @@ func NewCutService() *Cut {
 		cutDetailDao: dao.CutDetailDao,
 		userDao:      dao.UserDaoSingleton,
 		stockDao:     dao.StockDao,
+		goodsSpecDao: dao.GoodsSpecDao,
 	}
 }
 
@@ -103,9 +105,16 @@ func (s *Cut) GetCutOrderByCutNo(cutNo string) (*response.CutOrder, error) {
 	if err != nil {
 		return nil, err
 	}
+	goodsSpecs, err := s.goodsSpecDao.SelectByGoodsIDs([]int64{stock.GoodsID})
+	if err != nil {
+		return nil, err
+	}
+	goodsSpecMap := goodsSpecs.Map()
 	apiCutOrder := cutOrder.ResponseCutOrder()
 	apiCutOrder.Items = apiDetails
+	apiCutOrder.SpecName = goodsSpecMap.SpecName(stock.SpecIDs())
 	apiCutOrder.OriginPriceString = stock.SaleUnitPrice.StringFixed(2)
+	apiCutOrder.CurrentPriceString = stock.SaleUnitPrice.Sub(total).StringFixed(2)
 	apiCutOrder.SetCutoffPrice(total)
 	return apiCutOrder, nil
 }

@@ -8,6 +8,11 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const (
+	StockStatusOnSale  = "ON_SALE"
+	StockStatusOffSale = "OFF_SALE"
+)
+
 // Stock 商品库存数据模型
 type Stock struct {
 	ID                int64           `db:"id"`
