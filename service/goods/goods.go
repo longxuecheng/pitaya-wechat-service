@@ -194,10 +194,19 @@ func (s *Goods) SpecificationDesc(goodsID int64, specIDs []int64, sep string) (s
 	return strings.Join(specNames, sep), nil // 商品规格组合描述
 }
 
-func (s *Goods) HotGoods() ([]response.HotGoods, error) {
-	goodsList, err := s.goodsDao.SelectAllByStatus(model.GoodsStatusOnSale)
-	if err != nil {
-		return nil, err
+func (s *Goods) HotGoods(categoryID int64) ([]response.HotGoods, error) {
+	var goodsList []*model.Goods
+	var err error
+	if categoryID == 0 {
+		goodsList, err = s.goodsDao.SelectAllByStatus(model.GoodsStatusOnSale)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		goodsList, err = s.goodsDao.SelectByCategory(categoryID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	goodsSet := model.NewGoodsSet(goodsList)
 	stockSet, err := s.stockDao.SelectByGoodsIDs(goodsSet.GoodsIDs())

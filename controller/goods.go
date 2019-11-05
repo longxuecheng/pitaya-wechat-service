@@ -120,7 +120,12 @@ func GetGoodsInfo(c *gin.Context) {
 
 // GetHotGoods 获取热门商品
 func GetHotGoods(c *gin.Context) {
-	hotGoods, err := goods.GoodsService.HotGoods()
+	categoryID := c.Query("categoryId")
+	categoryInt64ID, err := strconv.ParseInt(categoryID, 10, 64)
+	if err != nil {
+		categoryInt64ID = 0
+	}
+	hotGoods, err := goods.GoodsService.HotGoods(categoryInt64ID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, map[string]interface{}{
 		"hotGoods": hotGoods,
