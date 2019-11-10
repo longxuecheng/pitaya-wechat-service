@@ -37,9 +37,7 @@ func (c *CutOrder) ResponseCutOrder() *response.CutOrder {
 	return &response.CutOrder{
 		ID:         c.ID,
 		CutNo:      c.CutNo,
-		UserID:     c.UserID,
 		GoodsID:    c.GoodsID,
-		StockID:    c.StockID,
 		CreateTime: utils.FormatTime(c.CreateTime, utils.TimePrecision_Seconds),
 		ExpireTime: utils.FormatTime(c.ExpireTime, utils.TimePrecision_Seconds),
 	}
@@ -67,7 +65,7 @@ func (c *CutDetail) ResponseCutDetail(u *User) *response.CutDetail {
 		CutTime:  utils.FormatTime(c.CreateTime, utils.TimePrecision_Seconds),
 	}
 	if u != nil {
-		detail.Avartar = u.AvatarURL
+		detail.Avatar = u.AvatarURL
 		detail.NickName = u.NickName
 	}
 	return detail

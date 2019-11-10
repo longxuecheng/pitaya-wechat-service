@@ -21,3 +21,11 @@ func TestDbCount(t *testing.T) {
 		fmt.Println(total)
 	}
 }
+
+func TestStockColumns(t *testing.T) {
+	c1 := []string{"x1", "x2"}
+	c2 := c1
+	c2 = append(c2, "x3")
+	fmt.Printf("c1 is %+v\n", c1)
+	fmt.Printf("c2 is %+v\n", c2)
+}

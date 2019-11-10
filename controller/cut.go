@@ -9,37 +9,29 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CutOrderInfo(c *gin.Context) {
-	cutNo := c.Query("cutNo")
-	cutOrder, err := cut.GetCutService().GetCutOrderByCutNo(cutNo)
+func CutoffInfo(c *gin.Context) {
+	req := &request.CutoffInfo{}
+	err := c.BindQuery(req)
+	if err != nil {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	cutoff, err := cut.GetCutService().GetCutoffInfo(req.UserID, req.GoodsID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, gin.H{
-		"cutoffInfo": cutOrder,
+		"cutoffInfo": cutoff,
 	})
 }
 
-func CreateCutOrder(c *gin.Context) {
-	req := &request.CutOrder{}
+func AssistCutoff(c *gin.Context) {
+	userID := middle_ware.MustGetCurrentUser(c)
+	req := &request.AssistCutoff{}
 	err := c.BindJSON(req)
 	utils.CheckAndPanic(err)
-	userID := middle_ware.MustGetCurrentUser(c)
-	req.UserID = userID
-	cutOrder, err := cut.GetCutService().CreateCutOrder(c.Request.Context(), req)
+	req.HelperID = userID
+	cutoff, err := cut.GetCutService().AssistCutoff(c.Request.Context(), req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, gin.H{
-		"cutOrder": cutOrder,
-	})
-}
-
-func CreateCutDetail(c *gin.Context) {
-	userID := middle_ware.MustGetCurrentUser(c)
-	req := &request.CreateCutDetail{}
-	err := c.BindJSON(req)
-	utils.CheckAndPanic(err)
-	req.UserID = userID
-	cutoff, err := cut.GetCutService().CreateCutDetail(req)
-	utils.CheckAndPanic(err)
-	middle_ware.SetResponseData(c, gin.H{
-		"cutoffPrice": cutoff,
+		"cutoffInfo": cutoff,
 	})
 }

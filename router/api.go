@@ -67,9 +67,8 @@ func apiRouter(r *gin.Engine) {
 		settleGroup.GET("supplier/show", controller.SettlementForSupplier)
 	}
 	{
-		cutoffGroup := root.Group("/cutoff", middle_ware.ValidateAuthorization)
-		cutoffGroup.POST("/start", controller.CreateCutOrder)
-		cutoffGroup.GET("/info", controller.CutOrderInfo)
-		cutoffGroup.POST("/assist", controller.CreateCutDetail)
+		cutoffGroup := root.Group("/cutoff")
+		cutoffGroup.GET("/info", controller.CutoffInfo)
+		cutoffGroup.POST("/assist", middle_ware.ValidateAuthorization, controller.AssistCutoff)
 	}
 }

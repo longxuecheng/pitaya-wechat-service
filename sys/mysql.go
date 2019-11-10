@@ -118,6 +118,7 @@ func (db *EasyDB) SelectDSL(destptr interface{}, columns []string, tableName str
 	if err != nil {
 		return err
 	}
+	// fmt.Println(sql)
 	return db.Select(destptr, sql, args...)
 }
 

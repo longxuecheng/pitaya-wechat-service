@@ -360,7 +360,6 @@ func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddR
 	}
 	cutReq := &request.CutOrder{
 		GoodsID: stock.GoodsID,
-		StockID: stock.ID,
 		UserID:  userID,
 	}
 	cutorder, err := s.cutService.MyActivatedCutOrder(cutReq)
@@ -372,6 +371,9 @@ func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddR
 		return 0, err
 	}
 	goods, err := s.goodsDao.SelectByID(stock.GoodsID)
+	if err == sql.ErrNoRows {
+		return 0, errors.NewWithCodef("GoodsInvalidStatus", "商品不可售")
+	}
 	if err != nil {
 		return 0, err
 	}

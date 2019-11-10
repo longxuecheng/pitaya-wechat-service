@@ -11,13 +11,11 @@ import (
 type ICutService interface {
 	MyActivatedCutOrder(req *request.CutOrder) (*response.CutOrder, error)
 
-	GetCutOrderByCutNo(cutNo string) (*response.CutOrder, error)
+	GetCutoffInfo(userID string, goodsID int64) (*response.CutOrder, error)
 
 	CutDetails(cutOrderID int64) (decimal.Decimal, []*response.CutDetail, error)
 
-	CreateCutOrder(ctx context.Context, req *request.CutOrder) (*response.CutOrder, error)
-
-	CreateCutDetail(req *request.CreateCutDetail) (decimal.Decimal, error)
+	AssistCutoff(ctx context.Context, req *request.AssistCutoff) (*response.CutOrder, error)
 
 	ConsumeCutOrder(ctx context.Context, req *request.ConsumeCutOrder) error
 }

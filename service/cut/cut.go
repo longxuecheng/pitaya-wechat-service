@@ -2,6 +2,7 @@ package cut
 
 import (
 	"context"
+	"database/sql"
 	"gotrue/dao"
 	"gotrue/dto/request"
 	"gotrue/dto/response"
@@ -9,6 +10,7 @@ import (
 	"gotrue/facility/utils"
 	"gotrue/model"
 	"gotrue/service/api"
+	"gotrue/sys"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,6 +26,7 @@ type Cut struct {
 	userDao      *dao.UserDao
 	stockDao     *dao.Stock
 	goodsSpecDao *dao.GoodsSpec
+	goodsDao     *dao.Goods
 }
 
 func GetCutService() api.ICutService {
@@ -40,30 +43,26 @@ func NewCutService() *Cut {
 		userDao:      dao.UserDaoSingleton,
 		stockDao:     dao.StockDao,
 		goodsSpecDao: dao.GoodsSpecDao,
+		goodsDao:     dao.GoodsDao,
 	}
 }
 
 // MyActivatedCutOrder will get an activated cut order for a given stock
 func (s *Cut) MyActivatedCutOrder(req *request.CutOrder) (*response.CutOrder, error) {
-	cutOrder, err := s.cutOrderDao.QueryByUserAndStock(req.UserID, req.StockID)
+	cutOrder, err := s.cutOrderDao.QueryByUserAndGoods(req.UserID, req.GoodsID)
 	if err != nil {
 		return nil, err
 	}
 	if cutOrder == nil {
 		return nil, nil
 	}
-	stock, err := s.stockDao.SelectByID(req.StockID)
+	detailSet, err := s.cutDetailDao.QueryByCutOrder(cutOrder.ID)
 	if err != nil {
 		return nil, err
 	}
-	totalCutoff, apiItems, err := s.CutDetails(cutOrder.ID)
-	if err != nil {
-		return nil, err
-	}
+	cutoffPrice := detailSet.TotalCutoffPrice()
 	apiCutOrder := cutOrder.ResponseCutOrder()
-	apiCutOrder.Items = apiItems
-	apiCutOrder.OriginPriceString = stock.SaleUnitPrice.StringFixed(2)
-	apiCutOrder.SetCutoffPrice(totalCutoff)
+	apiCutOrder.SetCutoffPrice(cutoffPrice)
 	return apiCutOrder, nil
 }
 
@@ -89,34 +88,87 @@ func (s *Cut) ConsumeCutOrder(ctx context.Context, req *request.ConsumeCutOrder)
 	return nil
 }
 
-func (s *Cut) GetCutOrderByCutNo(cutNo string) (*response.CutOrder, error) {
-	cutOrder, err := s.cutOrderDao.QueryByCutNo(cutNo)
+func (s *Cut) GetCutoffInfo(userID string, goodsID int64) (*response.CutOrder, error) {
+	userInt64ID := utils.DecodeIn64(userID)
+	cutOrder, err := s.cutOrderDao.QueryByUserAndGoods(userInt64ID, goodsID)
+	if err != nil {
+		return nil, err
+	}
+	user, err := s.userDao.SelectByID(userInt64ID)
 	if err != nil {
 		return nil, err
 	}
 	if cutOrder == nil {
-		return nil, errors.NewWithCodef("InvalidCutOrder", "当前砍价已经结束啦")
-	}
-	stock, err := s.stockDao.SelectByID(cutOrder.StockID)
-	if err != nil {
-		return nil, err
+		return &response.CutOrder{
+			Avatar:            user.AvatarURL,
+			CutoffPriceString: decimal.Zero.StringFixed(2),
+		}, nil
 	}
 	total, apiDetails, err := s.CutDetails(cutOrder.ID)
 	if err != nil {
 		return nil, err
 	}
-	goodsSpecs, err := s.goodsSpecDao.SelectByGoodsIDs([]int64{stock.GoodsID})
+
+	apiCutOrder := cutOrder.ResponseCutOrder()
+	apiCutOrder.SetCutoffPrice(total)
+	apiCutOrder.Items = apiDetails
+	apiCutOrder.Avatar = user.AvatarURL
+	apiCutOrder.NickName = user.NickName
+	return apiCutOrder, nil
+}
+
+func (s *Cut) AssistCutoff(ctx context.Context, req *request.AssistCutoff) (*response.CutOrder, error) {
+	userID := utils.DecodeIn64(req.UserID)
+	if userID == req.HelperID {
+		return nil, errors.NewWithCodef("InvalidCutoff", "自己不可以帮自己砍价哦")
+	}
+	stocks, err := s.stockDao.SelectByGoodsIDWithPriceASC(req.GoodsID)
 	if err != nil {
 		return nil, err
 	}
-	goodsSpecMap := goodsSpecs.Map()
-	apiCutOrder := cutOrder.ResponseCutOrder()
-	apiCutOrder.Items = apiDetails
-	apiCutOrder.SpecName = goodsSpecMap.SpecName(stock.SpecIDs())
-	apiCutOrder.OriginPriceString = stock.SaleUnitPrice.StringFixed(2)
-	apiCutOrder.CurrentPriceString = stock.SaleUnitPrice.Sub(total).StringFixed(2)
-	apiCutOrder.SetCutoffPrice(total)
-	return apiCutOrder, nil
+	if len(stocks) == 0 {
+		return nil, errors.NewWithCodef("NonCutoffGoods", "该商品不支持砍价")
+	}
+	cutOrder, err := s.cutOrderDao.QueryByUserAndGoods(userID, req.GoodsID)
+	if err != nil {
+		return nil, err
+	}
+	randomCutoff := decimal.Zero
+	var minPriceStock = stocks[0]
+	var discount = decimal.Zero
+
+	if cutOrder == nil {
+		sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+			orderID, err := s.createCutoffOrder(userID, req.GoodsID, tx)
+			if err != nil {
+				return err
+			}
+			calc := model.NewCutCalculator(minPriceStock.CostUnitPrice, minPriceStock.SaleUnitPrice, discount)
+			randomCutoff = calc.RandomCut()
+			return s.createCutoffDetail(req.HelperID, orderID, randomCutoff, tx)
+		})
+		return s.GetCutoffInfo(req.UserID, req.GoodsID)
+	}
+	// check duplicate cut
+	historyDetail, err := s.cutDetailDao.QueryByCutOrderAndUser(cutOrder.ID, req.HelperID)
+	if err != nil {
+		return nil, err
+	}
+	if historyDetail != nil {
+		return nil, errors.NewWithCodef("DuplicateCutoff", "您已经帮您的朋友砍过价了")
+	}
+	detailSet, err := s.cutDetailDao.QueryByCutOrder(cutOrder.ID)
+	if err != nil {
+		return nil, err
+	}
+	discount = detailSet.TotalCutoffPrice()
+	calc := model.NewCutCalculator(minPriceStock.CostUnitPrice, minPriceStock.SaleUnitPrice, discount)
+	randomCutoff = calc.RandomCut()
+	err = s.createCutoffDetail(req.HelperID, cutOrder.ID, randomCutoff, nil)
+	if err != nil {
+		return nil, err
+	}
+	return s.GetCutoffInfo(req.UserID, req.GoodsID)
 }
 
 // CutDetails will get detail list for a given cut order
@@ -136,73 +188,27 @@ func (s *Cut) CutDetails(cutOrderID int64) (decimal.Decimal, []*response.CutDeta
 	return total, apiDetails, nil
 }
 
-func (s *Cut) CreateCutOrder(ctx context.Context, req *request.CutOrder) (*response.CutOrder, error) {
-	cutOrder, err := s.cutOrderDao.QueryByUserAndStock(req.UserID, req.StockID)
-	if err != nil {
-		return nil, err
-	}
-	if cutOrder != nil {
-		return nil, errors.NewWithCodef("DuplicateCutOrder", "当前商品正在砍价")
-	}
+func (s *Cut) createCutoffOrder(userID, goodsID int64, tx *sql.Tx) (int64, error) {
 	uuid, err := uuid.NewUUID()
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	cutOrderReq := &model.CutOrder{
-		UserID:     req.UserID,
+	req := &model.CutOrder{
+		UserID:     userID,
 		CutNo:      uuid.String(),
-		GoodsID:    req.GoodsID,
-		StockID:    req.StockID,
+		GoodsID:    goodsID,
+		StockID:    0,
 		ExpireTime: time.Now().AddDate(0, 0, 7),
 	}
-	id, err := s.cutOrderDao.CreateCutOrder(cutOrderReq, nil)
-	if err != nil {
-		return nil, err
-	}
-	cutOrder, err = s.cutOrderDao.QueryByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return cutOrder.ResponseCutOrder(), nil
+	return s.cutOrderDao.CreateCutOrder(req, tx)
 }
 
-// CreateCutDetail creates a detailfor a cut order
-func (s *Cut) CreateCutDetail(req *request.CreateCutDetail) (decimal.Decimal, error) {
-	cutOrder, err := s.cutOrderDao.QueryByCutNo(req.CutNo)
-	randomCutoff := decimal.Zero
-	if err != nil {
-		return randomCutoff, err
-	}
-	if cutOrder == nil {
-		return randomCutoff, errors.NewWithCodef("ConsumedCutOrder", "您的朋友已经购买了商品")
-	}
-	// check duplicate cut
-	historyDetail, err := s.cutDetailDao.QueryByCutOrderAndUser(cutOrder.ID, req.UserID)
-	if err != nil {
-		return randomCutoff, err
-	}
-	if historyDetail != nil {
-		return randomCutoff, errors.NewWithCodef("DuplicateCut", "您已经帮您的朋友砍过价了")
-	}
-	detailSet, err := s.cutDetailDao.QueryByCutOrder(cutOrder.ID)
-	if err != nil {
-		return randomCutoff, err
-	}
-	stock, err := s.stockDao.SelectByID(cutOrder.StockID)
-	if err != nil {
-		return randomCutoff, err
-	}
-	discount := detailSet.TotalCutoffPrice()
-	cutCalc := model.NewCutCalculator(stock.CostUnitPrice, stock.SaleUnitPrice, discount)
-	randomCutoff = cutCalc.RandomCut()
+func (s *Cut) createCutoffDetail(userID, cutOrderID int64, cutoff decimal.Decimal, tx *sql.Tx) error {
 	cutDetail := &model.CutDetail{
-		CutOrderID: cutOrder.ID,
-		UserID:     req.UserID,
-		CutPrice:   randomCutoff,
+		CutOrderID: cutOrderID,
+		UserID:     userID,
+		CutPrice:   cutoff,
 	}
-	_, err = s.cutDetailDao.CreateCutDetail(cutDetail, nil)
-	if err != nil {
-		return randomCutoff, err
-	}
-	return randomCutoff, nil
+	_, err := s.cutDetailDao.CreateCutDetail(cutDetail, nil)
+	return err
 }

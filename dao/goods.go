@@ -40,7 +40,7 @@ func (dao *Goods) SelectByCategory(categoryID int64) ([]*model.Goods, error) {
 
 func (dao *Goods) SelectByID(ID int64) (*model.Goods, error) {
 	goods := new(model.Goods)
-	err := dao.db.SelectOne(goods, fmt.Sprintf("SELECT %s FROM goods WHERE id = ?", strings.Join(dao.columns, ",")), ID)
+	err := dao.db.SelectOne(goods, fmt.Sprintf("SELECT %s FROM goods WHERE id = ? AND status = ?", strings.Join(dao.columns, ",")), ID, model.GoodsStatusOnSale)
 	if err != nil {
 		return nil, err
 	}

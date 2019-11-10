@@ -88,7 +88,6 @@ func (s *Cashier) StockCheckout(req *request.CashierPreview) (*response.Cashier,
 	}
 	cutReq := &request.CutOrder{
 		GoodsID: goods.ID,
-		StockID: stock.ID,
 		UserID:  req.UserID,
 	}
 	cutOrder, err := s.cutService.MyActivatedCutOrder(cutReq)

@@ -66,6 +66,7 @@ func LoginByWechat(c *gin.Context) {
 	accessToken, err := service.BuildToken(user.ID, 3600)
 	utils.CheckAndPanic(err)
 	wechatUser := response.User{
+		UserID:    utils.EncodeIn64(user.ID),
 		NickName:  user.NickName,
 		AvatarURL: user.AvatarURL,
 		UserType:  user.UserType.Int(),

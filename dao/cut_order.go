@@ -65,3 +65,12 @@ func (d *CutOrder) QueryByUserAndStock(userID int64, stockID int64) (*model.CutO
 	}
 	return order, err
 }
+
+func (d *CutOrder) QueryByUserAndGoods(userID int64, goodsID int64) (*model.CutOrder, error) {
+	order := &model.CutOrder{}
+	err := d.db.SelectOneDSL(order, d.columns, d.table, sq.Eq{"user_id": userID, "goods_id": goodsID, "consumed": false})
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	return order, err
+}

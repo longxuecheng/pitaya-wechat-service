@@ -13,11 +13,17 @@ const (
 	StockStatusOffSale = "OFF_SALE"
 )
 
+type StockMinMax struct {
+	MinSalePrice decimal.Decimal `db:"min_sale_price"`
+	MaxSalePrice decimal.Decimal `db:"max_sale_price"`
+}
+
 // Stock 商品库存数据模型
 type Stock struct {
 	ID                int64           `db:"id"`
 	SupplierID        int64           `db:"supplier_id"`
 	Name              sql.NullString  `db:"name"`
+	ProfitPrice       decimal.Decimal `db:"profit_price" virtual:"true"`
 	SaleUnitPrice     decimal.Decimal `db:"sale_unit_price"`
 	CostUnitPrice     decimal.Decimal `db:"cost_unit_price"`
 	AvailableQuantity decimal.Decimal `db:"available_quantity"`
@@ -31,7 +37,7 @@ func (s *Stock) TableName() string {
 }
 
 func (s *Stock) Columns() []string {
-	return utils.TagValues(s, "db")
+	return utils.TagValues(s, "db", "virtual")
 }
 
 func (s *Stock) SpecIDs() []int64 {
