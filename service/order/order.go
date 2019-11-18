@@ -2,7 +2,6 @@ package order
 
 import (
 	"database/sql"
-	"fmt"
 	"gotrue/dao"
 	"gotrue/dto/pagination"
 	"gotrue/dto/request"
@@ -296,7 +295,25 @@ func (s *SaleOrder) PayResult(r *request.QueryWechatPayResult, req *payment.Quer
 				Params:  []string{"果真管理员", order.OrderNo12()},
 			})
 			if err != nil {
-				fmt.Printf("Send notification msg err %+v\n", err)
+				log.Printf("Send notification to admins err %+v\n", err)
+			}
+			me, err := s.userDao.SelectByID(order.UserID)
+			if err != nil {
+				return
+			}
+			agency, err := s.userDao.SelectByChannelUserID(me.ChannelUserID)
+			if err != nil {
+				return
+			}
+			if !agency.HasMobile() {
+				return
+			}
+			err = sms.SendPayNotificationMsg(&sms.MultiSendRequest{
+				Mobiles: []string{agency.PhoneNo.String},
+				Params:  []string{"果真Gotrue代理", order.OrderNo12()},
+			})
+			if err != nil {
+				log.Printf("Send notification to agency err %+v\n", err)
 			}
 		}()
 	}

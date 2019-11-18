@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	_ "github.com/go-sql-driver/mysql"
@@ -17,14 +18,12 @@ import (
 )
 
 var easyDB *EasyDB
-var dbConnection *sqlx.DB
 
 const dsnTmplate = "%s:%s@tcp(%s)/mymall?charset=utf8mb4&allowNativePasswords=true&parseTime=true&loc=%s"
 
 // EasyDB is a
 type EasyDB struct {
 	connection *sqlx.DB
-	ctx        context.Context
 }
 
 type count struct {
@@ -37,40 +36,32 @@ func GetEasyDB() *EasyDB {
 		return easyDB
 	}
 	easyDB = &EasyDB{
-		ctx:        context.Background(),
-		connection: DBConnection(),
+		connection: NewConn(),
 	}
 	return easyDB
 }
 
-func connect() {
-	if dbConnection == nil {
-		var dbHost string
-		env := os.Getenv("ENV")
-		if env == settings.EnvProd {
-			dbHost = settings.ProdDBHost
-		} else {
-			dbHost = settings.DevDBHost
-		}
-		log.Println(fmt.Sprintf("connecting to database %s", dbHost))
-		connectURL := fmt.Sprintf(dsnTmplate, "root", "6263272lxc", dbHost, url.QueryEscape("Asia/Shanghai"))
-		db, err := sqlx.Connect("mysql", connectURL)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		db.SetMaxIdleConns(20)
-		db.SetMaxOpenConns(20)
-		err = db.Ping()
-		if err != nil {
-			log.Panic("ping to database maybe some problems")
-		}
-		dbConnection = db
+func NewConn() *sqlx.DB {
+	var dbHost string
+	env := os.Getenv("ENV")
+	if env == settings.EnvProd {
+		dbHost = settings.ProdDBHost
+	} else {
+		dbHost = settings.DevDBHost
 	}
-}
-
-func DBConnection() *sqlx.DB {
-	connect()
-	return dbConnection
+	log.Println(fmt.Sprintf("connecting to database %s", dbHost))
+	connectURL := fmt.Sprintf(dsnTmplate, "root", "6263272lxc", dbHost, url.QueryEscape("Asia/Shanghai"))
+	db, err := sqlx.Connect("mysql", connectURL)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	db.SetMaxIdleConns(20)
+	db.SetMaxOpenConns(20)
+	err = db.Ping()
+	if err != nil {
+		log.Panic("ping to database maybe some problems")
+	}
+	return db
 }
 
 func (db *EasyDB) Stats() string {
@@ -98,12 +89,10 @@ func (db *EasyDB) ExecTx(execFunc func(tx *sql.Tx) error) {
 	}()
 }
 
-// Select 只是简单套用为了能在外部用EasyDB直接执行，用的是Native SQL
 func (db *EasyDB) Select(dest interface{}, query string, args ...interface{}) error {
 	return db.connection.Select(dest, query, args...)
 }
 
-// SelectOneDSL 只是简单套用为了能在外部用EasyDB直接执行，用的是Native SQL
 func (db *EasyDB) SelectOneDSL(destptr interface{}, columns []string, tableName string, pred interface{}) error {
 	sql, args, err := sq.Select(columns...).From(tableName).Where(pred).ToSql()
 	if err != nil {
@@ -112,13 +101,11 @@ func (db *EasyDB) SelectOneDSL(destptr interface{}, columns []string, tableName 
 	return db.SelectOne(destptr, sql, args...)
 }
 
-// SelectDSL 使用ORM的DSL进行SQL语句的初始化
 func (db *EasyDB) SelectDSL(destptr interface{}, columns []string, tableName string, pred interface{}, orderBys ...string) error {
 	sql, args, err := sq.Select(columns...).From(tableName).Where(pred).OrderBy(orderBys...).ToSql()
 	if err != nil {
 		return err
 	}
-	// fmt.Println(sql)
 	return db.Select(destptr, sql, args...)
 }
 
@@ -131,7 +118,6 @@ type PaginationCondition struct {
 }
 
 func (db *EasyDB) SelectPagination(destptr interface{}, condition PaginationCondition) (int64, error) {
-	// columns = append(columns, "count(1) over() as count")
 	qSQL, queryArgs, err := sq.Select(condition.Columns...).From(condition.TableName).Where(condition.WherePred).Offset(condition.Offset).Limit(condition.Limit).ToSql()
 	if err != nil {
 		return 0, err
@@ -145,90 +131,125 @@ func (db *EasyDB) SelectPagination(destptr interface{}, condition PaginationCond
 	return count.Count, db.Select(destptr, qSQL, queryArgs...)
 }
 
-// SelectOne 是对sqlx包中的查询单个的简化
 func (db *EasyDB) SelectOne(target interface{}, query string, args ...interface{}) error {
-	rows, err := db.connection.QueryxContext(db.ctx, query, args...)
-	if err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	e := make(chan error)
+	go func() {
+		rows, err := db.connection.QueryxContext(ctx, query, args...)
+		defer rows.Close()
+		if err != nil {
+			e <- err
+		}
+		if rows.Next() {
+			err = rows.StructScan(target)
+			if err != nil {
+				e <- err
+			}
+		} else {
+			e <- sql.ErrNoRows
+		}
+		e <- nil
+	}()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-e:
 		return err
 	}
-	if rows.Next() {
-		err = rows.StructScan(target)
-		if err != nil {
-			return err
-		}
-	} else {
-		return sql.ErrNoRows
-	}
-	defer rows.Close()
-	return nil
 }
 
 func (db *EasyDB) Insert(tableName string, setMap map[string]interface{}, tx *sql.Tx) (rowsAffected, lastInsertID int64, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 	query, args, err := sq.Insert(tableName).SetMap(setMap).ToSql()
 	if err != nil {
 		return
 	}
+	e := make(chan error)
 	var result sql.Result
-	// if tx == nil || len(tx) == 0 {
-	// 	result, err = db.connection.ExecContext(db.ctx, query, args...)
-	// } else {
-	// 	result, err = tx[0].ExecContext(db.ctx, query, args...)
-	// }
-	if tx == nil {
-		result, err = db.connection.ExecContext(db.ctx, query, args...)
-	} else {
-		result, err = tx.ExecContext(db.ctx, query, args...)
+	go func() {
+		if tx == nil {
+			result, err = db.connection.ExecContext(ctx, query, args...)
+		} else {
+			result, err = tx.ExecContext(ctx, query, args...)
+		}
+		if err != nil {
+			e <- err
+		}
+		rowsAffected, err = result.RowsAffected()
+		if err != nil {
+			e <- err
+		}
+		lastInsertID, err = result.LastInsertId()
+		e <- err
+	}()
+	select {
+	case <-ctx.Done():
+		return rowsAffected, lastInsertID, ctx.Err()
+	case err := <-e:
+		return rowsAffected, lastInsertID, err
 	}
-	if err != nil {
-		return
-	}
-	rowsAffected, err = result.RowsAffected()
-	if err != nil {
-		return
-	}
-	lastInsertID, err = result.LastInsertId()
-	if err != nil {
-		return
-	}
-	return
 }
 
 func (db *EasyDB) UpdateTx(tx *sql.Tx, tableName string, setMap map[string]interface{}, pred interface{}, args ...interface{}) (rowsAffected int64, err error) {
-	query, args, err := db.buildUpdtaSQL(tableName, setMap, pred, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	query, args, err := db.buildUpdateSQL(tableName, setMap, pred, args...)
 	if err != nil {
 		return
 	}
-	var result sql.Result
-	if tx != nil {
-		result, err = tx.ExecContext(db.ctx, query, args...)
-		if err != nil {
-			return
+	e := make(chan error)
+	var affectedRows int64
+	go func() {
+		var result sql.Result
+		var err error
+		if tx != nil {
+			result, err = tx.ExecContext(ctx, query, args...)
+			if err != nil {
+				e <- err
+			}
+			affectedRows, err = result.RowsAffected()
+
+		} else {
+			affectedRows, err = db.Update(tableName, setMap, pred, args)
 		}
-		rowsAffected, err = result.RowsAffected()
-	} else {
-		rowsAffected, err = db.Update(tableName, setMap, pred, args)
+		e <- err
+	}()
+	select {
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	case err := <-e:
+		return affectedRows, err
 	}
-	return
 }
 
-// Update 更新操作
-func (db *EasyDB) Update(tableName string, setMap map[string]interface{}, pred interface{}, args ...interface{}) (rowsAffected int64, err error) {
-	sql, args, err := db.buildUpdtaSQL(tableName, setMap, pred, args)
+func (db *EasyDB) Update(tableName string, setMap map[string]interface{}, pred interface{}, args ...interface{}) (affectedRows int64, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	sql, args, err := db.buildUpdateSQL(tableName, setMap, pred, args)
 	if err != nil {
 		return
 	}
-	result, err := db.connection.ExecContext(db.ctx, sql, args...)
-	if err != nil {
-		return
+	e := make(chan error)
+	go func() {
+		result, err := db.connection.ExecContext(ctx, sql, args...)
+		if err != nil {
+			e <- err
+		}
+		affectedRows, err = result.RowsAffected()
+		e <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	case err := <-e:
+		return affectedRows, err
 	}
-	rowsAffected, err = result.RowsAffected()
-	if err != nil {
-		return
-	}
-	return
 }
 
-func (db *EasyDB) buildUpdtaSQL(tableName string, setMap map[string]interface{}, pred interface{}, args ...interface{}) (sql string, args1 []interface{}, err error) {
+func (db *EasyDB) buildUpdateSQL(tableName string, setMap map[string]interface{}, pred interface{}, args ...interface{}) (sql string, args1 []interface{}, err error) {
 	sql, args1, err = sq.Update(tableName).SetMap(setMap).Where(pred, args...).ToSql()
 	return
 }

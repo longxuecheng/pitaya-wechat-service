@@ -41,6 +41,10 @@ func (u *User) Columns() []string {
 	return utils.TagValues(u, "db")
 }
 
+func (u *User) HasMobile() bool {
+	return u.PhoneNo.Valid
+}
+
 type UserCollection struct {
 	Items []*User
 }

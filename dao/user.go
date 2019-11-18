@@ -64,6 +64,11 @@ func (dao *UserDao) SelectByChannelCode(code string) (*model.User, error) {
 	return user, dao.db.SelectOneDSL(user, dao.columns, dao.table, squirrel.Eq{"channel_code": code})
 }
 
+func (dao *UserDao) SelectByChannelUserID(channelUserID int64) (*model.User, error) {
+	user := new(model.User)
+	return user, dao.db.SelectOneDSL(user, dao.columns, dao.table, squirrel.Eq{"channel_user_id": channelUserID})
+}
+
 func (dao *UserDao) UpdateByID(user *model.User) error {
 	updateMap := reflect_util.StructToMap(user, "db", "pk", "count")
 	_, err := dao.db.Update(dao.table, updateMap, squirrel.Eq{"id": user.ID})
