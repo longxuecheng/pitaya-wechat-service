@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"gotrue/facility/utils"
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -15,7 +15,7 @@ var WechatPaymentDao *WechatPayment
 func initWechatPaymentDao() *WechatPayment {
 	wp := &model.WechatPayment{}
 	WechatPaymentDao = &WechatPayment{
-		db:        sys.GetEasyDB(),
+		db:        GetEasyDB(),
 		columns:   utils.TagValues(wp, "db"),
 		tableName: wp.TableName(),
 	}
@@ -24,7 +24,7 @@ func initWechatPaymentDao() *WechatPayment {
 
 // WechatPayment is dao
 type WechatPayment struct {
-	db        *sys.EasyDB
+	db        *EasyDB
 	columns   []string
 	tableName string
 }

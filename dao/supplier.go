@@ -2,7 +2,7 @@ package dao
 
 import (
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	"github.com/Masterminds/squirrel"
 )
@@ -12,7 +12,7 @@ var SupplierDao *Supplier
 type Supplier struct {
 	columns []string
 	table   string
-	*sys.EasyDB
+	*EasyDB
 }
 
 func initSupplierDao() {
@@ -23,7 +23,7 @@ func initSupplierDao() {
 	SupplierDao = &Supplier{
 		splr.Columns(),
 		splr.TableName(),
-		sys.GetEasyDB(),
+		GetEasyDB(),
 	}
 }
 

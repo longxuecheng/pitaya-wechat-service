@@ -55,7 +55,7 @@ func (cs *Category) GetCategoryByID(ID int) (*dto.CategoryDTO, error) {
 	return parentDTO, nil
 }
 
-func (cs *Category) GetCategoriesByParentID(parentID int) ([]*dto.CategoryDTO, error) {
+func (cs *Category) GetCategoriesByParentID(parentID int64) ([]*dto.CategoryDTO, error) {
 	children, err := cs.categoryDao.SelectByParentID(parentID)
 	if err != nil {
 		return nil, err

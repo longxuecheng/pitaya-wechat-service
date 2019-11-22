@@ -2,7 +2,7 @@ package dao
 
 import (
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -12,7 +12,7 @@ var RegionDao *Region
 
 func initRegionDao() {
 	RegionDao = &Region{
-		db: sys.GetEasyDB(),
+		db: GetEasyDB(),
 	}
 }
 
@@ -20,7 +20,7 @@ var columns_region_all = []string{"id", "parent_id", "name", "type", "agency_id"
 
 // Region is dao
 type Region struct {
-	db *sys.EasyDB
+	db *EasyDB
 }
 
 func (dao *Region) SelectByParentID(parentID int) ([]model.Region, error) {

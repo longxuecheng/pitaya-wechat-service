@@ -2,7 +2,6 @@ package dao
 
 import (
 	"gotrue/model"
-	"gotrue/sys"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -14,14 +13,14 @@ func initBannerDao() {
 	BannerDao = &Banner{
 		table:   banner.TableName(),
 		columns: banner.Columns(),
-		db:      sys.GetEasyDB(),
+		db:      GetEasyDB(),
 	}
 }
 
 type Banner struct {
 	table   string
 	columns []string
-	db      *sys.EasyDB
+	db      *EasyDB
 }
 
 func (d *Banner) QueryOnlineBanners() ([]*model.Banner, error) {

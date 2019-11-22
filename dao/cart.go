@@ -3,7 +3,7 @@ package dao
 import (
 	"gotrue/facility/utils"
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -13,7 +13,7 @@ var CartDao *Cart
 
 func initCartDao() {
 	CartDao = &Cart{
-		db: sys.GetEasyDB(),
+		db: GetEasyDB(),
 	}
 }
 
@@ -21,7 +21,7 @@ var columns_cart_all = []string{"id", "user_id", "supplier_id", "session_id", "g
 
 // Cart is dao
 type Cart struct {
-	db *sys.EasyDB
+	db *EasyDB
 }
 
 func (dao *Cart) AddCart(cart model.Cart) (id int64, err error) {

@@ -60,6 +60,22 @@ func (g *Goods) StatusName() string {
 	return GoodsStatusMap[g.Status]
 }
 
+type GoodsMap map[int64]*Goods
+
+func (m GoodsMap) Get(id int64) *Goods {
+	return m[id]
+}
+
+type GoodsList []*Goods
+
+func (l GoodsList) GoodsMap() GoodsMap {
+	goodsMap := GoodsMap{}
+	for _, goods := range l {
+		goodsMap[goods.ID] = goods
+	}
+	return goodsMap
+}
+
 type GoodsSet struct {
 	items []*Goods
 }

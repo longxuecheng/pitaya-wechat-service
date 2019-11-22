@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"gotrue/facility/utils"
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -14,7 +14,7 @@ var SaleDetailDao *SaleDetail
 
 func initSaleDetailDao() {
 	SaleDetailDao = &SaleDetail{
-		db: sys.GetEasyDB(),
+		db: GetEasyDB(),
 	}
 }
 
@@ -22,7 +22,7 @@ var columns_sale_detail_all = []string{"id", "order_id", "stock_id", "goods_id",
 
 // SaleDetail is dao
 type SaleDetail struct {
-	db *sys.EasyDB
+	db *EasyDB
 }
 
 func (dao *SaleDetail) ExecTx(execFunc func(tx *sql.Tx) error) {

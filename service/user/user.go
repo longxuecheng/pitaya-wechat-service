@@ -9,7 +9,6 @@ import (
 	"gotrue/model"
 	"gotrue/service/api"
 	"gotrue/service/region"
-	"gotrue/sys"
 	"log"
 	"time"
 
@@ -158,7 +157,7 @@ func (s *User) CreateAddress(userID int64, req request.UserAddressAddRequest) (i
 		"is_default":  req.IsDefault,
 		"user_id":     userID,
 	}
-	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+	dao.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 		if req.IsDefault {
 			updateMap := map[string]interface{}{
 				"is_default": false,

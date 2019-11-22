@@ -3,7 +3,7 @@ package dao
 import (
 	"fmt"
 	"gotrue/model"
-	"gotrue/sys"
+
 	"strings"
 
 	sq "github.com/Masterminds/squirrel"
@@ -17,7 +17,7 @@ func initGoodsDao() {
 	GoodsDao = &Goods{
 		table:   goods.TableName(),
 		columns: goods.Columns(),
-		db:      sys.GetEasyDB(),
+		db:      GetEasyDB(),
 	}
 }
 
@@ -25,13 +25,22 @@ func initGoodsDao() {
 type Goods struct {
 	table   string
 	columns []string
-	db      *sys.EasyDB
+	db      *EasyDB
+}
+
+func (dao *Goods) SelectAllByStatus(status model.GoodsStatus) ([]*model.Goods, error) {
+	goods := []*model.Goods{}
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, sq.Eq{"status": string(status)}, "id DESC")
+	if err != nil {
+		return nil, err
+	}
+	return goods, nil
 }
 
 func (dao *Goods) SelectByCategory(categoryID int64) ([]*model.Goods, error) {
 	goods := []*model.Goods{}
 	pred := sq.Eq{"category_id": categoryID, "status": model.GoodsStatusOnSale}
-	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "id ASC")
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -56,11 +65,11 @@ func (dao *Goods) SelectByIDs(IDs []int64) ([]*model.Goods, error) {
 	return goods, nil
 }
 
-func (dao *Goods) SelectAllByStatus(status model.GoodsStatus) ([]*model.Goods, error) {
-	goods := []*model.Goods{}
-	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, sq.Eq{"status": string(status)})
+func (dao *Goods) QueryMapByIDs(idList []int64) (model.GoodsMap, error) {
+	goods := model.GoodsList{}
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, sq.Eq{"id": idList})
 	if err != nil {
 		return nil, err
 	}
-	return goods, nil
+	return goods.GoodsMap(), nil
 }

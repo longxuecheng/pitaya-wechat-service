@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"gotrue/facility/utils"
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	sq "github.com/Masterminds/squirrel"
 	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
@@ -15,14 +15,14 @@ var CutOrderDao *CutOrder
 func initCutOrderDao() {
 	m := &model.CutOrder{}
 	CutOrderDao = &CutOrder{
-		db:      sys.GetEasyDB(),
+		db:      GetEasyDB(),
 		table:   m.TableName(),
 		columns: m.Columns(),
 	}
 }
 
 type CutOrder struct {
-	db      *sys.EasyDB
+	db      *EasyDB
 	table   string
 	columns []string
 }

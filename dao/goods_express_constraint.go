@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"gotrue/facility/utils"
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	"github.com/Masterminds/squirrel"
 )
@@ -15,7 +15,7 @@ var GoodsExpressConstraintDao *GoodsExpressConstraint
 func InitGoodsExpressConstraintDao() {
 	m := &model.GoodsExpressConstraint{}
 	GoodsExpressConstraintDao = &GoodsExpressConstraint{
-		db:      sys.GetEasyDB(),
+		db:      GetEasyDB(),
 		table:   m.TableName(),
 		columns: m.Columns(),
 	}
@@ -23,7 +23,7 @@ func InitGoodsExpressConstraintDao() {
 
 // GoodsExpressConstraint is dao
 type GoodsExpressConstraint struct {
-	db      *sys.EasyDB
+	db      *EasyDB
 	table   string
 	columns []string
 }

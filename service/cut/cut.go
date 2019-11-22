@@ -10,7 +10,6 @@ import (
 	"gotrue/facility/utils"
 	"gotrue/model"
 	"gotrue/service/api"
-	"gotrue/sys"
 	"time"
 
 	"github.com/google/uuid"
@@ -138,7 +137,7 @@ func (s *Cut) AssistCutoff(ctx context.Context, req *request.AssistCutoff) (*res
 	var discount = decimal.Zero
 
 	if cutOrder == nil {
-		sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+		dao.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 			orderID, err := s.createCutoffOrder(userID, req.GoodsID, tx)
 			if err != nil {
 				return err

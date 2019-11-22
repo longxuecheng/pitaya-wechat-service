@@ -1,4 +1,4 @@
-package sys
+package dao
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 
 var easyDB *EasyDB
 
-const dsnTmplate = "%s:%s@tcp(%s)/mymall?charset=utf8mb4&allowNativePasswords=true&parseTime=true&loc=%s"
+const dsnTemplate = "%s:%s@tcp(%s)/mymall?charset=utf8mb4&allowNativePasswords=true&parseTime=true&loc=%s"
 
 // EasyDB is a
 type EasyDB struct {
@@ -49,8 +49,8 @@ func NewConn() *sqlx.DB {
 	} else {
 		dbHost = settings.DevDBHost
 	}
-	log.Println(fmt.Sprintf("connecting to database %s", dbHost))
-	connectURL := fmt.Sprintf(dsnTmplate, "root", "6263272lxc", dbHost, url.QueryEscape("Asia/Shanghai"))
+	log.Printf("connecting to database %s \n", dbHost)
+	connectURL := fmt.Sprintf(dsnTemplate, "root", "6263272lxc", dbHost, url.QueryEscape("Asia/Shanghai"))
 	db, err := sqlx.Connect("mysql", connectURL)
 	if err != nil {
 		log.Fatalln(err)
@@ -62,6 +62,17 @@ func NewConn() *sqlx.DB {
 		log.Panic("ping to database maybe some problems")
 	}
 	return db
+}
+
+func (db *EasyDB) NewTxExecutor() (*TxExecutor, error) {
+	tx, err := db.connection.BeginTx(context.Background(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return &TxExecutor{
+		tx:    tx,
+		chain: []TxFunc{},
+	}, nil
 }
 
 func (db *EasyDB) Stats() string {
@@ -176,10 +187,12 @@ func (db *EasyDB) Insert(tableName string, setMap map[string]interface{}, tx *sq
 		}
 		if err != nil {
 			e <- err
+			return
 		}
 		rowsAffected, err = result.RowsAffected()
 		if err != nil {
 			e <- err
+			return
 		}
 		lastInsertID, err = result.LastInsertId()
 		e <- err
@@ -190,6 +203,45 @@ func (db *EasyDB) Insert(tableName string, setMap map[string]interface{}, tx *sq
 	case err := <-e:
 		return rowsAffected, lastInsertID, err
 	}
+}
+
+var ErrorNowRowAffected = errors.New("No rows affected")
+
+func (db *EasyDB) ExecuteSQLTx(tx *sql.Tx, query string, args ...interface{}) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	txCopy := tx
+	if txCopy == nil {
+		newTx, err := db.connection.Begin()
+		if err != nil {
+			return err
+		}
+		txCopy = newTx
+	}
+	var err error
+	defer func() {
+		// if tx is nil,commit as a separated transaction
+		// if tx is not nil, the control right will give to existed tx
+		if tx == nil {
+			if err != nil {
+				txCopy.Rollback()
+			}
+			txCopy.Commit()
+		}
+
+	}()
+	result, err := txCopy.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return ErrorNowRowAffected
+	}
+	return nil
 }
 
 func (db *EasyDB) UpdateTx(tx *sql.Tx, tableName string, setMap map[string]interface{}, pred interface{}, args ...interface{}) (rowsAffected int64, err error) {
@@ -208,9 +260,9 @@ func (db *EasyDB) UpdateTx(tx *sql.Tx, tableName string, setMap map[string]inter
 			result, err = tx.ExecContext(ctx, query, args...)
 			if err != nil {
 				e <- err
+				return
 			}
 			affectedRows, err = result.RowsAffected()
-
 		} else {
 			affectedRows, err = db.Update(tableName, setMap, pred, args)
 		}

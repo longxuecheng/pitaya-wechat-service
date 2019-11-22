@@ -8,7 +8,6 @@ import (
 	"gotrue/model"
 	"gotrue/service/api"
 	"gotrue/service/basic"
-	"gotrue/sys"
 	"io"
 	"log"
 	"strings"
@@ -71,7 +70,7 @@ func (s *Goods) ImportExpressConstraints(stockID int64, r io.Reader) error {
 		}
 		constrains = append(constrains, constraint)
 	}
-	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+	dao.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 		for _, c := range constrains {
 			_, err = s.expressConstraintDao.CreateConstraint(c, tx)
 			if err != nil {

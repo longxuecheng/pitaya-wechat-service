@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"gotrue/facility/utils"
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -14,14 +14,14 @@ var CutDetailDao *CutDetail
 func initCutDetailDao() {
 	m := &model.CutDetail{}
 	CutDetailDao = &CutDetail{
-		db:      sys.GetEasyDB(),
+		db:      GetEasyDB(),
 		table:   m.TableName(),
 		columns: m.Columns(),
 	}
 }
 
 type CutDetail struct {
-	db      *sys.EasyDB
+	db      *EasyDB
 	table   string
 	columns []string
 }

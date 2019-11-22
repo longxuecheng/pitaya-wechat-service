@@ -3,7 +3,7 @@ package dao
 import (
 	"fmt"
 	"gotrue/model"
-	"gotrue/sys"
+	
 	"strings"
 )
 
@@ -12,7 +12,7 @@ var GoodsAttributeDao *GoodsAttribute
 
 func initGoodsAttributeDao() {
 	GoodsAttributeDao = &GoodsAttribute{
-		db: sys.GetEasyDB(),
+		db: GetEasyDB(),
 	}
 }
 
@@ -20,7 +20,7 @@ var columns_goods_attribute = []string{"id", "goods_id", "attribute_id", "value"
 
 // GoodsAttribute is dao
 type GoodsAttribute struct {
-	db *sys.EasyDB
+	db *EasyDB
 }
 
 func (dao *GoodsAttribute) SelectByGoodsID(goodsID int64) ([]*model.GoodsAttribute, error) {

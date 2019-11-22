@@ -2,7 +2,6 @@ package dao
 
 import (
 	"gotrue/model"
-	"gotrue/sys"
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -12,7 +11,7 @@ var AttributeDao *Attribute
 
 func initAttributeDao() {
 	AttributeDao = &Attribute{
-		db: sys.GetEasyDB(),
+		db: GetEasyDB(),
 	}
 }
 
@@ -20,7 +19,7 @@ var columns_attribute = []string{"id", "name", "value", "sort_order"}
 
 // AttributeDao is dao
 type Attribute struct {
-	db *sys.EasyDB
+	db *EasyDB
 }
 
 func (dao *Attribute) SelectByIDs(IDs []int64) ([]*model.Attribute, error) {

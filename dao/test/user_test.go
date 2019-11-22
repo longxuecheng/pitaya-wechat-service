@@ -23,6 +23,15 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
+func TestSelectUser(t *testing.T) {
+	agency, err := dao.UserDaoSingleton.SelectByChannelUserID(15)
+	if err != nil {
+		t.Error(err)
+	}
+	if agency.HasMobile() {
+		fmt.Printf("%+v\n", agency.PhoneNo.String)
+	}
+}
 func TestNickName(t *testing.T) {
 	fmt.Println("\xF0\x9F\x90\x91")
 }

@@ -1,6 +1,7 @@
 package middle_ware
 
 import (
+	"gotrue/facility/context_util"
 	"gotrue/service"
 	"net/http"
 
@@ -25,7 +26,14 @@ func ValidateAuthorization(c *gin.Context) {
 		return
 	}
 	c.Set(currentUserKey, userClaims.UserID)
+	InjectUserID(c, userClaims.UserID)
 	c.Next()
+}
+
+func InjectUserID(c *gin.Context, userID int64) {
+	ctx := context_util.WithUserID(c.Request.Context(), userID)
+	copy := c.Request.WithContext(ctx)
+	c.Request = copy
 }
 
 func MustGetCurrentUser(c *gin.Context) int64 {

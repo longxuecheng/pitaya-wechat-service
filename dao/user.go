@@ -3,7 +3,7 @@ package dao
 import (
 	"database/sql"
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	"github.com/Masterminds/squirrel"
 	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
@@ -16,14 +16,14 @@ func initUserDao() {
 	UserDaoSingleton = &UserDao{
 		table:   u.TableName(),
 		columns: u.Columns(),
-		db:      sys.GetEasyDB(),
+		db:      GetEasyDB(),
 	}
 }
 
 type UserDao struct {
 	table   string
 	columns []string
-	db      *sys.EasyDB
+	db      *EasyDB
 }
 
 func (dao *UserDao) SelectAll() ([]*model.User, error) {

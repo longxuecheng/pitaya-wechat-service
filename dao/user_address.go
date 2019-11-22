@@ -3,7 +3,7 @@ package dao
 import (
 	"database/sql"
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -12,14 +12,14 @@ var UserAddressDao *UserAddress
 
 func initUserAddressDao() {
 	UserAddressDao = &UserAddress{
-		db: sys.GetEasyDB(),
+		db: GetEasyDB(),
 	}
 }
 
 var columns_user_address_all = []string{"id", "name", "user_id", "country_id", "province_id", "city_id", "district_id", "address", "mobile", "is_default"}
 
 type UserAddress struct {
-	db *sys.EasyDB
+	db *EasyDB
 }
 
 func (dao *UserAddress) SelectByUserID(userID int64) ([]*model.UserAddress, error) {

@@ -2,7 +2,6 @@ package service
 
 import (
 	"gotrue/model"
-	"gotrue/sys"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -43,12 +42,7 @@ func BuildToken(userID int64, ttl int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// cacheCurrentUser(ss, userID)
 	return ss, nil
-}
-
-func cacheCurrentUser(token string, userID int64) {
-	sys.UserCache().Add(token, 0, userID)
 }
 
 // ParseToken validate signed token and return claims

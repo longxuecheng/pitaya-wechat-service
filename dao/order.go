@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"gotrue/facility/utils"
 	"gotrue/model"
-	"gotrue/sys"
 
 	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
 
@@ -17,7 +16,7 @@ var SaleOrderDao *SaleOrder
 func initSaleOrderDao() {
 	m := &model.SaleOrder{}
 	SaleOrderDao = &SaleOrder{
-		db:      sys.GetEasyDB(),
+		db:      GetEasyDB(),
 		table:   m.TableName(),
 		columns: m.Columns(),
 	}
@@ -25,7 +24,7 @@ func initSaleOrderDao() {
 
 // SaleOrder is dao
 type SaleOrder struct {
-	db      *sys.EasyDB
+	db      *EasyDB
 	columns []string
 	table   string
 }
@@ -62,7 +61,7 @@ func (dao *SaleOrder) SelectByOrderNo(orderNo string) (*model.SaleOrder, error) 
 
 func (dao *SaleOrder) SelectAllByUserWithPagination(userID int64, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
-	c := sys.PaginationCondition{
+	c := PaginationCondition{
 		Columns:   dao.columns,
 		TableName: dao.table,
 		Offset:    offset,
@@ -75,7 +74,7 @@ func (dao *SaleOrder) SelectAllByUserWithPagination(userID int64, offset uint64,
 
 func (dao *SaleOrder) SelectByUserAndStatus(userID int64, statusList []model.OrderStatus, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
-	c := sys.PaginationCondition{
+	c := PaginationCondition{
 		Columns:   dao.columns,
 		TableName: dao.table,
 		Offset:    offset,
@@ -89,7 +88,7 @@ func (dao *SaleOrder) SelectByUserAndStatus(userID int64, statusList []model.Ord
 // SelectBySupplierWithPagination query orders for single supplier
 func (dao *SaleOrder) SelectBySupplierWithPagination(supplierID int64, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
-	c := sys.PaginationCondition{
+	c := PaginationCondition{
 		Columns:   dao.columns,
 		TableName: dao.table,
 		Offset:    offset,
@@ -103,7 +102,7 @@ func (dao *SaleOrder) SelectBySupplierWithPagination(supplierID int64, offset ui
 // SelectAllBySuppliersWithPagination query orders for multiple suppliers
 func (dao *SaleOrder) SelectAllBySuppliersWithPagination(supplierIDs []int64, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
-	c := sys.PaginationCondition{
+	c := PaginationCondition{
 		Columns:   dao.columns,
 		TableName: dao.table,
 		Offset:    offset,
@@ -117,7 +116,7 @@ func (dao *SaleOrder) SelectAllBySuppliersWithPagination(supplierIDs []int64, of
 // SelectBySupplierAndStatus query orders by status
 func (dao *SaleOrder) SelectBySupplierAndStatus(supplierIDs []int64, stats []model.OrderStatus, offset uint64, limit uint64) ([]model.SaleOrder, int64, error) {
 	orderList := []model.SaleOrder{}
-	c := sys.PaginationCondition{
+	c := PaginationCondition{
 		Columns:   dao.columns,
 		TableName: dao.table,
 		Offset:    offset,

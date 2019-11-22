@@ -2,7 +2,7 @@ package dao
 
 import (
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -12,7 +12,7 @@ var GoodsSpecDao *GoodsSpec
 
 func initGoodsSpecDao() {
 	GoodsSpecDao = &GoodsSpec{
-		db: sys.GetEasyDB(),
+		db: GetEasyDB(),
 	}
 }
 
@@ -20,7 +20,7 @@ var columns_goods_specs = []string{"id", "goods_id", "specification_id", "value"
 
 // GoodsSpec is dao
 type GoodsSpec struct {
-	db *sys.EasyDB
+	db *EasyDB
 }
 
 func (dao *GoodsSpec) SelectByGoodsID(goodsID int64) ([]*model.GoodsSpecification, error) {

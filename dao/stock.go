@@ -2,7 +2,7 @@ package dao
 
 import (
 	"gotrue/model"
-	"gotrue/sys"
+	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -15,7 +15,7 @@ func initStockDao() {
 	StockDao = &Stock{
 		Table:   stock.TableName(),
 		Columns: stock.Columns(),
-		db:      sys.GetEasyDB(),
+		db:      GetEasyDB(),
 	}
 }
 
@@ -23,7 +23,7 @@ func initStockDao() {
 type Stock struct {
 	Table   string
 	Columns []string
-	db      *sys.EasyDB
+	db      *EasyDB
 }
 
 func (dao *Stock) SelectByID(ID int64) (*model.Stock, error) {

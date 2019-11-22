@@ -19,7 +19,6 @@ import (
 	"gotrue/service/user"
 	"gotrue/service/wechat"
 	"gotrue/service/wechat/payment"
-	"gotrue/sys"
 	"time"
 
 	"github.com/looplab/fsm"
@@ -234,7 +233,7 @@ func (s *SaleOrder) PayResult(r *request.QueryWechatPayResult, req *payment.Quer
 	order.Status = orderStatus
 	// 如果当前订单不是主单
 	if !order.IsMaster() {
-		sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+		dao.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 			err := s.dao.UpdateByID(order, nil)
 			if err != nil {
 				return err
@@ -257,8 +256,7 @@ func (s *SaleOrder) PayResult(r *request.QueryWechatPayResult, req *payment.Quer
 	if err != nil {
 		return err
 	}
-
-	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+	dao.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 		err := s.dao.UpdateByID(order, tx)
 		if err != nil {
 			return err
@@ -299,6 +297,9 @@ func (s *SaleOrder) PayResult(r *request.QueryWechatPayResult, req *payment.Quer
 			}
 			me, err := s.userDao.SelectByID(order.UserID)
 			if err != nil {
+				return
+			}
+			if me.ChannelUserID == 0 {
 				return
 			}
 			agency, err := s.userDao.SelectByChannelUserID(me.ChannelUserID)
@@ -413,7 +414,7 @@ func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddR
 		return 0, err
 	}
 	sb.CuttoffFirst()
-	sys.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
+	dao.GetEasyDB().ExecTx(func(tx *sql.Tx) error {
 		id, err = s.createStockOrders(sb.StockOrders(), tx)
 		if err != nil {
 			return err
