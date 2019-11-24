@@ -23,7 +23,13 @@ func GetUserListByConditions(c *gin.Context) {
 	c.JSON(http.StatusOK, users)
 }
 
-func UserAddressDelete(c *gin.Context) {
+func GetUserListByNickname(c *gin.Context) {
+	nickname := c.Query("nickname")
+	userList, err := user.UserService.GetUserListByNickname(nickname)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, gin.H{
+		"userList": userList,
+	})
 }
 
 func UserAddressList(c *gin.Context) {

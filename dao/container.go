@@ -22,4 +22,7 @@ func Init() {
 	initBannerDao()
 	initCutOrderDao()
 	initCutDetailDao()
+	initCouponDao()
+	initActivityDao()
+	initActivityCouponDao()
 }

@@ -11,16 +11,18 @@ func apiRouter(r *gin.Engine) {
 	root := r.Group("/api")
 	root.GET("/banner/list", controller.BannerList)
 	categoryGroup := root.Group("/category")
-	categoryGroup.GET("/tree", controller.GetCatogoriesTree)
+	categoryGroup.GET("/tree", controller.GetCategoriesTree)
 	categoryGroup.GET("/info", controller.GetCategoryInfo)
 	categoryGroup.GET("/channel", controller.GetCategoryChannels)
 	categoryGroup.GET("/top/list", controller.GetTopCategories)
+	categoryGroup.GET("/internal/list", controller.GetInternalTopCategoryList)
 
 	authGroup := root.Group("/auth")
 	authGroup.POST("/login", controller.LoginByWechat)
 
 	goodsGroup := root.Group("/goods")
 	goodsGroup.GET("/list", controller.GetGoodsListByCategory)
+	goodsGroup.GET("/internal/list", controller.GetInternalGoodsListByCategory)
 	goodsGroup.GET("/constraint/express", controller.GoodsExpressConstraint)
 	goodsGroup.POST("/constraint/import", controller.ImportExpressConstraints)
 	goodsGroup.GET("/detail", controller.GetGoodsInfo)
@@ -38,7 +40,10 @@ func apiRouter(r *gin.Engine) {
 	cashierGroup.POST("preview/stock", controller.PreviewCashierFromStock)
 
 	userGroup := root.Group("/user", middle_ware.ValidateAuthorization)
+	userGroup.GET("/list/nickname", controller.GetUserListByNickname)
 	userGroup.POST("/channel/bind", controller.BindChannelUser)
+	userGroup.POST("/coupon/grab", controller.GrabCoupon)
+	userGroup.GET("/coupon/all", controller.GetCouponListForUser)
 
 	regionGroup := root.Group("/region")
 	regionGroup.GET("list", controller.RegionList)

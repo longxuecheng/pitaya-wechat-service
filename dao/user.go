@@ -3,7 +3,6 @@ package dao
 import (
 	"database/sql"
 	"gotrue/model"
-	
 
 	"github.com/Masterminds/squirrel"
 	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
@@ -24,6 +23,17 @@ type UserDao struct {
 	table   string
 	columns []string
 	db      *EasyDB
+}
+
+func (dao *UserDao) QueryListByNickname(nickname string) ([]*model.User, error) {
+	users := []*model.User{}
+	nickname = "%" + nickname + "%"
+
+	err := dao.db.Select(&users, "SELECT id,nick_name,avatar_url from user WHERE nick_name LIKE ?", nickname)
+	if err != nil {
+		return nil, err
+	}
+	return users, err
 }
 
 func (dao *UserDao) SelectAll() ([]*model.User, error) {

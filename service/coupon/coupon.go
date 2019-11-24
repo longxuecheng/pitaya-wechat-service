@@ -15,6 +15,7 @@ var (
 	ErrorActivityOffline      = errors.NewWithCodef("ActivityOfflin", "活动下线啦")
 	ErrorActivityNotAvailable = errors.NewWithCodef("ActivityNotAvailable", "不在活动期间")
 	ErrorCouponDrained        = errors.NewWithCodef("CouponDrained", "优惠券抢完啦")
+	ErrorDuplicateGrabCoupon  = errors.NewWithCodef("DuplicateGrabCoupon", "不可以重复抢哦")
 )
 
 var couponServiceIns api.ICouponService
@@ -68,7 +69,7 @@ func (s *CouponService) CouponActivityInfo(ctx context.Context, activityID int64
 	apiCouponActivity := &api.CouponActivityResponse{
 		Title:           activity.Title,
 		BannerURL:       activity.BannerURL,
-		BgURL:           activity.BgURL,
+		BgURL:           activity.BgURL.String,
 		StartTime:       utils.FormatTime(activity.StartTime, utils.TimePrecision_Seconds),
 		ExpireTime:      utils.FormatTime(activity.ExpireTime, utils.TimePrecision_Seconds),
 		CouponType:      couponActivity.CouponType.Title(),
@@ -138,9 +139,17 @@ func (s *CouponService) newAPICouponResponse(categoryMap model.CategoryMap, good
 }
 
 func (s *CouponService) GrabCoupon(ctx context.Context, activityID int64) error {
+	// TODO 检查一个用户是否已经在该活动下抢到了优惠券，避免一个人抢多张
 	userID, err := context_util.GetUserID(ctx)
 	if err != nil {
 		return err
+	}
+	_, err = s.couponDao.QueryByUserAndActivity(userID, activityID)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	if err == nil {
+		return ErrorDuplicateGrabCoupon
 	}
 	activity, err := s.activityDao.QueryByID(activityID)
 	if err == sql.ErrNoRows {

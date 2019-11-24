@@ -13,7 +13,7 @@ func Logger() gin.HandlerFunc {
 		// before request
 		c.Next()
 		// after request
-		latency := time.Since(t)
-		log.Log.Debug("time latency was %d", latency)
+		elapsed := time.Since(t)
+		log.Log.Debug("Time used is %0.2f seconds", elapsed.Seconds())
 	}
 }

@@ -9,6 +9,8 @@ import (
 type IGoodsService interface {
 	GetGoodsByCategory(categoryID int64) ([]*response.GoodsItem, error)
 
+	GetInternalGoodsByCategory(categoryID int64) ([]*InternalGoods, error)
+
 	Gallery(goodsID int64) ([]response.GoodsGalleryDTO, error)
 
 	ExpressConstraint(stockID int64, provinceID int) (*response.GoodsExpressConstraint, error)
@@ -25,4 +27,9 @@ type IGoodsService interface {
 	OneSaleGoodsCards() ([]*response.GoodsCard, error)
 
 	ImportExpressConstraints(stockID int64, r io.Reader) error
+}
+
+type InternalGoods struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
 }

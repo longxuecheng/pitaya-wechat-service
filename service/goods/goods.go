@@ -127,6 +127,21 @@ func (s *Goods) GetGoodsByCategory(categoryID int64) ([]*response.GoodsItem, err
 	return buildApiGoods(goods), nil
 }
 
+func (s *Goods) GetInternalGoodsByCategory(categoryID int64) ([]*api.InternalGoods, error) {
+	goods, err := s.goodsDao.SelectByCategory(categoryID)
+	if err != nil {
+		return nil, err
+	}
+	apiGoods := make([]*api.InternalGoods, len(goods))
+	for i, g := range goods {
+		apiGoods[i] = &api.InternalGoods{
+			ID:   g.ID,
+			Name: g.Name,
+		}
+	}
+	return apiGoods, nil
+}
+
 func (s *Goods) Gallery(goodsID int64) ([]response.GoodsGalleryDTO, error) {
 	return nil, nil
 }

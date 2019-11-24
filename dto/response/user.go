@@ -7,11 +7,19 @@ type User struct {
 	UserID    string `json:"userId"`
 }
 
+type InternalUser struct {
+	ID        int64  `json:"id"`
+	AvatarURL string `json:"avatarUrl"`
+	NickName  string `json:"nickname"`
+}
+
 type UserDTO struct {
-	Name    string `json:"name"`
-	PhoneNo string `json:"phoneNo"`
-	Email   string `json:"email"`
-	OpenID  string `json:"-"`
+	Name      string `json:"name"`
+	Nickname  string `json:"nickname"`
+	AvatarURL string `json:"avatarUrl"`
+	PhoneNo   string `json:"phoneNo"`
+	Email     string `json:"email"`
+	OpenID    string `json:"-"`
 }
 
 type UserAddress struct {

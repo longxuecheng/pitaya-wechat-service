@@ -4,6 +4,7 @@ import (
 	"gotrue/dao"
 	"gotrue/dto"
 	"gotrue/model"
+	"gotrue/service/api"
 )
 
 var CategoryService *Category
@@ -33,6 +34,21 @@ func (cs *Category) GetTopList() ([]*dto.CategoryDTO, error) {
 		return nil, err
 	}
 	return buildCategoryDTOs(list), nil
+}
+
+func (cs *Category) GetInternalTopList() ([]*api.InternalCategory, error) {
+	list, err := cs.categoryDao.SelectAllTopCategories()
+	if err != nil {
+		return nil, err
+	}
+	apiList := make([]*api.InternalCategory, len(list))
+	for i, c := range list {
+		apiList[i] = &api.InternalCategory{
+			ID:   c.ID,
+			Name: c.Name,
+		}
+	}
+	return apiList, nil
 }
 
 func (cs *Category) GetCategoryByID(ID int) (*dto.CategoryDTO, error) {

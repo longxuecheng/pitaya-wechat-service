@@ -9,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetCatogoriesTree 获取顶级类目树列表
-func GetCatogoriesTree(c *gin.Context) {
+// GetCategoriesTree 获取顶级类目树列表
+func GetCategoriesTree(c *gin.Context) {
 	categories, err := basic.CategoryService.GetCategoryTree()
 	if err != nil {
 		panic(err)
@@ -46,5 +46,13 @@ func GetTopCategories(c *gin.Context) {
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, map[string]interface{}{
 		"categories": categories,
+	})
+}
+
+func GetInternalTopCategoryList(c *gin.Context) {
+	categories, err := basic.CategoryService.GetInternalTopList()
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, gin.H{
+		"categoryList": categories,
 	})
 }

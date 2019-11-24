@@ -148,9 +148,14 @@ func (db *EasyDB) SelectOne(target interface{}, query string, args ...interface{
 	e := make(chan error)
 	go func() {
 		rows, err := db.connection.QueryxContext(ctx, query, args...)
+		if err != nil {
+			e <- err
+			return
+		}
 		defer rows.Close()
 		if err != nil {
 			e <- err
+			return
 		}
 		if rows.Next() {
 			err = rows.StructScan(target)

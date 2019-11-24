@@ -55,12 +55,31 @@ func (a *address) userAddressDTO(fullRegion string) *response.UserAddress {
 	return dto
 }
 
+func (s *User) GetUserListByNickname(nickname string) ([]*response.InternalUser, error) {
+	if nickname == "" {
+		return nil, nil
+	}
+	userList, err := s.userDao.QueryListByNickname(nickname)
+	if err != nil {
+		return nil, err
+	}
+	apiUserList := make([]*response.InternalUser, len(userList))
+	for i, user := range userList {
+		apiUserList[i] = &response.InternalUser{
+			NickName:  user.NickName,
+			AvatarURL: user.AvatarURL,
+			ID:        user.ID,
+		}
+	}
+	return apiUserList, nil
+}
+
 func (s *User) GetList() ([]*response.UserDTO, error) {
 	users, err := s.userDao.SelectAll()
 	if err != nil {
 		return nil, err
 	}
-	return buildUserDTOs(users), nil
+	return buildAPIUsers(users), nil
 }
 
 func (s *User) DefaultAddress(userID int64) (*response.UserAddress, error) {
@@ -235,13 +254,15 @@ func installUserAddress(ad *model.UserAddress) *response.UserAddress {
 func installUserDTO(model *model.User) *response.UserDTO {
 	userDto := new(response.UserDTO)
 	userDto.Name = model.Name.String
+	userDto.Nickname = model.NickName
+	userDto.AvatarURL = model.AvatarURL
 	userDto.PhoneNo = model.PhoneNo.String
 	userDto.Email = model.Email.String
 	userDto.OpenID = model.WechatID
 	return userDto
 }
 
-func buildUserDTOs(models []*model.User) []*response.UserDTO {
+func buildAPIUsers(models []*model.User) []*response.UserDTO {
 	if models == nil || len(models) == 0 {
 		return nil
 	}

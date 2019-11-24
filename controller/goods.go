@@ -74,6 +74,24 @@ func GetGoodsListByCategory(c *gin.Context) {
 	c.Set("data", map[string]interface{}{"goodsList": goods})
 }
 
+func GetInternalGoodsListByCategory(c *gin.Context) {
+	categoryIDString := c.Query("categoryId")
+	if categoryIDString == "" {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	categoryID, err := strconv.ParseInt(categoryIDString, 10, 64)
+	if err != nil {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	goods, err := goods.GoodsService.GetGoodsByCategory(categoryID)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, gin.H{
+		"goodsList": goods,
+	})
+}
+
 // GetGoodsInfo 获取指定商品详情
 // 包括（1.商品信息 2.图片列表 3.商品属性 4. 商品库存 5. 商品规格）
 func GetGoodsInfo(c *gin.Context) {

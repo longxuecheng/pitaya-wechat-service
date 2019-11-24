@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"gotrue/facility/utils"
 	"time"
 )
@@ -12,17 +13,16 @@ const (
 type ActivityType string
 
 type Activity struct {
-	ID         int64        `db:"id"`
-	Title      string       `db:"title"`
-	BannerURL  string       `db:"banner_url"`
-	BgURL      string       `db:"bg_url"`
-	PageRoute  string       `db:"page_route"`
-	Type       ActivityType `db:"type"`
-	Content    string       `db:"content"`
-	StartTime  time.Time    `db:"start_time"`
-	ExpireTime time.Time    `db:"expire_time"`
-	IsDelete   bool         `db:"is_delete"`
-	IsOnline   bool         `db:is_online`
+	ID         int64          `db:"id"`
+	Title      string         `db:"title"`
+	BannerURL  string         `db:"banner_url"`
+	BgURL      sql.NullString `db:"bg_url"`
+	PageRoute  string         `db:"page_route"`
+	Type       ActivityType   `db:"type"`
+	StartTime  time.Time      `db:"start_time"`
+	ExpireTime time.Time      `db:"expire_time"`
+	IsDelete   bool           `db:"is_delete"`
+	IsOnline   bool           `db:"is_online"`
 }
 
 func (c *Activity) TableName() string {

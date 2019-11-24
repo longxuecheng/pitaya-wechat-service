@@ -37,7 +37,12 @@ func (d *Coupon) QueryByCouponNo(couponNo string) (*model.Coupon, error) {
 
 func (d *Coupon) QueryByUserID(userID int64) (model.CouponList, error) {
 	coupons := model.CouponList{}
-	return coupons, d.db.SelectDSL(coupons, d.columns, d.table, squirrel.Eq{"user_id": userID, "consumed": false})
+	return coupons, d.db.SelectDSL(&coupons, d.columns, d.table, squirrel.Eq{"user_id": userID, "consumed": false})
+}
+
+func (d *Coupon) QueryByUserAndActivity(userID, activityID int64) (*model.Coupon, error) {
+	coupon := &model.Coupon{}
+	return coupon, d.db.SelectOneDSL(coupon, d.columns, d.table, squirrel.Eq{"user_id": userID, "activity_id": activityID})
 }
 
 func (d *Coupon) CreateCoupon(coupon *model.Coupon, tx *sql.Tx) (int64, error) {

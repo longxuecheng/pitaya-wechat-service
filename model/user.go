@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"gotrue/facility/utils"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -31,6 +32,7 @@ type User struct {
 	ChannelUserID   int64          `db:"channel_user_id"`
 	BindChannelTime NullUTC8Time   `db:"bind_channel_time"`
 	ChannelCode     string         `db:"channel_code"`
+	CreateTime      time.Time      `db:"create_time"`
 }
 
 func (u *User) TableName() string {
