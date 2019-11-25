@@ -3,6 +3,7 @@ package controller
 import (
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
+	"gotrue/service/api"
 	"gotrue/service/coupon"
 	"strconv"
 
@@ -22,6 +23,17 @@ func GrabCoupon(c *gin.Context) {
 		return
 	}
 	err = couponService.GrabCoupon(c.Request.Context(), activityIDInt64)
+	utils.CheckAndPanic(err)
+}
+
+func SendCoupon(c *gin.Context) {
+	req := &api.SendCouponRequest{}
+	err := c.BindJSON(req)
+	if err != nil {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	err = coupon.GetCouponService().SendCouponToUser(c.Request.Context(), req)
 	utils.CheckAndPanic(err)
 }
 

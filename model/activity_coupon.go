@@ -11,7 +11,7 @@ import (
 type ActivityCoupon struct {
 	ID                int64           `db:"id"`
 	ActivityID        int64           `db:"activity_id"`
-	CouponType        CounponType     `db:"coupon_type"`
+	CouponType        CouponType      `db:"coupon_type"`
 	ComposableType    ComposableType  `db:"composable_type"`
 	CouponPrice       decimal.Decimal `db:"coupon_price"`
 	TotalQuantity     int64           `db:"total_quantity"`

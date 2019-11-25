@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"gotrue/facility/slices"
 	"gotrue/facility/utils"
 	"time"
@@ -8,10 +9,13 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// ValidCouponTypes is valid coupon type list
+var ValidCouponTypes = []CouponType{CouponTypeAllCategory, CouponTypeSpecialCategory, CouponTypeSpecialGoods}
+
 const (
-	CounponTypeAllCategory     CounponType = "All_Category"
-	CounponTypeSpecialCategory CounponType = "Special_Category"
-	CounponTypeSpecialGoods    CounponType = "Special_Goods"
+	CouponTypeAllCategory     CouponType = "All_Category"
+	CouponTypeSpecialCategory CouponType = "Special_Category"
+	CouponTypeSpecialGoods    CouponType = "Special_Goods"
 )
 
 const (
@@ -19,19 +23,34 @@ const (
 	ComposableTypeCutoff ComposableType = "Cutoff"
 )
 
-type CounponType string
+type CouponType string
 
-func (c CounponType) String() string {
+func NewCouponTypeFromString(str string) (CouponType, error) {
+	has := false
+	couponType := CouponType(str)
+	for _, ct := range ValidCouponTypes {
+		if couponType == ct {
+			has = true
+			break
+		}
+	}
+	if !has {
+		return couponType, errors.New("Invalid coupon type")
+	}
+	return couponType, nil
+}
+
+func (c CouponType) String() string {
 	return string(c)
 }
 
-func (c CounponType) Title() string {
+func (c CouponType) Title() string {
 	switch c {
-	case CounponTypeAllCategory:
+	case CouponTypeAllCategory:
 		return "全品类"
-	case CounponTypeSpecialCategory:
+	case CouponTypeSpecialCategory:
 		return "指定品类"
-	case CounponTypeSpecialGoods:
+	case CouponTypeSpecialGoods:
 		return "指定商品"
 	default:
 		return "未知"
@@ -48,10 +67,11 @@ type Coupon struct {
 	Price          decimal.Decimal `db:"price"`
 	CreateTime     time.Time       `db:"create_time"`
 	Consumed       bool            `db:"consumed"`
+	Received       bool            `db:"received"`
 	ConsumeTime    NullUTC8Time    `db:"consumed_time"`
 	SaleOrderID    int64           `db:"sale_order_id"`
 	ExpireTime     time.Time       `db:"expire_time"`
-	Type           CounponType     `db:"type"`
+	Type           CouponType      `db:"type"`
 	CategoryID     int64           `db:"category_id"`
 	GoodsID        int64           `db:"goods_id"`
 	ComposableType ComposableType  `db:"composable_type"`

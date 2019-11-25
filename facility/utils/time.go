@@ -10,6 +10,7 @@ const (
 const (
 	TimeFormatUnit_Date    string = "2006-1-2"
 	TimeFormatUnit_Seconds string = "2006-1-2 15:04:05"
+	TimeFormatUnit_Minutes string = "2006-1-2 15:04"
 )
 
 type TimePrecision int8

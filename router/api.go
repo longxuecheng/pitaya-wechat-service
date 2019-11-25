@@ -7,7 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func internalAPI(r *gin.Engine) {
+	internalAPI := r.Group("/api/internal", middle_ware.ValidateAuthorization)
+	internalAPI.GET("/goods/list", controller.GetInternalGoodsListByCategory)
+	internalAPI.GET("/category/list", controller.GetInternalTopCategoryList)
+	internalAPI.POST("/coupon/send", controller.SendCoupon)
+}
+
 func apiRouter(r *gin.Engine) {
+	internalAPI(r)
 	root := r.Group("/api")
 	root.GET("/banner/list", controller.BannerList)
 	categoryGroup := root.Group("/category")
@@ -15,14 +23,12 @@ func apiRouter(r *gin.Engine) {
 	categoryGroup.GET("/info", controller.GetCategoryInfo)
 	categoryGroup.GET("/channel", controller.GetCategoryChannels)
 	categoryGroup.GET("/top/list", controller.GetTopCategories)
-	categoryGroup.GET("/internal/list", controller.GetInternalTopCategoryList)
 
 	authGroup := root.Group("/auth")
 	authGroup.POST("/login", controller.LoginByWechat)
 
 	goodsGroup := root.Group("/goods")
 	goodsGroup.GET("/list", controller.GetGoodsListByCategory)
-	goodsGroup.GET("/internal/list", controller.GetInternalGoodsListByCategory)
 	goodsGroup.GET("/constraint/express", controller.GoodsExpressConstraint)
 	goodsGroup.POST("/constraint/import", controller.ImportExpressConstraints)
 	goodsGroup.GET("/detail", controller.GetGoodsInfo)

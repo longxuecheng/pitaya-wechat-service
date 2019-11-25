@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"gotrue/facility/errors"
 	"gotrue/model"
 
 	"github.com/shopspring/decimal"
@@ -15,6 +16,8 @@ type ICouponService interface {
 	GetCouponListByUser(ctx context.Context) ([]*CouponResponse, error)
 
 	GrabCoupon(ctx context.Context, activityID int64) error
+
+	SendCouponToUser(ctx context.Context, req *SendCouponRequest) error
 }
 
 type CouponResponse struct {
@@ -40,4 +43,31 @@ type CouponActivityResponse struct {
 	CouponPrice     string `json:"couponPrice"`
 	TotalCoupon     int64  `json:"totalCoupon"`
 	AvailableCoupon int64  `json:"availableCoupon"`
+}
+
+type SendCouponRequest struct {
+	CategoryID           int64           `json:"categoryId"`
+	GoodsID              int64           `json:"goodsId"`
+	CouponType           string          `json:"couponType"`
+	CouponPrice          decimal.Decimal `json:"couponPrice"`
+	CouponQuantity       int             `json:"couponQuantity"`
+	TargetUserID         int64           `json:"targetUserID"`
+	ExpireTime           string          `json:"expireTime"`
+	ComposableWithCutoff bool            `json:"composableWithCuffoff"`
+}
+
+func (r *SendCouponRequest) Validate() error {
+	if r.TargetUserID == 0 {
+		return errors.NewWithCodef("MissingTargetUser", "还没有指定用户")
+	}
+	if r.CouponPrice.Equals(decimal.Zero) {
+		return errors.NewWithCodef("InvalidCouponPrice", "优惠券金额不能为0")
+	}
+	if r.CouponQuantity == 0 {
+		return errors.NewWithCodef("InvalidCouponQuantity", "优惠券数量不能为0")
+	}
+	if r.ExpireTime == "" {
+		return errors.NewWithCodef("MissingCouponExpireTime", "优惠券过期时间错误")
+	}
+	return nil
 }

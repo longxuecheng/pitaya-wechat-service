@@ -9,6 +9,9 @@ import (
 	"gotrue/facility/utils"
 	"gotrue/model"
 	"gotrue/service/api"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -52,6 +55,63 @@ type CouponService struct {
 	activityDao       *dao.Activity
 	categoryDao       *dao.Category
 	goodsDao          *dao.Goods
+}
+
+func (s *CouponService) SendCouponToUser(ctx context.Context, req *api.SendCouponRequest) error {
+	err := req.Validate()
+	if err != nil {
+		return err
+	}
+	couponType, err := model.NewCouponTypeFromString(req.CouponType)
+	if err != nil {
+		return errors.CauseWithCodef(err, "InvalidCouponType", "券类型不合法")
+	}
+	if couponType == model.CouponTypeSpecialCategory {
+		if req.CategoryID == 0 {
+			return errors.NewWithCodef("InvalidCategory", "品类与券类型不符合")
+		}
+	}
+	if couponType == model.CouponTypeSpecialGoods {
+		if req.CategoryID == 0 || req.GoodsID == 0 {
+			return errors.NewWithCodef("InvalidGoods", "商品与券类型不符合")
+		}
+	}
+	composableType := model.ComposableTypeNone
+	if req.ComposableWithCutoff {
+		composableType = model.ComposableTypeCutoff
+	}
+	expireTime, err := time.Parse(utils.TimeFormatUnit_Minutes, req.ExpireTime)
+	if err != nil {
+		return errors.NewWithCodef("InvalidTimeFormat", "日期格式误")
+	}
+	coupon := &model.Coupon{
+		UserID:         req.TargetUserID,
+		CouponNo:       uuid.New().String(),
+		Price:          req.CouponPrice,
+		ActivityID:     0, // may be set send coupon as an independent activity implicitly
+		Type:           couponType,
+		CategoryID:     req.CategoryID,
+		GoodsID:        req.GoodsID,
+		ComposableType: composableType,
+		CreateTime:     time.Now(),
+		ExpireTime:     expireTime,
+		Received:       false,
+	}
+	createFunc := func(input interface{}, tx *sql.Tx) (interface{}, error) {
+		for i := 0; i < req.CouponQuantity; i++ {
+			_, err := s.couponDao.CreateCoupon(coupon, tx)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	}
+	txExecutor, err := dao.GetEasyDB().NewTxExecutor()
+	if err != nil {
+		return err
+	}
+	txExecutor.AppendFunc(createFunc)
+	return txExecutor.Execute()
 }
 
 func (s *CouponService) CouponActivityInfo(ctx context.Context, activityID int64) (*api.CouponActivityResponse, error) {
@@ -169,16 +229,17 @@ func (s *CouponService) GrabCoupon(ctx context.Context, activityID int64) error 
 	if couponActivity.IsDrained() {
 		return ErrorCouponDrained
 	}
-	txExecutor, err := dao.GetEasyDB().NewTxExecutor()
-	if err != nil {
-		return err
-	}
+
 	grabCouponFunc := func(input interface{}, tx *sql.Tx) (interface{}, error) {
 		return nil, s.activityCouponDao.DecreaseAvailQuantityByID(couponActivity.ID, tx)
 	}
 	createCouponFunc := func(input interface{}, tx *sql.Tx) (interface{}, error) {
 		coupon := couponActivity.NewCoupon(userID)
 		return s.couponDao.CreateCoupon(coupon, tx)
+	}
+	txExecutor, err := dao.GetEasyDB().NewTxExecutor()
+	if err != nil {
+		return err
 	}
 	txExecutor.AppendFunc(grabCouponFunc)
 	txExecutor.AppendFunc(createCouponFunc)
