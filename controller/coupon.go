@@ -37,9 +37,27 @@ func SendCoupon(c *gin.Context) {
 	utils.CheckAndPanic(err)
 }
 
-func GetCouponListForUser(c *gin.Context) {
+func GetAvailableCouponListForUser(c *gin.Context) {
 	couponService := coupon.GetCouponService()
-	couponList, err := couponService.GetCouponListByUser(c.Request.Context())
+	couponList, err := couponService.GetAvailableCouponList(c.Request.Context())
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, gin.H{
+		"coupons": couponList,
+	})
+}
+
+func GetReceivableCouponListForUser(c *gin.Context) {
+	couponService := coupon.GetCouponService()
+	couponList, err := couponService.GetReceivableCouponList(c.Request.Context())
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, gin.H{
+		"coupons": couponList,
+	})
+}
+
+func GetExpiredCouponListForUser(c *gin.Context) {
+	couponService := coupon.GetCouponService()
+	couponList, err := couponService.GetExpiredCouponList(c.Request.Context())
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, gin.H{
 		"coupons": couponList,

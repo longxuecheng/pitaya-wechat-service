@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"gotrue/dao"
 	"gotrue/dto/response"
+	"gotrue/facility/errors"
 	"gotrue/model"
 	"gotrue/service/api"
 	"gotrue/service/basic"
@@ -13,13 +14,9 @@ import (
 	"strings"
 )
 
-var GoodsService *Goods
+var GoodsService api.IGoodsService
 
 func initGoodsService() {
-	if GoodsService != nil {
-		return
-	}
-
 	GoodsService = &Goods{
 		goodsDao:             dao.GoodsDao,
 		stockDao:             dao.StockDao,
@@ -120,15 +117,15 @@ func (s *Goods) ExpressConstraint(stockID int64, addressID int64) (*response.Goo
 }
 
 func (s *Goods) GetGoodsByCategory(categoryID int64) ([]*response.GoodsItem, error) {
-	goods, err := s.goodsDao.SelectByCategory(categoryID)
+	goods, err := s.goodsDao.QueryAllByCategory(categoryID)
 	if err != nil {
 		return nil, err
 	}
-	return buildApiGoods(goods), nil
+	return buildAPIGoods(goods), nil
 }
 
 func (s *Goods) GetInternalGoodsByCategory(categoryID int64) ([]*api.InternalGoods, error) {
-	goods, err := s.goodsDao.SelectByCategory(categoryID)
+	goods, err := s.goodsDao.QueryAllByStatus(model.GoodsStatusOnSale.String())
 	if err != nil {
 		return nil, err
 	}
@@ -142,16 +139,21 @@ func (s *Goods) GetInternalGoodsByCategory(categoryID int64) ([]*api.InternalGoo
 	return apiGoods, nil
 }
 
-func (s *Goods) Gallery(goodsID int64) ([]response.GoodsGalleryDTO, error) {
-	return nil, nil
-}
-
-func (s *Goods) Info(goodsID int64) (*response.GoodsInfo, error) {
-	goods, err := s.goodsDao.SelectByID(goodsID)
+func (s *Goods) GoodsInfo(goodsID int64) (*api.GoodsInfoRespone, error) {
+	goods, err := s.goodsDao.QueryByID(goodsID)
 	if err != nil {
 		return nil, err
 	}
-	return installApiGoodsInfo(goods), nil
+	priceRange, err := s.stockDao.SelectMinMaxSalePriceByGoodsID(goodsID)
+	if err != nil {
+		return nil, errors.CauseWithCodef(err, "GetPriceRangeError", "获取价格范围失败")
+	}
+	apiGoods := installAPIGoodsInfo(goods)
+	apiGoods.Status = goods.StatusName()
+	apiGoods.Available = goods.IsOnSale()
+	apiGoods.MinPrice = priceRange.MinSalePrice.StringFixed(2)
+	apiGoods.MaxPrice = priceRange.MaxSalePrice.StringFixed(2)
+	return apiGoods, nil
 }
 
 func (s *Goods) Attributes(goodsID int64) ([]*response.AttributeDTO, error) {
@@ -208,34 +210,34 @@ func (s *Goods) SpecificationDesc(goodsID int64, specIDs []int64, sep string) (s
 	return strings.Join(specNames, sep), nil // 商品规格组合描述
 }
 
-func (s *Goods) HotGoods(categoryID int64) ([]response.HotGoods, error) {
-	var goodsList []*model.Goods
+func (s *Goods) GoodsList(categoryID int64) ([]api.IndexGoodsResponse, error) {
+	var goodsList model.GoodsSet
 	var err error
 	if categoryID == 0 {
-		goodsList, err = s.goodsDao.SelectAllByStatus(model.GoodsStatusOnSale)
+		goodsList, err = s.goodsDao.QueyAll()
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		goodsList, err = s.goodsDao.SelectByCategory(categoryID)
+		goodsList, err = s.goodsDao.QueryAllByCategory(categoryID)
 		if err != nil {
 			return nil, err
 		}
 	}
-	goodsSet := model.NewGoodsSet(goodsList)
-	stockSet, err := s.stockDao.SelectByGoodsIDs(goodsSet.GoodsIDs())
+	goodsIDList := goodsList.GoodsIDs()
+	stockSet, err := s.stockDao.QueryOnSaleStocksByGoodsIDs(goodsIDList)
 	if err != nil {
 		return nil, err
 	}
-	goodsSpecSet, err := s.goodsSpecDao.SelectByGoodsIDs(goodsSet.GoodsIDs())
+	goodsSpecSet, err := s.goodsSpecDao.SelectByGoodsIDs(goodsIDList)
 	if err != nil {
 		return nil, err
 	}
-	return s.buildApiHotGoods(goodsList, stockSet, goodsSpecSet), nil
+	return s.buildAPIIndexGoods(goodsList, stockSet, goodsSpecSet), nil
 }
 
 func (s *Goods) OneSaleGoodsCards() ([]*response.GoodsCard, error) {
-	goodsList, err := s.goodsDao.SelectAllByStatus(model.GoodsStatusOnSale)
+	goodsList, err := s.goodsDao.QueryAllByStatus(model.GoodsStatusOnSale.String())
 	if err != nil {
 		return nil, err
 	}
@@ -276,8 +278,8 @@ func buildGoodsSpecificationDTOs(models []*model.GoodsSpecification) []*response
 
 }
 
-func installApiGoodsInfo(model *model.Goods) *response.GoodsInfo {
-	data := new(response.GoodsInfo)
+func installAPIGoodsInfo(model *model.Goods) *api.GoodsInfoRespone {
+	data := &api.GoodsInfoRespone{}
 	data.ID = model.ID
 	data.SupplierID = model.SupplierID
 	data.Name = model.Name
@@ -288,12 +290,11 @@ func installApiGoodsInfo(model *model.Goods) *response.GoodsInfo {
 	if model.BriefDescription.Valid {
 		data.BriefDesc = model.BriefDescription.String
 	}
-	data.RetailPrice = model.RetailPrice
 	data.ProducingArea = model.ProducingArea
 	return data
 }
 
-func installApiGoods(model *model.Goods) *response.GoodsItem {
+func installAPIGoods(model *model.Goods) *response.GoodsItem {
 	data := new(response.GoodsItem)
 	data.ID = model.ID
 	data.Name = model.Name
@@ -303,24 +304,25 @@ func installApiGoods(model *model.Goods) *response.GoodsItem {
 	return data
 }
 
-func (s *Goods) buildApiHotGoods(models []*model.Goods, stockSet *model.StockSet, goodsSpecSet *model.GoodsSpecSet) []response.HotGoods {
+func (s *Goods) buildAPIIndexGoods(models model.GoodsSet, stockSet model.StockSet, goodsSpecSet *model.GoodsSpecSet) []api.IndexGoodsResponse {
 	if models == nil || len(models) == 0 {
 		return nil
 	}
 	stockSpecMap := stockSet.SpecMap()
 	goodsSpecMap := goodsSpecSet.Map()
-	dtos := make([]response.HotGoods, len(models))
+	dtos := make([]api.IndexGoodsResponse, len(models))
 	// goods => stocks => specifications
 	for i, model := range models {
-		data := response.HotGoods{
+		data := api.IndexGoodsResponse{
 			ID:            model.ID,
+			Status:        model.StatusName(),
 			Name:          model.Name,
 			PicURL:        model.ListPicURL.String,
-			RetailPrice:   model.RetailPrice,
 			ProducingArea: model.ProducingArea,
+			Available:     model.IsOnSale(),
 		}
 		stocks := stockSet.GetByGoods(model.ID)
-		stockPriceList := make([]response.StockPrice, len(stocks))
+		stockPriceList := make([]api.StockPrice, len(stocks))
 		for i, stock := range stocks {
 			specIDList := stockSpecMap.GetSpecs(stock.ID)
 			specNames := []string{}
@@ -330,7 +332,7 @@ func (s *Goods) buildApiHotGoods(models []*model.Goods, stockSet *model.StockSet
 					specNames = append(specNames, spec.Value)
 				}
 			}
-			stockPriceList[i] = response.StockPrice{
+			stockPriceList[i] = api.StockPrice{
 				Spec:      strings.Join(specNames, "|"),
 				SalePrice: stock.SaleUnitPrice.StringFixed(2),
 			}
@@ -341,13 +343,13 @@ func (s *Goods) buildApiHotGoods(models []*model.Goods, stockSet *model.StockSet
 	return dtos
 }
 
-func buildApiGoods(models []*model.Goods) []*response.GoodsItem {
+func buildAPIGoods(models []*model.Goods) []*response.GoodsItem {
 	if models == nil || len(models) == 0 {
 		return nil
 	}
 	dtos := make([]*response.GoodsItem, len(models))
 	for i, model := range models {
-		dtos[i] = installApiGoods(model)
+		dtos[i] = installAPIGoods(model)
 	}
 	return dtos
 }

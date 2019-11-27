@@ -2,7 +2,6 @@ package dao
 
 import (
 	"gotrue/model"
-	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -28,15 +27,15 @@ type Stock struct {
 
 func (dao *Stock) SelectByID(ID int64) (*model.Stock, error) {
 	stock := new(model.Stock)
-	err := dao.db.SelectOneDSL(stock, dao.Columns, dao.Table, sq.Eq{"id": ID})
+	err := dao.db.SelectOneDSL(stock, dao.Columns, dao.Table, sq.Eq{"id": ID, "status": model.StockStatusOnSale})
 	if err != nil {
 		return nil, err
 	}
 	return stock, nil
 }
 
-func (dao *Stock) SelectByGoodsID(goodsID int64) ([]*model.Stock, error) {
-	stocks := []*model.Stock{}
+func (dao *Stock) SelectByGoodsID(goodsID int64) (model.StockSet, error) {
+	stocks := model.StockSet{}
 	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"goods_id": goodsID})
 	if err != nil {
 		return nil, err
@@ -46,15 +45,16 @@ func (dao *Stock) SelectByGoodsID(goodsID int64) ([]*model.Stock, error) {
 
 func (dao *Stock) SelectMinMaxSalePriceByGoodsID(goodsID int64) (*model.StockMinMax, error) {
 	stocks := &model.StockMinMax{}
-	err := dao.db.SelectDSL(&stocks, []string{"MIN(sale_unit_price) AS min_sale_price", "MAX(sale_unit_price) AS max_sale_price"}, dao.Table, sq.Eq{"goods_id": goodsID})
+	columns := []string{"MIN(sale_unit_price) AS min_sale_price", "MAX(sale_unit_price) AS max_sale_price"}
+	err := dao.db.SelectOneDSL(&stocks, columns, dao.Table, sq.Eq{"goods_id": goodsID, "status": model.StockStatusOnSale})
 	if err != nil {
 		return nil, err
 	}
 	return stocks, nil
 }
 
-func (dao *Stock) SelectByGoodsIDWithPriceASC(goodsID int64) ([]*model.Stock, error) {
-	stocks := []*model.Stock{}
+func (dao *Stock) SelectByGoodsIDWithPriceASC(goodsID int64) (model.StockSet, error) {
+	stocks := model.StockSet{}
 	columns := dao.Columns
 	columns = append(columns, "(sale_unit_price - cost_unit_price) AS profit_price")
 	err := dao.db.SelectDSL(&stocks, columns, dao.Table, sq.Eq{"goods_id": goodsID}, "profit_price ASC")
@@ -64,17 +64,27 @@ func (dao *Stock) SelectByGoodsIDWithPriceASC(goodsID int64) ([]*model.Stock, er
 	return stocks, nil
 }
 
-func (dao *Stock) SelectByGoodsIDs(goodsIDs []int64) (*model.StockSet, error) {
-	stocks := []*model.Stock{}
-	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"goods_id": goodsIDs, "status": model.StockStatusOnSale})
+func (dao *Stock) QueryOnSaleStocksByGoodsIDs(goodsIDs []int64) (model.StockSet, error) {
+	stocks := model.StockSet{}
+	pred := sq.Eq{"goods_id": goodsIDs, "status": model.StockStatusOnSale}
+	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, pred, "sale_unit_price ASC")
 	if err != nil {
 		return nil, err
 	}
-	return model.NewStockSet(stocks), nil
+	return stocks, nil
 }
 
-func (dao *Stock) SelectByIDs(ids []int64) ([]*model.Stock, error) {
-	stocks := []*model.Stock{}
+func (dao *Stock) SelectByGoodsIDs(goodsIDs []int64) (model.StockSet, error) {
+	stocks := model.StockSet{}
+	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"goods_id": goodsIDs, "status": model.StockStatusOnSale}, "sale_unit_price ASC")
+	if err != nil {
+		return nil, err
+	}
+	return stocks, nil
+}
+
+func (dao *Stock) SelectByIDs(ids []int64) (model.StockSet, error) {
+	stocks := model.StockSet{}
 	err := dao.db.SelectDSL(&stocks, dao.Columns, dao.Table, sq.Eq{"id": ids, "status": model.StockStatusOnSale})
 	if err != nil {
 		return nil, err

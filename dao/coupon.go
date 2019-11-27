@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"gotrue/facility/utils"
 	"gotrue/model"
+	"time"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -38,6 +39,33 @@ func (d *Coupon) QueryByCouponNo(couponNo string) (*model.Coupon, error) {
 func (d *Coupon) QueryByUserID(userID int64) (model.CouponList, error) {
 	coupons := model.CouponList{}
 	return coupons, d.db.SelectDSL(&coupons, d.columns, d.table, squirrel.Eq{"user_id": userID, "consumed": false})
+}
+
+func (d *Coupon) QueryAvailableCouponList(userID int64) (model.CouponList, error) {
+	couponList := model.CouponList{}
+	err := d.db.Select(&couponList, "SELECT * FROM coupon WHERE user_id = ? AND received IS true AND expire_time > ?", userID, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	return couponList, nil
+}
+
+func (d *Coupon) QueryReceivableCouponList(userID int64) (model.CouponList, error) {
+	couponList := model.CouponList{}
+	err := d.db.Select(&couponList, "SELECT * FROM coupon WHERE user_id = ? AND received IS false AND expire_time > ?", userID, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	return couponList, nil
+}
+
+func (d *Coupon) QueryExpiredCouponList(userID int64) (model.CouponList, error) {
+	couponList := model.CouponList{}
+	err := d.db.Select(&couponList, "SELECT * FROM coupon WHERE user_id = ? AND expire_time <= ?", userID, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	return couponList, nil
 }
 
 func (d *Coupon) QueryByUserAndActivity(userID, activityID int64) (*model.Coupon, error) {

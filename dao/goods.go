@@ -1,10 +1,7 @@
 package dao
 
 import (
-	"fmt"
 	"gotrue/model"
-
-	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -28,18 +25,9 @@ type Goods struct {
 	db      *EasyDB
 }
 
-func (dao *Goods) SelectAllByStatus(status model.GoodsStatus) ([]*model.Goods, error) {
-	goods := []*model.Goods{}
-	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, sq.Eq{"status": string(status)}, "id DESC")
-	if err != nil {
-		return nil, err
-	}
-	return goods, nil
-}
-
-func (dao *Goods) SelectByCategory(categoryID int64) ([]*model.Goods, error) {
-	goods := []*model.Goods{}
-	pred := sq.Eq{"category_id": categoryID, "status": model.GoodsStatusOnSale}
+func (dao *Goods) QueyAll() (model.GoodsSet, error) {
+	goods := model.GoodsSet{}
+	pred := sq.Eq{"is_delete": false}
 	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "id DESC")
 	if err != nil {
 		return nil, err
@@ -47,17 +35,46 @@ func (dao *Goods) SelectByCategory(categoryID int64) ([]*model.Goods, error) {
 	return goods, nil
 }
 
-func (dao *Goods) SelectByID(ID int64) (*model.Goods, error) {
-	goods := new(model.Goods)
-	err := dao.db.SelectOne(goods, fmt.Sprintf("SELECT %s FROM goods WHERE id = ? AND status = ?", strings.Join(dao.columns, ",")), ID, model.GoodsStatusOnSale)
+func (dao *Goods) QueryAllByStatus(status string) (model.GoodsList, error) {
+	goods := model.GoodsList{}
+	pred := sq.Eq{"status": status, "is_delete": false}
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "id DESC")
 	if err != nil {
 		return nil, err
 	}
 	return goods, nil
 }
 
-func (dao *Goods) SelectByIDs(IDs []int64) ([]*model.Goods, error) {
-	goods := []*model.Goods{}
+func (dao *Goods) QueryAllByCategory(categoryID int64) (model.GoodsSet, error) {
+	goods := model.GoodsSet{}
+	pred := sq.Eq{"category_id": categoryID, "is_delete": false}
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "id DESC")
+	if err != nil {
+		return nil, err
+	}
+	return goods, nil
+}
+
+func (dao *Goods) QueryByID(id int64) (*model.Goods, error) {
+	goods := &model.Goods{}
+	err := dao.db.SelectOneDSL(goods, dao.columns, dao.table, sq.Eq{"id": id, "is_delete": false})
+	if err != nil {
+		return nil, err
+	}
+	return goods, nil
+}
+
+func (dao *Goods) SelectOnSaleByID(ID int64) (*model.Goods, error) {
+	goods := &model.Goods{}
+	err := dao.db.SelectOneDSL(goods, dao.columns, dao.table, sq.Eq{"id": ID, "is_delete": false, "status": model.GoodsStatusOnSale})
+	if err != nil {
+		return nil, err
+	}
+	return goods, nil
+}
+
+func (dao *Goods) SelectByIDs(IDs []int64) (model.GoodsSet, error) {
+	goods := model.GoodsSet{}
 	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, sq.Eq{"id": IDs})
 	if err != nil {
 		return nil, err

@@ -15,13 +15,25 @@ import (
 )
 
 var (
-	ErrorActivityOffline      = errors.NewWithCodef("ActivityOfflin", "活动下线啦")
+	ErrorActivityOffline      = errors.NewWithCodef("ActivityOffline", "活动下线啦")
 	ErrorActivityNotAvailable = errors.NewWithCodef("ActivityNotAvailable", "不在活动期间")
 	ErrorCouponDrained        = errors.NewWithCodef("CouponDrained", "优惠券抢完啦")
 	ErrorDuplicateGrabCoupon  = errors.NewWithCodef("DuplicateGrabCoupon", "不可以重复抢哦")
 )
 
 var couponServiceIns api.ICouponService
+
+const (
+	couponStatusAvailable  couponStatus = "available"
+	couponStatusReceivable couponStatus = "receivable"
+	couponStatusExpired    couponStatus = "expired"
+)
+
+type couponStatus string
+
+func (s couponStatus) String() string {
+	return string(s)
+}
 
 type Cut struct {
 	cutOrderDao  *dao.CutOrder
@@ -86,7 +98,6 @@ func (s *CouponService) SendCouponToUser(ctx context.Context, req *api.SendCoupo
 	}
 	coupon := &model.Coupon{
 		UserID:         req.TargetUserID,
-		CouponNo:       uuid.New().String(),
 		Price:          req.CouponPrice,
 		ActivityID:     0, // may be set send coupon as an independent activity implicitly
 		Type:           couponType,
@@ -99,6 +110,7 @@ func (s *CouponService) SendCouponToUser(ctx context.Context, req *api.SendCoupo
 	}
 	createFunc := func(input interface{}, tx *sql.Tx) (interface{}, error) {
 		for i := 0; i < req.CouponQuantity; i++ {
+			coupon.CouponNo = uuid.New().String()
 			_, err := s.couponDao.CreateCoupon(coupon, tx)
 			if err != nil {
 				return nil, err
@@ -151,15 +163,7 @@ func (s *CouponService) GetCouponByCouponNo(ctx context.Context, couponNo string
 	return coupon, nil
 }
 
-func (s *CouponService) GetCouponListByUser(ctx context.Context) ([]*api.CouponResponse, error) {
-	userID, err := context_util.GetUserID(ctx)
-	if err != nil {
-		return nil, err
-	}
-	coupons, err := s.couponDao.QueryByUserID(userID)
-	if err != nil {
-		return nil, err
-	}
+func (s *CouponService) buildAPICoupons(coupons model.CouponList, status couponStatus) ([]*api.CouponResponse, error) {
 	categoryMap, err := s.categoryDao.QueyMapByCategoryIDList(coupons.CategoryIDList())
 	if err != nil {
 		return nil, err
@@ -170,12 +174,48 @@ func (s *CouponService) GetCouponListByUser(ctx context.Context) ([]*api.CouponR
 	}
 	apiCoupons := make([]*api.CouponResponse, len(coupons))
 	for i, coupon := range coupons {
-		apiCoupons[i] = s.newAPICouponResponse(categoryMap, goodsMap, coupon)
+		apiCoupons[i] = s.newAPICouponResponse(categoryMap, goodsMap, coupon, status)
 	}
 	return apiCoupons, nil
 }
 
-func (s *CouponService) newAPICouponResponse(categoryMap model.CategoryMap, goodsMap model.GoodsMap, coupon *model.Coupon) *api.CouponResponse {
+func (s *CouponService) GetAvailableCouponList(ctx context.Context) ([]*api.CouponResponse, error) {
+	userID, err := context_util.GetUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	coupons, err := s.couponDao.QueryAvailableCouponList(userID)
+	if err != nil {
+		return nil, err
+	}
+	return s.buildAPICoupons(coupons, couponStatusAvailable)
+}
+
+func (s *CouponService) GetReceivableCouponList(ctx context.Context) ([]*api.CouponResponse, error) {
+	userID, err := context_util.GetUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	coupons, err := s.couponDao.QueryReceivableCouponList(userID)
+	if err != nil {
+		return nil, err
+	}
+	return s.buildAPICoupons(coupons, couponStatusReceivable)
+}
+
+func (s *CouponService) GetExpiredCouponList(ctx context.Context) ([]*api.CouponResponse, error) {
+	userID, err := context_util.GetUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	coupons, err := s.couponDao.QueryExpiredCouponList(userID)
+	if err != nil {
+		return nil, err
+	}
+	return s.buildAPICoupons(coupons, couponStatusExpired)
+}
+
+func (s *CouponService) newAPICouponResponse(categoryMap model.CategoryMap, goodsMap model.GoodsMap, coupon *model.Coupon, status couponStatus) *api.CouponResponse {
 	var categoryName string
 	var goodsName string
 	if cat := categoryMap.Get(coupon.CategoryID); cat != nil {
@@ -186,6 +226,7 @@ func (s *CouponService) newAPICouponResponse(categoryMap model.CategoryMap, good
 	}
 	return &api.CouponResponse{
 		ID:           coupon.ID,
+		Status:       status.String(),
 		CategoryName: categoryName,
 		CategoryID:   coupon.CategoryID,
 		CouponNo:     coupon.CouponNo,
@@ -194,12 +235,11 @@ func (s *CouponService) newAPICouponResponse(categoryMap model.CategoryMap, good
 		GoodsName:    goodsName,
 		Price:        coupon.Price,
 		PriceString:  coupon.Price.StringFixed(2),
-		ExpireTime:   utils.FormatTime(coupon.ExpireTime, utils.TimePrecision_Date),
+		ExpireTime:   utils.FormatTime(coupon.ExpireTime, utils.TimePrecision_Seconds),
 	}
 }
 
 func (s *CouponService) GrabCoupon(ctx context.Context, activityID int64) error {
-	// TODO 检查一个用户是否已经在该活动下抢到了优惠券，避免一个人抢多张
 	userID, err := context_util.GetUserID(ctx)
 	if err != nil {
 		return err

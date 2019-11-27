@@ -101,7 +101,7 @@ type SaleOrder struct {
 	goodsDao         *dao.Goods
 	userDao          *dao.UserDao
 	wechatPaymentDao *dao.WechatPayment
-	goodsService     *goods.Goods
+	goodsService     api.IGoodsService
 	cartService      *cart.Cart
 	userService      *user.User
 	regionService    api.IRegionService
@@ -368,11 +368,19 @@ func (s *SaleOrder) Cancel(orderID int64) (*response.SaleOrderInfo, error) {
 
 // CreateFromStock create order from stock
 func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddRequest) (id int64, err error) {
+
 	err = req.Validate()
 	if err != nil {
 		return
 	}
 	stock, err := s.stockDao.SelectByID(req.StockID)
+	if err != nil {
+		return 0, err
+	}
+	goods, err := s.goodsDao.SelectOnSaleByID(stock.GoodsID)
+	if err == sql.ErrNoRows {
+		return 0, errors.NewWithCodef("GoodsNotAvailable", "该商品当前不可售")
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -388,13 +396,7 @@ func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddR
 	if err != nil {
 		return 0, err
 	}
-	goods, err := s.goodsDao.SelectByID(stock.GoodsID)
-	if err == sql.ErrNoRows {
-		return 0, errors.NewWithCodef("GoodsInvalidStatus", "商品不可售")
-	}
-	if err != nil {
-		return 0, err
-	}
+
 	expressConstraint, err := s.goodsService.ExpressConstraint(stock.ID, int64(address.ID))
 	if !expressConstraint.IsOK() {
 		return 0, expressConstraint.Error()

@@ -18,6 +18,14 @@ type StockMinMax struct {
 	MaxSalePrice decimal.Decimal `db:"max_sale_price"`
 }
 
+func (smm *StockMinMax) PriceRangeString() string {
+	prices := []string{smm.MinSalePrice.StringFixed(2)}
+	if !smm.MaxSalePrice.Equal(smm.MinSalePrice) {
+		prices = append(prices, smm.MaxSalePrice.StringFixed(2))
+	}
+	return strings.Join(prices, "~")
+}
+
 // Stock 商品库存数据模型
 type Stock struct {
 	ID                int64           `db:"id"`
@@ -50,28 +58,20 @@ func (s *Stock) SpecIDs() []int64 {
 	return specIn64IDs
 }
 
-type StockSet struct {
-	stocks []*Stock
-}
+type StockSet []*Stock
 
-func NewStockSet(stocks []*Stock) *StockSet {
-	return &StockSet{
-		stocks: stocks,
-	}
-}
-
-func (s *StockSet) Map() map[int64]*Stock {
+func (s StockSet) Map() map[int64]*Stock {
 	stockMap := map[int64]*Stock{}
-	for _, item := range s.stocks {
+	for _, item := range s {
 		stockMap[item.ID] = item
 	}
 	return stockMap
 }
 
 // GoodsIDs get distinct goods id list
-func (s *StockSet) GoodsIDs() []int64 {
+func (s StockSet) GoodsIDs() []int64 {
 	distinctMap := map[int64]bool{}
-	for _, item := range s.stocks {
+	for _, item := range s {
 		distinctMap[item.GoodsID] = true
 	}
 	goodsIDs := []int64{}
@@ -81,17 +81,17 @@ func (s *StockSet) GoodsIDs() []int64 {
 	return goodsIDs
 }
 
-func (s *StockSet) SpecMap() StockSpecMap {
+func (s StockSet) SpecMap() StockSpecMap {
 	m := StockSpecMap{}
-	for _, item := range s.stocks {
+	for _, item := range s {
 		m[item.ID] = item.SpecIDs()
 	}
 	return m
 }
 
-func (s *StockSet) GetByGoods(goodsID int64) []*Stock {
+func (s StockSet) GetByGoods(goodsID int64) []*Stock {
 	gStocks := []*Stock{}
-	for _, item := range s.stocks {
+	for _, item := range s {
 		if goodsID == item.GoodsID {
 			gStocks = append(gStocks, item)
 		}

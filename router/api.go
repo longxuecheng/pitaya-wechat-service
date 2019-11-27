@@ -32,7 +32,7 @@ func apiRouter(r *gin.Engine) {
 	goodsGroup.GET("/constraint/express", controller.GoodsExpressConstraint)
 	goodsGroup.POST("/constraint/import", controller.ImportExpressConstraints)
 	goodsGroup.GET("/detail", controller.GetGoodsInfo)
-	goodsGroup.GET("/hot", controller.GetHotGoods)
+	goodsGroup.GET("/list/index", controller.GetGoodsList)
 	goodsGroup.GET("/card/list", controller.GetOnlineGoodsCards)
 
 	cartGroup := root.Group("/cart", middle_ware.ValidateAuthorization)
@@ -49,7 +49,9 @@ func apiRouter(r *gin.Engine) {
 	userGroup.GET("/list/nickname", controller.GetUserListByNickname)
 	userGroup.POST("/channel/bind", controller.BindChannelUser)
 	userGroup.POST("/coupon/grab", controller.GrabCoupon)
-	userGroup.GET("/coupon/all", controller.GetCouponListForUser)
+	userGroup.GET("/coupon/available", controller.GetAvailableCouponListForUser)
+	userGroup.GET("/coupon/expired", controller.GetExpiredCouponListForUser)
+	userGroup.GET("/coupon/receivable", controller.GetReceivableCouponListForUser)
 
 	regionGroup := root.Group("/region")
 	regionGroup.GET("list", controller.RegionList)

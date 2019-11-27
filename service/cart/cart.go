@@ -6,13 +6,12 @@ import (
 	"gotrue/dto/response"
 	"gotrue/facility/utils"
 	"gotrue/model"
+	"gotrue/service/api"
 	"gotrue/service/goods"
 	"gotrue/service/stock"
 
 	"github.com/shopspring/decimal"
 )
-
-var df response.CartItem
 
 // CartService 是Cart的一个单例
 var CartService *Cart
@@ -40,13 +39,13 @@ func initCartService() {
 type Cart struct {
 	dao             *dao.Cart
 	stockDao        *dao.Stock
-	goodsService    *goods.Goods
+	goodsService    api.IGoodsService
 	goodsImgService *goods.GoodsImg
 	stockService    *stock.Stock
 }
 
 func (s *Cart) AddGoods(request request.CartAddRequest) (id int64, err error) {
-	goods, err := s.goodsService.Info(request.GoodsID) // 商品信息
+	goods, err := s.goodsService.GoodsInfo(request.GoodsID) // 商品信息
 	if err != nil {
 		return
 	}
@@ -82,7 +81,7 @@ func (s *Cart) List(userID int64) ([]response.CartItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	stockMap := model.NewStockSet(stocks).Map()
+	stockMap := stocks.Map()
 	wrapper := newCartResponseWrapper(cartItems, stockMap)
 	return wrapper.DTOItems(), nil
 }
@@ -144,13 +143,13 @@ func (set *cartResposneWrapper) DTOItems() []response.CartItem {
 }
 
 type cartCreator struct {
-	goods    *response.GoodsInfo
+	goods    *api.GoodsInfoRespone
 	stock    *response.GoodsStockDTO
 	userID   int64
 	quantity decimal.Decimal
 }
 
-func newCartCreator(goods *response.GoodsInfo,
+func newCartCreator(goods *api.GoodsInfoRespone,
 	stock *response.GoodsStockDTO, userID int64, quantity decimal.Decimal) *cartCreator {
 	cc := new(cartCreator)
 	cc.goods = goods

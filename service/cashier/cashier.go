@@ -1,9 +1,11 @@
 package cashier
 
 import (
+	"database/sql"
 	"gotrue/dao"
 	"gotrue/dto/request"
 	"gotrue/dto/response"
+	"gotrue/facility/errors"
 	"gotrue/facility/utils"
 	"gotrue/model"
 	"gotrue/service/api"
@@ -48,7 +50,7 @@ func initCashierService() {
 type Cashier struct {
 	stockDao     *dao.Stock
 	goodsDao     *dao.Goods
-	goodsService *goods.Goods
+	goodsService api.IGoodsService
 	cartService  *cart.Cart
 	userService  *user.User
 	cutService   api.ICutService
@@ -70,7 +72,10 @@ func (s *Cashier) StockCheckout(req *request.CashierPreview) (*response.Cashier,
 	if err != nil {
 		return nil, err
 	}
-	goods, err := s.goodsDao.SelectByID(stock.GoodsID)
+	goods, err := s.goodsDao.SelectOnSaleByID(stock.GoodsID)
+	if err == sql.ErrNoRows {
+		return nil, errors.NewWithCodef("GoodsNotAvailable", "该商品当前不可售")
+	}
 	if err != nil {
 		return nil, err
 	}

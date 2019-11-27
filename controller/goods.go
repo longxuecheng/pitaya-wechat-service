@@ -55,7 +55,6 @@ func ImportExpressConstraints(c *gin.Context) {
 	utils.CheckAndPanic(err)
 }
 
-// GetGoodsListByCategory 按照商品分类获取商品列表
 func GetGoodsListByCategory(c *gin.Context) {
 	categoryIDString := c.Query("categoryId")
 	if categoryIDString == "" {
@@ -98,33 +97,22 @@ func GetGoodsInfo(c *gin.Context) {
 	ID := c.Query("id")
 	goodsID, err := strconv.ParseInt(ID, 10, 64)
 	if err != nil {
-		panic(err)
+		middle_ware.BadRequest(c, "")
+		return
 	}
-	goodsInfo, err := goods.GoodsService.Info(goodsID)
-	if err != nil {
-		panic(err)
-	}
+	goodsInfo, err := goods.GoodsService.GoodsInfo(goodsID)
+	utils.CheckAndPanic(err)
 	gallery, err := goods.GoodsImgService.GetByGoodsID(goodsID)
-	if err != nil {
-		panic(err)
-	}
+	utils.CheckAndPanic(err)
 	attributes, err := goods.GoodsService.Attributes(goodsID)
-	if err != nil {
-		panic(err)
-	}
+	utils.CheckAndPanic(err)
 	goodsSpecDTOs, err := goods.GoodsService.Specifications(goodsID)
-	if err != nil {
-		panic(err)
-	}
+	utils.CheckAndPanic(err)
 	goodsSpecSet := response.NewGoodsSpecSet(goodsSpecDTOs)
 	stockDTOs, err := stock.StockService.GetStocksByGoodsID(goodsID)
-	if err != nil {
-		panic(err)
-	}
+	utils.CheckAndPanic(err)
 	specDTOs, err := basic.SpecificationService.GetByIDs(goodsSpecSet.DistinctSpecIDs())
-	if err != nil {
-		panic(err)
-	}
+	utils.CheckAndPanic(err)
 	goodsSpecSet.SetSpecs(specDTOs)
 	specTree := goodsSpecSet.SpecTree()
 	c.Set("data", map[string]interface{}{
@@ -136,17 +124,16 @@ func GetGoodsInfo(c *gin.Context) {
 	})
 }
 
-// GetHotGoods 获取热门商品
-func GetHotGoods(c *gin.Context) {
+func GetGoodsList(c *gin.Context) {
 	categoryID := c.Query("categoryId")
 	categoryInt64ID, err := strconv.ParseInt(categoryID, 10, 64)
 	if err != nil {
 		categoryInt64ID = 0
 	}
-	hotGoods, err := goods.GoodsService.HotGoods(categoryInt64ID)
+	goodsList, err := goods.GoodsService.GoodsList(categoryInt64ID)
 	utils.CheckAndPanic(err)
-	middle_ware.SetResponseData(c, map[string]interface{}{
-		"hotGoods": hotGoods,
+	middle_ware.SetResponseData(c, gin.H{
+		"goodsList": goodsList,
 	})
 }
 

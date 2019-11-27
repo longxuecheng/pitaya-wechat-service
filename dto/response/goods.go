@@ -36,20 +36,6 @@ type GoodsItem struct {
 	ProducingArea string          `json:"producingArea"`
 }
 
-type HotGoods struct {
-	ID            int64           `json:"id"`
-	Name          string          `json:"name"`
-	PicURL        string          `json:"picUrl"`
-	RetailPrice   decimal.Decimal `json:"retailPrice"`
-	ProducingArea string          `json:"producingArea"`
-	StockPrices   []StockPrice    `json:"stockPrices"`
-}
-
-type StockPrice struct {
-	Spec      string `json:"spec"`
-	SalePrice string `json:"salePrice"`
-}
-
 type GoodsCard struct {
 	ID            int64           `json:"id"`
 	Name          string          `json:"name"`
@@ -75,18 +61,6 @@ type GoodsExpressConstraint struct {
 
 func (g *GoodsExpressConstraint) CalculateTotalExpressFee(quantity decimal.Decimal) {
 	g.TotalExpressFee = g.UnitExpressFee.Mul(quantity)
-}
-
-type GoodsInfo struct {
-	ID            int64           `json:"id"`
-	SupplierID    int64           `json:"supplierId"`
-	Name          string          `json:"name"`
-	BriefDesc     string          `json:"briefDesc"`
-	RetailPrice   decimal.Decimal `json:"retailPrice"`
-	Unit          string          `json:"unit"`
-	Description   string          `json:"description"`
-	ListPicURL    string          `json:"listPicUrl"`
-	ProducingArea string          `json:"producintArea"`
 }
 
 type GoodsGalleryDTO struct {

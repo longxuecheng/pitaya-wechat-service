@@ -9,6 +9,7 @@ import (
 	"gotrue/service/region"
 	"gotrue/service/stock"
 	"gotrue/service/supplier"
+	"gotrue/service/tencloud"
 	"gotrue/service/user"
 	"gotrue/service/wechat"
 )
@@ -27,5 +28,5 @@ func Init() {
 	InitSettlementService()
 	InitBannerService()
 	InitGaodeMapService()
-	InitCosService()
+	tencloud.InitCosService()
 }

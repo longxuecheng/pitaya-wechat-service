@@ -21,14 +21,15 @@ func (s GoodsStatus) Value() (driver.Value, error) {
 
 const (
 	GoodsStatusOnSale  GoodsStatus = "ON_SALE"
-	GoodsStatusOffSale GoodsStatus = "OFF_SALE"
+	GoodsStatusOffSale GoodsStatus = "OUT_SALE"
 	GoodsStatusPreSale GoodsStatus = "PRE_SALE"
 )
 
 var GoodsStatusMap = map[GoodsStatus]string{
-	GoodsStatusOnSale:  "限时热销",
-	GoodsStatusOffSale: "下架",
-	GoodsStatusPreSale: "敬请期待"}
+	GoodsStatusOnSale:  "热卖中",
+	GoodsStatusOffSale: "售罄",
+	GoodsStatusPreSale: "敬请期待",
+}
 
 type Goods struct {
 	ID               int64           `db:"id"`
@@ -60,6 +61,10 @@ func (g *Goods) StatusName() string {
 	return GoodsStatusMap[g.Status]
 }
 
+func (g *Goods) IsOnSale() bool {
+	return g.Status == GoodsStatusOnSale
+}
+
 type GoodsMap map[int64]*Goods
 
 func (m GoodsMap) Get(id int64) *Goods {
@@ -76,27 +81,19 @@ func (l GoodsList) GoodsMap() GoodsMap {
 	return goodsMap
 }
 
-type GoodsSet struct {
-	items []*Goods
-}
+type GoodsSet []*Goods
 
-func NewGoodsSet(items []*Goods) *GoodsSet {
-	return &GoodsSet{
-		items: items,
-	}
-}
-
-func (s *GoodsSet) Map() map[int64]*Goods {
+func (s GoodsSet) Map() map[int64]*Goods {
 	goodsMap := map[int64]*Goods{}
-	for _, item := range s.items {
+	for _, item := range s {
 		goodsMap[item.ID] = item
 	}
 	return goodsMap
 }
 
-func (s *GoodsSet) GoodsIDs() []int64 {
+func (s GoodsSet) GoodsIDs() []int64 {
 	distinctMap := map[int64]bool{}
-	for _, item := range s.items {
+	for _, item := range s {
 		distinctMap[item.ID] = true
 	}
 	goodsIDs := []int64{}
