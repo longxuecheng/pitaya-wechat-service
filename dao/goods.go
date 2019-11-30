@@ -28,7 +28,7 @@ type Goods struct {
 func (dao *Goods) QueyAll() (model.GoodsSet, error) {
 	goods := model.GoodsSet{}
 	pred := sq.Eq{"is_delete": false}
-	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "id DESC")
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "display_weight DESC", "click_count DESC", "id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (dao *Goods) QueyAll() (model.GoodsSet, error) {
 func (dao *Goods) QueryAllByStatus(status string) (model.GoodsList, error) {
 	goods := model.GoodsList{}
 	pred := sq.Eq{"status": status, "is_delete": false}
-	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "id DESC")
+	err := dao.db.SelectDSL(&goods, dao.columns, dao.table, pred, "display_weight DESC", "click_count DESC", "id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -89,4 +89,8 @@ func (dao *Goods) QueryMapByIDs(idList []int64) (model.GoodsMap, error) {
 		return nil, err
 	}
 	return goods.GoodsMap(), nil
+}
+
+func (dao *Goods) IncreaseClickCount(goodsID int64) error {
+	return dao.db.ExecuteSQLTx(nil, "UPDATE goods SET click_count = click_count + 1 WHERE id = ?", goodsID)
 }

@@ -1,7 +1,6 @@
 package request
 
 import (
-	"gotrue/dto/pagination"
 	"gotrue/facility/errors"
 
 	"github.com/shopspring/decimal"
@@ -23,21 +22,6 @@ type SaleOrderQuickAddRequest struct {
 	SaleOrderAddRequest
 	StockID  int64           `json:"stockId"`
 	Quantity decimal.Decimal `json:"quantity"`
-}
-
-type orderType string
-
-const (
-	All      orderType = "all"
-	Finished orderType = "finished"
-	Created  orderType = "created"
-	Sent     orderType = "sent"
-	Paid     orderType = "paid"
-)
-
-type OrderListRequest struct {
-	*pagination.Page
-	Type orderType `json:"type"`
 }
 
 type OrderExpressUpdate struct {

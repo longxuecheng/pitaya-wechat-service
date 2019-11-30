@@ -121,15 +121,20 @@ func (db *EasyDB) SelectDSL(destptr interface{}, columns []string, tableName str
 }
 
 type PaginationCondition struct {
-	Columns   []string
-	TableName string
-	Offset    uint64
-	Limit     uint64
-	WherePred interface{}
+	Columns     []string
+	OrderbyPred string
+	TableName   string
+	Offset      uint64
+	Limit       uint64
+	WherePred   interface{}
 }
 
 func (db *EasyDB) SelectPagination(destptr interface{}, condition PaginationCondition) (int64, error) {
-	qSQL, queryArgs, err := sq.Select(condition.Columns...).From(condition.TableName).Where(condition.WherePred).Offset(condition.Offset).Limit(condition.Limit).ToSql()
+	qSQL, queryArgs, err := sq.Select(condition.Columns...).From(condition.TableName).
+		Where(condition.WherePred).
+		OrderBy(condition.OrderbyPred).
+		Offset(condition.Offset).
+		Limit(condition.Limit).ToSql()
 	if err != nil {
 		return 0, err
 	}

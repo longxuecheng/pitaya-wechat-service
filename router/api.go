@@ -61,19 +61,20 @@ func apiRouter(r *gin.Engine) {
 	addressGroup.GET("list", controller.UserAddressList)
 	addressGroup.POST("save", controller.AddNewAddress)
 	addressGroup.GET("detail", controller.UserAddressDetail)
-
 	{
 		orderGroup := root.Group("/order", middle_ware.ValidateAuthorization)
 		orderGroup.POST("submit", controller.SubmitSaleOrder)
 		orderGroup.POST("submit/quick", controller.QuickSubmitOrder)
-		orderGroup.POST("list", controller.ListSaleOrders)
-		orderGroup.POST("list/supplier", controller.ListSupplierOrders)
+		orderGroup.POST("list", controller.SaleOrderList4User)
+		orderGroup.POST("list/supplier", controller.SaleOrderList4SupplierAdmin)
 		orderGroup.GET("detail", controller.SaleOrderInfo)
 		orderGroup.GET("express", controller.SaleOrderExpressInfo)
 		orderGroup.POST("express/update", controller.UpdateExpressInfo)
 		orderGroup.GET("express/list", controller.ExpressList)
-		orderGroup.GET("prepay", controller.WechatPrePay)
-		orderGroup.GET("pay/result", controller.WechatPayResult)
+		orderGroup.GET("prepay", controller.Prepay)
+		orderGroup.GET("pay/result", controller.GetPayResult)
+		orderGroup.POST("cancel", controller.CancelOrder)
+		orderGroup.POST("receive", controller.ReceiveOrder)
 	}
 	{
 		settleGroup := root.Group("/settlement", middle_ware.ValidateAuthorization)

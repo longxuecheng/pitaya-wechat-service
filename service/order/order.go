@@ -1,11 +1,12 @@
 package order
 
 import (
+	"context"
 	"database/sql"
 	"gotrue/dao"
 	"gotrue/dto/pagination"
 	"gotrue/dto/request"
-	"gotrue/dto/response"
+	"gotrue/facility/context_util"
 	"gotrue/facility/errors"
 	"gotrue/facility/utils"
 	"gotrue/model"
@@ -21,28 +22,18 @@ import (
 	"gotrue/service/wechat/payment"
 	"time"
 
-	"github.com/looplab/fsm"
 	"github.com/rs/zerolog/log"
 
 	"github.com/shopspring/decimal"
 )
 
-var SaleOrderService *SaleOrder
+var SaleOrderService api.ISaleOrderService
 
 var (
-	OrderInvalidError = errors.NewWithCodef("OrderInvalid", "当前订单不支持该操作")
+	ErrInvalidOption = errors.NewWithCodef("InvalidOption", "非法操作")
 )
 
-func beforeInit() {
-	cart.Init()
-	goods.Init()
-}
-
 func initSaleOrderService() {
-	if SaleOrderService != nil {
-		return
-	}
-	beforeInit()
 	SaleOrderService = &SaleOrder{
 		dao:              dao.SaleOrderDao,
 		stockDao:         dao.StockDao,
@@ -58,37 +49,6 @@ func initSaleOrderService() {
 		cutService:       cut.GetCutService(),
 	}
 
-}
-
-type saleOrderFSM struct {
-	fsm *fsm.FSM
-}
-
-func newOrderFSM(order *model.SaleOrder) *saleOrderFSM {
-	return &saleOrderFSM{
-		fsm: fsm.NewFSM(
-			order.Status.String(),
-			fsm.Events{
-				{Name: "pay", Src: []string{model.Created.String(), model.PayFailed.String(), model.Paying.String()}, Dst: model.Paid.String()},
-				{Name: "cancel", Src: []string{model.Created.String()}, Dst: model.Canceled.String()},
-				{Name: "send", Src: []string{model.Paid.String(), model.Sent.String()}, Dst: model.Sent.String()},
-				{Name: "post_sale", Src: []string{model.Received.String()}, Dst: model.PostSaleFinished.String()},
-				{Name: "refund", Src: []string{model.Paid.String()}, Dst: model.Refound.String()},
-			},
-			fsm.Callbacks{},
-		),
-	}
-}
-
-func (sof *saleOrderFSM) can(event string) error {
-	if !sof.fsm.Can(event) {
-		return OrderInvalidError
-	}
-	return nil
-}
-
-func (sof *saleOrderFSM) orderStatus() model.OrderStatus {
-	return model.OrderStatus(sof.fsm.Current())
 }
 
 // SaleOrder 作为销售订单服务，实现了api.IOrderService
@@ -108,8 +68,8 @@ type SaleOrder struct {
 	cutService       api.ICutService
 }
 
-// UpdateExpressInfo will send express
-func (s *SaleOrder) UpdateExpressInfo(req *request.OrderExpressUpdate) error {
+// SendExpress will send express
+func (s *SaleOrder) SendExpress(req *request.OrderExpressUpdate) error {
 	if err := express.IsSupport(req.ExpressMethod); err != nil {
 		return err
 	}
@@ -117,18 +77,15 @@ func (s *SaleOrder) UpdateExpressInfo(req *request.OrderExpressUpdate) error {
 	if err != nil {
 		return err
 	}
-	// TODO 检查订单状态
 	sof := newOrderFSM(order)
-	err = sof.can("send")
+	err = sof.can(actionSend)
 	if err != nil {
 		return err
 	}
-	sof.fsm.Event("send")
-	// 修改订单状态为已经发货
+	sof.fsm.Event(actionSend.String())
 	order.ExpressMethod = &req.ExpressMethod
 	order.ExpressNo = &req.ExpressNo
-	order.Status = model.OrderStatus(sof.fsm.Current())
-
+	order.Status = sof.current()
 	if err := s.dao.UpdateByID(order, nil); err != nil {
 		return err
 	}
@@ -263,7 +220,7 @@ func (s *SaleOrder) PayResult(r *request.QueryWechatPayResult, req *payment.Quer
 		}
 		for _, subOrder := range subOrders {
 			subOrder.Status = orderStatus
-			err = s.dao.UpdateByID(&subOrder, tx)
+			err = s.dao.UpdateByID(subOrder, tx)
 			if err != nil {
 				return err
 			}
@@ -343,32 +300,75 @@ func (s *SaleOrder) CreateFromCart(userID int64, req request.SaleOrderAddRequest
 	return
 }
 
+func (s *SaleOrder) ConfirmReceive(ctx context.Context, orderID int64) (*api.SaleOrderResponse, error) {
+	userID, _ := context_util.GetUserID(ctx)
+	order, err := s.dao.QueryByUserAndID(userID, orderID)
+	if err == sql.ErrNoRows {
+		return nil, ErrInvalidOption
+	}
+	if err != nil {
+		return nil, err
+	}
+	sof := newOrderFSM(order)
+	err = sof.can(actionReceive)
+	if err != nil {
+		return nil, err
+	}
+	err = sof.fsm.Event(actionReceive.String())
+	if err != nil {
+		return nil, err
+	}
+	order.Status = sof.current()
+	apiDetails, err := s.installDetails(orderID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.dao.UpdateByID(order, nil)
+	if err != nil {
+		return nil, err
+	}
+	apiData := installInfo(order)
+	apiData.Details = apiDetails
+	return apiData, nil
+}
+
 // Cancel will cancel order
-func (s *SaleOrder) Cancel(orderID int64) (*response.SaleOrderInfo, error) {
-	saleOrder, err := s.dao.SelectByID(orderID)
+func (s *SaleOrder) Cancel(ctx context.Context, orderID int64) (*api.SaleOrderResponse, error) {
+	userID, _ := context_util.GetUserID(ctx)
+	order, err := s.dao.QueryByUserAndID(userID, orderID)
+	if err == sql.ErrNoRows {
+		return nil, ErrInvalidOption
+	}
 	if err != nil {
 		return nil, err
 	}
-	sof := newOrderFSM(saleOrder)
-	err = sof.can("cancel")
+	sof := newOrderFSM(order)
+	err = sof.can(actionCancel)
 	if err != nil {
 		return nil, err
 	}
-	err = sof.fsm.Event("cancel")
+	err = sof.fsm.Event(actionCancel.String())
 	if err != nil {
 		return nil, err
 	}
-	saleOrder.Status = sof.orderStatus()
-	err = s.dao.UpdateByID(saleOrder, nil)
+	order.Status = sof.current()
+	// TODO 取消的后续操作
+	apiDetails, err := s.installDetails(orderID)
 	if err != nil {
 		return nil, err
 	}
-	return s.Info(orderID)
+	err = s.dao.UpdateByID(order, nil)
+	if err != nil {
+		return nil, err
+	}
+	apiData := installInfo(order)
+	apiData.Details = apiDetails
+	return apiData, nil
 }
 
 // CreateFromStock create order from stock
-func (s *SaleOrder) CreateFromStock(userID int64, req request.SaleOrderQuickAddRequest) (id int64, err error) {
-
+func (s *SaleOrder) CreateFromStock(ctx context.Context, req request.SaleOrderQuickAddRequest) (id int64, err error) {
+	userID, _ := context_util.GetUserID(ctx)
 	err = req.Validate()
 	if err != nil {
 		return
@@ -477,86 +477,72 @@ func (s *SaleOrder) createStockOrders(orders []*StockOrder, tx *sql.Tx) (masterI
 }
 
 // ListManagedOrders list orders for a supplier's admin
-func (s *SaleOrder) ListManagedOrders(userID int64, req request.OrderListRequest) (page *pagination.Page, err error) {
+func (s *SaleOrder) ListManagedOrders(userID int64, req api.OrderListRequest) (page *pagination.Page, err error) {
 	admins, err := s.supplierAdminDao.QueryByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
-	var orders []model.SaleOrder
+	var orders model.SaleOrderList
 	var total int64
-	if req.Type == request.All {
+	if req.IsAllStatus() {
 		orders, total, err = s.dao.SelectAllBySuppliersWithPagination(admins.SupplierIDs(), req.Offet(), req.Limit())
 	} else {
-		stats := s.mappingRequestStatus(req)
+		stats := []model.OrderStatus{apiStatus2ModelStatusMap[req.Type]}
 		orders, total, err = s.dao.SelectBySupplierAndStatus(admins.SupplierIDs(), stats, req.Offet(), req.Limit())
 	}
 	if err != nil {
 		return nil, err
 	}
-	orderSet := newSaleOrderSet(orders)
-	details, err := s.saleDetailDao.SelectByOrderIDs(orderSet.orderIDList()...)
+	details, err := s.saleDetailDao.QueryByIDs(orders.IDList())
 	if err != nil {
 		return page, err
 	}
-	orderSet.setSaleDetails(details)
 	page = req.Page
 	page.SetCount(total)
-	page.Data = orderSet.apiOrders()
+	page.Data = newResponseBuilder().setOrders(orders).setDetails(details).buildList()
 	return
 }
 
-// mappingRequestStatus map status from request to db
-func (s *SaleOrder) mappingRequestStatus(req request.OrderListRequest) []model.OrderStatus {
-	stats := []model.OrderStatus{}
-	if req.Type == request.Created {
-		stats = append(stats, model.Created)
-	}
-	if req.Type == request.Finished {
-		stats = append(stats, model.Finish)
-	}
-	if req.Type == request.Sent {
-		stats = append(stats, model.Sent)
-	}
-	if req.Type == request.Paid {
-		stats = append(stats, model.Paid)
-	}
-	return stats
+var apiStatus2ModelStatusMap = map[api.OrderStatus]model.OrderStatus{
+	api.Created:  model.Created,
+	api.Finished: model.Finish,
+	api.Sent:     model.Sent,
+	api.Paid:     model.Paid,
 }
 
 // List will list orders for a user
-func (s *SaleOrder) List(userID int64, req request.OrderListRequest) (*pagination.Page, error) {
-	var orders []model.SaleOrder
+func (s *SaleOrder) List(ctx context.Context, req api.OrderListRequest) (*pagination.Page, error) {
+	userID, _ := context_util.GetUserID(ctx)
+	var orders model.SaleOrderList
 	var total int64
 	var err error
-	if req.Type == request.All {
+	if req.IsAllStatus() {
 		orders, total, err = s.dao.SelectAllByUserWithPagination(userID, req.Offet(), req.Limit())
 	} else {
-		orderStatusList := s.mappingRequestStatus(req)
-		orders, total, err = s.dao.SelectByUserAndStatus(userID, orderStatusList, req.Offet(), req.Limit())
+		stats := []model.OrderStatus{apiStatus2ModelStatusMap[req.Type]}
+		orders, total, err = s.dao.SelectByUserAndStatus(userID, stats, req.Offet(), req.Limit())
 		if err != nil {
 			return nil, err
 		}
 	}
-	orderSet := newSaleOrderSet(orders)
-	details, err := s.saleDetailDao.SelectByOrderIDs(orderSet.orderIDList()...)
+	details, err := s.saleDetailDao.QueryByIDs(orders.IDList())
 	if err != nil {
 		return nil, err
 	}
 	page := req.Page
-	orderSet.setSaleDetails(details)
 	page.SetCount(total)
-	page.Data = orderSet.apiOrders()
+	page.Data = newResponseBuilder().setOrders(orders).setDetails(details).buildList()
 	return page, nil
 }
 
-// WechatPrepay will prepay an order
-func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse, error) {
+// Prepay will prepay an order
+func (s *SaleOrder) Prepay(userID, orderID int64) (*payment.PrepayReponse, error) {
 	order, err := s.dao.SelectByID(orderID)
 	if err != nil {
 		return nil, err
 	}
 	sof := newOrderFSM(order)
-	err = sof.can("pay")
+	err = sof.can(actionPay)
 	if err != nil {
 		return nil, err
 	}
@@ -566,8 +552,7 @@ func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse,
 		if err != nil {
 			return nil, err
 		}
-		orderSet := newSaleOrderSet(subOrders)
-		totalPrice = orderSet.sumOrderPrice()
+		totalPrice = subOrders.TotalPrice()
 		totalPrice = totalPrice.Add(order.OrderAmt)
 	} else {
 		totalPrice = order.OrderAmt
@@ -577,27 +562,24 @@ func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse,
 	if err != nil {
 		return nil, err
 	}
-
-	prepayReq := &wechat.PrepayRequest{
+	result, err := wechat.WechatService().PrePay(&wechat.PrepayRequest{
 		OpenID:   user.OpenID,
 		OrderNo:  order.OrderNo,
 		TotalFee: totalPrice.Mul(decimal.New(1, 2)).IntPart(),
 		Desc:     order.OrderNo,
-	}
-	result, err := wechat.WechatService().PrePay(prepayReq)
+	})
 
 	if err != nil {
 		return nil, err
 	}
-	wp := &model.WechatPayment{
+	_, err = s.wechatPaymentDao.Create(&model.WechatPayment{
 		SaleOrderID:    order.ID,
 		SaleOrderNo:    order.OrderNo,
 		Amount:         totalPrice,
 		Status:         model.Paying.String(),
 		CreateTime:     time.Now(),
 		TransationType: model.TransactionTypePay,
-	}
-	_, err = s.wechatPaymentDao.Create(wp, nil)
+	}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -605,25 +587,29 @@ func (s *SaleOrder) WechatPrepay(userID, orderID int64) (*payment.PrepayReponse,
 }
 
 // Info shows sale order info but sale details are not included
-func (s *SaleOrder) Info(orderID int64) (*response.SaleOrderInfo, error) {
-	saleOrder, err := s.dao.SelectByID(orderID)
-	if err != nil && err != sql.ErrNoRows {
-		return nil, err
+func (s *SaleOrder) Info(orderID int64) (*api.SaleOrderResponse, error) {
+	order, err := s.dao.SelectByID(orderID)
+	if err == sql.ErrNoRows {
+		return nil, errors.NewWithCodef("OrderNotExists", "订单不存在")
 	}
-	if saleOrder == nil {
-		return nil, nil
-	}
-	fullName, err := s.regionService.FullName(saleOrder.RegionIDs())
 	if err != nil {
 		return nil, err
 	}
-	dto := s.installSaleInfoDTO(saleOrder)
-	dto.FullRegion = fullName
-	return dto, nil
+	fullName, err := s.regionService.FullName(order.RegionIDs())
+	if err != nil {
+		return nil, err
+	}
+	apiDetails, err := s.installDetails(orderID)
+	if err != nil {
+		return nil, err
+	}
+	apiOrder := installInfo(order)
+	apiOrder.FullRegion = fullName
+	apiOrder.Details = apiDetails
+	return apiOrder, nil
 }
 
-// ListGoods list sale details for a sale order
-func (s *SaleOrder) ListGoods(orderID int64) ([]response.SaleOrderGoodsDTO, error) {
+func (s *SaleOrder) installDetails(orderID int64) ([]api.SaleDetailResponse, error) {
 	goodsList, err := s.saleDetailDao.SelectByOrderID(orderID)
 	if err != nil {
 		return nil, err
@@ -635,159 +621,9 @@ func (s *SaleOrder) ListGoods(orderID int64) ([]response.SaleOrderGoodsDTO, erro
 		}
 		v.GoodsSpecDescription = specDesc
 	}
-	dtos := make([]response.SaleOrderGoodsDTO, len(goodsList))
+	apiDataList := make([]api.SaleDetailResponse, len(goodsList))
 	for i, goods := range goodsList {
-		dtos[i] = installSaleDetailDTO(goods)
+		apiDataList[i] = installDetail(goods)
 	}
-	return dtos, nil
-}
-
-func (s *SaleOrder) installSaleInfoDTO(order *model.SaleOrder) *response.SaleOrderInfo {
-	data := &response.SaleOrderInfo{}
-	data.ID = order.ID
-	data.OrderNo = order.OrderNo
-	data.Status = order.Status.Name()
-	data.CreatedAt = order.CreateTime.Format("2006-01-02 15:04:05")
-	data.Consignee = order.Receiver
-	data.Mobile = order.PhoneNo
-	data.FullRegion = "TODO"
-	data.Address = order.Address
-	data.GoodsAmt = order.GoodsAmt
-
-	if order.ExpressMethod != nil {
-		data.ExpressMethod = *order.ExpressMethod
-	}
-	if order.ExpressNo != nil {
-		data.ExpressNo = *order.ExpressNo
-	}
-	data.ExpressFee = order.ExpressFee
-	data.OrderAmt = order.OrderPrice()
-	return data
-}
-
-func installSaleOrderItemDTO(model model.SaleOrder) response.SaleOrderItemDTO {
-	dto := response.SaleOrderItemDTO{}
-	dto.ID = model.ID
-	dto.OrderNo = model.OrderNo
-	dto.OrderAmt = model.OrderPrice()
-	dto.Status = model.Status.Name()
-	return dto
-}
-
-func buildSaleOrderItemDTOs(models []model.SaleOrder) []response.SaleOrderItemDTO {
-	if models == nil || len(models) == 0 {
-		return nil
-	}
-	dtos := make([]response.SaleOrderItemDTO, len(models))
-	for i, model := range models {
-		dtos[i] = installSaleOrderItemDTO(model)
-	}
-	return dtos
-}
-
-func installSaleDetailDTO(model *model.SaleDetail) response.SaleOrderGoodsDTO {
-	dto := response.SaleOrderGoodsDTO{}
-	dto.ID = model.ID
-	dto.GoodsName = model.GoodsName
-	dto.Quantity = model.Quantity
-	dto.RetailPrice = model.SaleUnitPrice
-	dto.ListPicURL = model.ListPicURL.String
-	dto.GoodsSpecDescription = model.GoodsSpecDescription
-	return dto
-}
-
-// installSaleDetailFromStock 从库存创建一个订单明细,且数量为1个用于目前的供应商
-func installSaleDetailFromStock(orderID int64, stock *model.Stock, goods *model.Goods) model.SaleDetail {
-	sd := model.SaleDetail{
-		OrderID:       orderID,
-		GoodsID:       stock.GoodsID,
-		GoodsName:     goods.Name,
-		ListPicURL:    goods.ListPicURL,
-		Quantity:      decimal.NewFromFloat32(1.0),
-		StockID:       stock.ID,
-		SaleUnitPrice: stock.SaleUnitPrice,
-		CostUnitPrice: stock.CostUnitPrice,
-		GoodsSpecIDs:  stock.Specification.String,
-	}
-	return sd
-}
-
-// supplierStock 是供应商的购买库存信息
-type supplierStock struct {
-	SupplierID int64
-	Quantity   decimal.Decimal
-	// 单件商品库存的运费
-	UnitExpressFee decimal.Decimal
-	Stock          *model.Stock
-	Goods          *model.Goods
-}
-
-func (ss supplierStock) saleDetail() *model.SaleDetail {
-	return &model.SaleDetail{
-		OrderID:       0,
-		GoodsID:       ss.Stock.GoodsID,
-		GoodsName:     ss.Goods.Name,
-		Quantity:      ss.Quantity,
-		StockID:       ss.Stock.ID,
-		SaleUnitPrice: ss.Stock.SaleUnitPrice,
-		CostUnitPrice: ss.Stock.CostUnitPrice,
-		GoodsSpecIDs:  ss.Stock.Specification.String,
-		ListPicURL:    ss.Goods.ListPicURL,
-	}
-
-}
-
-type SaleOrderSet struct {
-	orders    []model.SaleOrder
-	orderIDs  []int64
-	goodsList []*model.SaleDetail
-}
-
-func newSaleOrderSet(orders []model.SaleOrder) *SaleOrderSet {
-	set := &SaleOrderSet{}
-	set.orders = orders
-	orderIds := []int64{}
-	for _, order := range orders {
-		orderIds = append(orderIds, order.ID)
-	}
-	set.orderIDs = orderIds
-	return set
-}
-
-func (set *SaleOrderSet) sumOrderPrice() decimal.Decimal {
-	sum := decimal.Zero
-	if len(set.orders) == 0 {
-		return sum
-	}
-	for _, order := range set.orders {
-		sum = sum.Add(order.OrderAmt)
-	}
-	return sum
-}
-
-func (set *SaleOrderSet) setSaleDetails(details []*model.SaleDetail) {
-	set.goodsList = details
-}
-
-func (set *SaleOrderSet) orderIDList() []int64 {
-	return set.orderIDs
-}
-
-func (set *SaleOrderSet) apiOrders() []response.SaleOrderItemDTO {
-	if len(set.orders) == 0 {
-		return nil
-	}
-	dtos := make([]response.SaleOrderItemDTO, len(set.orders))
-	for i, model := range set.orders {
-		dto := installSaleOrderItemDTO(model)
-		goodsList := []response.SaleOrderGoodsDTO{}
-		for _, goods := range set.goodsList {
-			if model.ID == goods.OrderID {
-				goodsList = append(goodsList, installSaleDetailDTO(goods))
-			}
-		}
-		dto.GoodsList = goodsList
-		dtos[i] = dto
-	}
-	return dtos
+	return apiDataList, nil
 }

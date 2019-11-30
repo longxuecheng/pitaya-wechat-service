@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"gotrue/facility/utils"
 	"gotrue/model"
-	
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -35,9 +34,9 @@ func (dao *SaleDetail) Create(detail *model.SaleDetail, tx *sql.Tx) (id int64, e
 	return
 }
 
-func (dao *SaleDetail) SelectByOrderIDs(orderIDs ...int64) ([]*model.SaleDetail, error) {
+func (dao *SaleDetail) QueryByIDs(idList []int64) ([]*model.SaleDetail, error) {
 	details := []*model.SaleDetail{}
-	err := dao.db.SelectDSL(&details, columns_sale_detail_all, model.Table_Sale_Detail, sq.Eq{"order_id": orderIDs})
+	err := dao.db.SelectDSL(&details, columns_sale_detail_all, model.Table_Sale_Detail, sq.Eq{"order_id": idList})
 	return details, err
 }
 

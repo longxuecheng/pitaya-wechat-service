@@ -2,25 +2,22 @@ package model
 
 import (
 	"database/sql/driver"
+	"gotrue/facility/utils"
 	"time"
-
-	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
 
 	"github.com/shopspring/decimal"
 )
 
 const (
-	Created   OrderStatus = "CREATED"
-	Canceled  OrderStatus = "CANCELED"
-	Paid      OrderStatus = "PAID"
-	Paying    OrderStatus = "PAYING"
-	PayFailed OrderStatus = "PAY_FAILED"
-	//Sent 商家已发货
+	Created          OrderStatus = "CREATED"
+	Cancel           OrderStatus = "CANCEL"
+	Paid             OrderStatus = "PAID"
+	Paying           OrderStatus = "PAYING"
+	PayFailed        OrderStatus = "PAY_FAILED"
 	Sent             OrderStatus = "SENT"
-	Received         OrderStatus = "RECEIVED"
 	Refunding        OrderStatus = "REFUNDING"
 	RefundRefused    OrderStatus = "REFUND_REFUSED"
-	Refound          OrderStatus = "REFOUND"
+	Refund           OrderStatus = "REFUND"
 	PostSale         OrderStatus = "PST_SALE"
 	PostSaleFinished OrderStatus = "PST_SALE_FNS"
 	Finish           OrderStatus = "FINISHED"
@@ -33,20 +30,19 @@ const (
 	DiscountTypeScore  DiscountType = "Score"
 )
 
-var orderStatuMap = map[OrderStatus]string{
-	Created:          "已创建",
-	Canceled:         "已取消",
-	Paying:           "待付款",
+var orderStatusMap = map[OrderStatus]string{
+	Created:          "待付款",
+	Paying:           "支付中",
+	Cancel:           "已取消",
 	Paid:             "已付款", // 待收货
 	PayFailed:        "付款失败",
-	Sent:             "已发货",
-	Received:         "已收货",
+	Sent:             "待收货",
 	Refunding:        "退款中",
 	RefundRefused:    "拒绝退款",
-	Refound:          "退款成功",
+	Refund:           "退款成功",
 	PostSale:         "售后处理中",
 	PostSaleFinished: "售后完成",
-	Finish:           "完成",
+	Finish:           "交易完成",
 }
 
 type OrderStatus string
@@ -60,7 +56,7 @@ func (os OrderStatus) String() string {
 }
 
 func (so OrderStatus) Name() string {
-	if statusName, ok := orderStatuMap[so]; ok {
+	if statusName, ok := orderStatusMap[so]; ok {
 		return statusName
 	}
 	return "未知"
@@ -72,13 +68,31 @@ func (d DiscountType) Value() (driver.Value, error) {
 	return string(d), nil
 }
 
+type SaleOrderList []*SaleOrder
+
+func (l SaleOrderList) IDList() []int64 {
+	ids := make([]int64, len(l))
+	for i, o := range l {
+		ids[i] = o.ID
+	}
+	return ids
+}
+
+func (l SaleOrderList) TotalPrice() decimal.Decimal {
+	sum := decimal.Zero
+	for _, order := range l {
+		sum = sum.Add(order.OrderAmt)
+	}
+	return sum
+}
+
 type SaleOrder struct {
-	ID            int64           `db:"id" insert:"true" pk:"true"`
+	ID            int64           `db:"id" insert:"false" pk:"true"`
 	ParentID      int64           `db:"parent_id"`
 	OrderNo       string          `db:"order_no"`
-	CreateTime    time.Time       `db:"create_time" insert:"true"`
+	CreateTime    time.Time       `db:"create_time" insert:"false"`
 	UserID        int64           `db:"user_id"`
-	Status        OrderStatus     `db:"status" insert:"true"`
+	Status        OrderStatus     `db:"status" insert:"false"`
 	Receiver      string          `db:"receiver"`
 	ProvinceID    int             `db:"province_id"`
 	CityID        int             `db:"city_id"`
@@ -98,16 +112,12 @@ type SaleOrder struct {
 	Count         int64           `db:"count" count:"true"`
 }
 
-func (so *SaleOrder) OrderPrice() decimal.Decimal {
-	return so.OrderAmt
-}
-
 func (so *SaleOrder) TableName() string {
 	return "sale_order"
 }
 
 func (so *SaleOrder) Columns() []string {
-	return reflect_util.TagValues(so, "db", "count")
+	return utils.TagValues(so, "db", "count")
 }
 
 func (so *SaleOrder) OrderNo12() string {
@@ -124,7 +134,7 @@ func (so *SaleOrder) IsMaster() bool {
 }
 
 type SaleOrderSet struct {
-	Items          []SaleOrder
+	Items          []*SaleOrder
 	costPrice      decimal.Decimal
 	profitPrice    decimal.Decimal
 	totalSalePrice decimal.Decimal

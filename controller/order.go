@@ -4,6 +4,7 @@ import (
 	"gotrue/dto/request"
 	"gotrue/facility/utils"
 	"gotrue/middle_ware"
+	"gotrue/service/api"
 	"gotrue/service/express"
 	"gotrue/service/order"
 	"gotrue/service/wechat"
@@ -11,6 +12,42 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func ReceiveOrder(c *gin.Context) {
+	str := c.Query("orderId")
+	if str == "" {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	orderID, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	data, err := order.SaleOrderService.ConfirmReceive(c.Request.Context(), orderID)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, gin.H{
+		"order": data,
+	})
+}
+
+func CancelOrder(c *gin.Context) {
+	str := c.Query("orderId")
+	if str == "" {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	orderID, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	data, err := order.SaleOrderService.Cancel(c.Request.Context(), orderID)
+	utils.CheckAndPanic(err)
+	middle_ware.SetResponseData(c, gin.H{
+		"order": data,
+	})
+}
 
 // SubmitSaleOrder 提交销售订单
 func SubmitSaleOrder(c *gin.Context) {
@@ -27,26 +64,22 @@ func QuickSubmitOrder(c *gin.Context) {
 	req := request.SaleOrderQuickAddRequest{}
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
-	userID := middle_ware.MustGetCurrentUser(c)
-	orderID, err := order.SaleOrderService.CreateFromStock(userID, req)
+	orderID, err := order.SaleOrderService.CreateFromStock(c.Request.Context(), req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, orderID)
 }
 
-// ListSaleOrders 获取用户的所有订单
-func ListSaleOrders(c *gin.Context) {
-	req := request.OrderListRequest{}
+func SaleOrderList4User(c *gin.Context) {
+	req := api.OrderListRequest{}
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
-	userID := middle_ware.MustGetCurrentUser(c)
-	result, err := order.SaleOrderService.List(userID, req)
+	result, err := order.SaleOrderService.List(c.Request.Context(), req)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, result)
 }
 
-// ListSupplierOrders 给供应商管理员用户列出所有的订单
-func ListSupplierOrders(c *gin.Context) {
-	req := request.OrderListRequest{}
+func SaleOrderList4SupplierAdmin(c *gin.Context) {
+	req := api.OrderListRequest{}
 	err := c.BindJSON(&req)
 	utils.CheckAndPanic(err)
 	userID := middle_ware.MustGetCurrentUser(c)
@@ -60,11 +93,8 @@ func SaleOrderInfo(c *gin.Context) {
 	orderID := bindSaleOrderIDFromQuery(c)
 	info, err := order.SaleOrderService.Info(orderID)
 	utils.CheckAndPanic(err)
-	goodsList, err := order.SaleOrderService.ListGoods(orderID)
-	utils.CheckAndPanic(err)
-	middle_ware.SetResponseData(c, map[string]interface{}{
-		"orderInfo":  info,
-		"orderGoods": goodsList,
+	middle_ware.SetResponseData(c, gin.H{
+		"orderInfo": info,
 	})
 }
 
@@ -77,16 +107,16 @@ func SaleOrderExpressInfo(c *gin.Context) {
 	middle_ware.SetResponseData(c, expressInfo)
 }
 
-func WechatPrePay(c *gin.Context) {
+func Prepay(c *gin.Context) {
 	orderID := bindSaleOrderIDFromQuery(c)
 	userID := middle_ware.MustGetCurrentUser(c)
-	result, err := order.SaleOrderService.WechatPrepay(userID, orderID)
+	result, err := order.SaleOrderService.Prepay(userID, orderID)
 	utils.CheckAndPanic(err)
 	middle_ware.SetResponseData(c, result)
 }
 
-// WechatPayResult is used for query wechat pay result from mini-program
-func WechatPayResult(c *gin.Context) {
+// GetPayResult is used for query wechat pay result from mini-program
+func GetPayResult(c *gin.Context) {
 	// orderID := bindSaleOrderIDFromQuery(c)
 	req := &request.QueryWechatPayResult{}
 	err := c.BindQuery(req)
@@ -109,7 +139,7 @@ func UpdateExpressInfo(c *gin.Context) {
 		return
 	}
 	utils.CheckAndPanic(err)
-	err = order.SaleOrderService.UpdateExpressInfo(req)
+	err = order.SaleOrderService.SendExpress(req)
 	utils.CheckAndPanic(err)
 }
 

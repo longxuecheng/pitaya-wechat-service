@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"gotrue/dao"
 	"gotrue/dto/response"
+	"gotrue/facility/async_util"
 	"gotrue/facility/errors"
 	"gotrue/model"
 	"gotrue/service/api"
@@ -139,6 +140,13 @@ func (s *Goods) GetInternalGoodsByCategory(categoryID int64) ([]*api.InternalGoo
 	return apiGoods, nil
 }
 
+func (s *Goods) click(goodsID int64) {
+	clickFunc := func() error {
+		return s.goodsDao.IncreaseClickCount(goodsID)
+	}
+	async_util.RunAsyncWithRecovery(clickFunc)
+}
+
 func (s *Goods) GoodsInfo(goodsID int64) (*api.GoodsInfoRespone, error) {
 	goods, err := s.goodsDao.QueryByID(goodsID)
 	if err != nil {
@@ -153,6 +161,7 @@ func (s *Goods) GoodsInfo(goodsID int64) (*api.GoodsInfoRespone, error) {
 	apiGoods.Available = goods.IsOnSale()
 	apiGoods.MinPrice = priceRange.MinSalePrice.StringFixed(2)
 	apiGoods.MaxPrice = priceRange.MaxSalePrice.StringFixed(2)
+	s.click(goodsID)
 	return apiGoods, nil
 }
 
