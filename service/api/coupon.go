@@ -19,13 +19,15 @@ type ICouponService interface {
 
 	GetExpiredCouponList(ctx context.Context) ([]*CouponResponse, error)
 
+	ReceiveCoupon(ctx context.Context, couponID int64) error
+
 	GrabCoupon(ctx context.Context, activityID int64) error
 
 	SendCouponToUser(ctx context.Context, req *SendCouponRequest) error
 }
 
 type CouponResponse struct {
-	ID           int64           `json:"-"`
+	ID           int64           `json:"id"`
 	Status       string          `json:"status"`
 	CouponNo     string          `json:"couponNo"`
 	ExpireTime   string          `json:"expireTime"`

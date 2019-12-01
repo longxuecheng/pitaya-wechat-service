@@ -29,7 +29,7 @@ func InitCosService() {
 	CosService = NewCosService()
 }
 
-func (s *Cos) PushImageObject(name string, data []byte) error {
+func (s *Cos) PushData(name string, data []byte) error {
 	u, _ := url.Parse(bucketURL)
 	b := &cos.BaseURL{BucketURL: u}
 	c := cos.NewClient(b, &http.Client{

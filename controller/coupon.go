@@ -63,3 +63,18 @@ func GetExpiredCouponListForUser(c *gin.Context) {
 		"coupons": couponList,
 	})
 }
+
+func ReceiveCoupon(c *gin.Context) {
+	str := c.Query("couponId")
+	if str == "" {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	couponID, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		middle_ware.BadRequest(c, "")
+		return
+	}
+	err = coupon.GetCouponService().ReceiveCoupon(c.Request.Context(), couponID)
+	utils.CheckAndPanic(err)
+}

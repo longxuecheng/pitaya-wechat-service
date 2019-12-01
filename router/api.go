@@ -52,6 +52,7 @@ func apiRouter(r *gin.Engine) {
 	userGroup.GET("/coupon/available", controller.GetAvailableCouponListForUser)
 	userGroup.GET("/coupon/expired", controller.GetExpiredCouponListForUser)
 	userGroup.GET("/coupon/receivable", controller.GetReceivableCouponListForUser)
+	userGroup.POST("/coupon/receive", controller.ReceiveCoupon)
 
 	regionGroup := root.Group("/region")
 	regionGroup.GET("list", controller.RegionList)

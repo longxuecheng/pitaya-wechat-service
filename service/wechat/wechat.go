@@ -1,14 +1,12 @@
 package wechat
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"gotrue/facility/http_util"
 	"gotrue/service/wechat/payment"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -173,33 +171,4 @@ func (s *wechatService) QueryPayResult(orderNo string) (*payment.QueryOrderRespo
 		return nil, err
 	}
 	return result, nil
-}
-
-func (s *wechatService) GetWxAcodeUnlimited() (*payment.QueryOrderResponse, error) {
-	url := fmt.Sprintf(wxcodeGetUnlimited_url, s.AccessToken())
-	req := WxAcodeUnlimitedRequest{
-		Scene: "xxx;ooo",
-		Page:  "pages/goods/goods",
-		Width: 430,
-	}
-	data, _ := json.Marshal(req)
-	resp, err := http_util.Send(http.MethodPost, url, bytes.NewReader(data), http_util.JsonHeader)
-	if err != nil {
-		return nil, err
-	}
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	// result := &WxAcodeUnlimitedResponse{}
-	// err = http_util.UnmarshalBody(resp, result)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if !result.isOk() {
-	// 	return nil, errors.New(result.ErrorMsg)
-	// }
-	f, err := os.Create("wxacode.jpeg")
-	if err != nil {
-		return nil, err
-	}
-	_, err = f.Write(respBytes)
-	return nil, err
 }

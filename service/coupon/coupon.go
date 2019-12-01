@@ -19,6 +19,7 @@ var (
 	ErrorActivityNotAvailable = errors.NewWithCodef("ActivityNotAvailable", "不在活动期间")
 	ErrorCouponDrained        = errors.NewWithCodef("CouponDrained", "优惠券抢完啦")
 	ErrorDuplicateGrabCoupon  = errors.NewWithCodef("DuplicateGrabCoupon", "不可以重复抢哦")
+	ErrorInvalidCoupon        = errors.NewWithCodef("InvalidCoupon", "不合法的优惠券")
 )
 
 var couponServiceIns api.ICouponService
@@ -67,6 +68,22 @@ type CouponService struct {
 	activityDao       *dao.Activity
 	categoryDao       *dao.Category
 	goodsDao          *dao.Goods
+}
+
+func (s *CouponService) ReceiveCoupon(ctx context.Context, couponID int64) error {
+	userID, err := context_util.GetUserID(ctx)
+	if err != nil {
+		return err
+	}
+	coupon, err := s.couponDao.QueryByUserAndCouponID(userID, couponID)
+	if err == sql.ErrNoRows {
+		return ErrorInvalidCoupon
+	}
+	if err != nil {
+		return err
+	}
+	coupon.Received = true
+	return s.couponDao.Update(coupon, nil)
 }
 
 func (s *CouponService) SendCouponToUser(ctx context.Context, req *api.SendCouponRequest) error {
@@ -235,7 +252,7 @@ func (s *CouponService) newAPICouponResponse(categoryMap model.CategoryMap, good
 		GoodsName:    goodsName,
 		Price:        coupon.Price,
 		PriceString:  coupon.Price.StringFixed(2),
-		ExpireTime:   utils.FormatTime(coupon.ExpireTime, utils.TimePrecision_Seconds),
+		ExpireTime:   utils.FormatTime(coupon.ExpireTime, utils.TimePrecision_Date),
 	}
 }
 

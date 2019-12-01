@@ -17,7 +17,7 @@ func TestPushImageObject(t *testing.T) {
 	buff := make([]byte, info.Size())
 	reader := bufio.NewReader(f)
 	reader.Read(buff)
-	err = cos.PushImageObject("wxacode.jpeg", buff)
+	err = cos.PushData("wxacode.jpeg", buff)
 	if err != nil {
 		t.Error(err)
 	}
