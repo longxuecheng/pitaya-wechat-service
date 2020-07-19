@@ -1,0 +1,33 @@
+.flex-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+}
+
+.cover2 {
+    width: 1280px;
+    height: 680px;
+    background-image: url("fs1.jpg");
+    background-repeat: no-repeat;
+    margin: 0 auto;
+}
+
+.cover1 {
+    width: 1280px;
+    height: 680px;
+    background-image: url("fs2.jpg");
+    background-repeat: no-repeat;
+    margin: 0 auto;
+}
+
+.icp-footer {
+    height: 55px;
+    width: 1280px;
+    margin: 0 auto;
+    text-align: center;
+    line-height: 55px;
+    color: #999;
+    font-size: 12px;
+}

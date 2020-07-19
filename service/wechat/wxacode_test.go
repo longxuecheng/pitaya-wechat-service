@@ -1,7 +1,6 @@
 package wechat
 
 import (
-	"fmt"
 	"gotrue/service/tencloud"
 	"testing"
 
@@ -12,14 +11,12 @@ import (
 
 func TestGetParameterizedMPCode(t *testing.T) {
 	tm := &TokenManager{}
-	tm.at = "27_-AIkrZebUuXVaRfkDX1ml8SXVs_UhvFOD0qE5gbJv1UkFsXwxjGQ1QBTFHGiHuIojA8NOGgYn4uo0rsvA2-OnBcVbKiK9CPV_nglM4Vyl52I8vurPaWnizVziv029Tn68cX5Q5cK1fHw6PpyFJMeABAVZC"
+	tm.at = "28_DOWO4KcusZtqLqd6_XGUAp8B2jHdhjlmNrjsXvE_yzWuzTyaGhv23iJ54K7gU31ZQD-xTRoQGx9GfDAbCYuPIV8m9_iVlESiG8axBXKXNNbghoCMqSNefxfBDdmg4uvszu-9deQboHzxxnT0EMWhAIAMUE"
 	ws := wechatService{
 		TokenManager: tm,
 	}
-	dataBytes, err := ws.GetParameterizedMPCode()
-	if err != nil {
-		fmt.Printf("%+v\n", err)
-	}
+	dataBytes, err := ws.GetParameterizedMPCode("id=1", "pages/goods/goods", 430, true)
+	assert.NoError(t, err)
 	cosService := tencloud.NewCosService()
 	name := uuid.New().String() + ".jpeg"
 	err = cosService.PushData(name, dataBytes)
