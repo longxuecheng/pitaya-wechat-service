@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.planetmeican.com/meican.x/manage/facility/errors"
+	"/meican.x/manage/facility/errors"
 )
 
 const (

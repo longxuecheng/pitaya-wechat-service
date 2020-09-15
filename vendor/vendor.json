@@ -89,18 +89,6 @@
 			"revisionTime": "2019-09-26T12:17:15Z"
 		},
 		{
-			"checksumSHA1": "8YFxR9WTLiX3fMkwrdJ3dkzU1nY=",
-			"path": "go.planetmeican.com/manage/paperwork-facility/reflect_util",
-			"revision": "b1ebb017cf3038803348f553d129c6a205b9888e",
-			"revisionTime": "2019-10-16T10:22:03Z"
-		},
-		{
-			"checksumSHA1": "VzhBX+KQVsqm77oEACQ/PnsWrYI=",
-			"path": "go.planetmeican.com/meican.x/manage/facility/errors",
-			"revision": "29068b0d24687f8e947beccee9b45a03eee320b8",
-			"revisionTime": "2019-07-30T02:51:53Z"
-		},
-		{
 			"checksumSHA1": "WYsDhZGparMeQMUkvocePUa9V5s=",
 			"path": "golang.org/x/text/internal/gen",
 			"revision": "17bcc049122f272a32787ba38073ee47433023e9",

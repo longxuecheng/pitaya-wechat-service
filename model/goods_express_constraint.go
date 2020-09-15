@@ -4,7 +4,7 @@ import (
 	"gotrue/facility/utils"
 
 	"github.com/shopspring/decimal"
-	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
+	"/manage/paperwork-facility/reflect_util"
 )
 
 // GoodsExpressConstraint is constraint of goods express

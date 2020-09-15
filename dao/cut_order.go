@@ -7,7 +7,7 @@ import (
 	
 
 	sq "github.com/Masterminds/squirrel"
-	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
+	"/manage/paperwork-facility/reflect_util"
 )
 
 var CutOrderDao *CutOrder

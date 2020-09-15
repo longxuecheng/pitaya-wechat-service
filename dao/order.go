@@ -5,7 +5,7 @@ import (
 	"gotrue/facility/utils"
 	"gotrue/model"
 
-	"go.planetmeican.com/manage/paperwork-facility/reflect_util"
+	"/manage/paperwork-facility/reflect_util"
 
 	sq "github.com/Masterminds/squirrel"
 )
